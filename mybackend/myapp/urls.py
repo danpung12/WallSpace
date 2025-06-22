@@ -18,6 +18,7 @@ urlpatterns = [
     
     # 자소서 분석
     path('analyze/', views.AnalyzeResumeView.as_view(), name='analyze-resume'),
+    path('resumes/<int:pk>/analyze/', views.ResumeAnalysisView.as_view(), name='resume-analyze'),
     
     # 자소서 CRUD
     path('', include(router.urls)),
