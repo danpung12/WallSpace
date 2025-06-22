@@ -1,0 +1,17 @@
+{
+  "name": "notion-project-template",
+  "version": "1.0.0",
+  "description": "Notion 프로젝트 관리 템플릿 생성기",
+  "main": "create-notion-template.js",
+  "scripts": {
+    "start": "node create-notion-template.js",
+    "setup": "npm install"
+  },
+  "dependencies": {
+    "@notionhq/client": "^2.2.14",
+    "dotenv": "^16.0.3"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
