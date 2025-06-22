@@ -29,9 +29,16 @@ if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     
-    # 개발 환경에서만 DRF 로그인 화면 사용
-    import debug_toolbar
+    # 개발 환경에서만 DRF 로그인 화면 및 디버그 툴바 사용
+    try:
+        import debug_toolbar
+        urlpatterns += [
+            path('__debug__/', include(debug_toolbar.urls)),
+        ]
+    except ImportError:
+        pass  # debug_toolbar가 설치되지 않은 경우 무시
+    
+    # DRF 로그인 URL (디버그 툴바와 별개로 항상 추가)
     urlpatterns += [
-        path('__debug__/', include(debug_toolbar.urls)),
         path('api-auth/', include('rest_framework.urls')),
     ]
