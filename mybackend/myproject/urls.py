@@ -14,31 +14,41 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path, include
+
+# Django imports
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
+
+# Conditional imports for development only
+if settings.DEBUG:
+    try:
+        # Third party imports
+        import debug_toolbar  # noqa: F401
+
+        DEBUG_TOOLBAR_AVAILABLE = True
+    except ImportError:
+        DEBUG_TOOLBAR_AVAILABLE = False
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/auth/', include('myapp.urls')),  # JWT 및 커스텀 인증 엔드포인트
+    path("admin/", admin.site.urls),
+    path("api/auth/", include("myapp.urls")),  # JWT 및 커스텀 인증 엔드포인트
 ]
 
-# 개발 환경에서만 정적 파일 및 DRF 로그인 화면 제공
+# Development environment specific URLs
 if settings.DEBUG:
+    # Serve static and media files
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    
-    # 개발 환경에서만 DRF 로그인 화면 및 디버그 툴바 사용
-    try:
-        import debug_toolbar
+
+    # Debug toolbar
+    if DEBUG_TOOLBAR_AVAILABLE:
         urlpatterns += [
-            path('__debug__/', include(debug_toolbar.urls)),
+            path("__debug__/", include(debug_toolbar.urls)),
         ]
-    except ImportError:
-        pass  # debug_toolbar가 설치되지 않은 경우 무시
-    
-    # DRF 로그인 URL (디버그 툴바와 별개로 항상 추가)
+
+    # DRF login URLs
     urlpatterns += [
-        path('api-auth/', include('rest_framework.urls')),
+        path("api-auth/", include("rest_framework.urls")),
     ]

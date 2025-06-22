@@ -1,0 +1,24 @@
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.pytest_cache
+  | \.tox
+  | \\venv
+  | \\.venv
+  | \\migrations
+  | \\static
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+line_length = 88
+use_parentheses = true
+ensure_newline_before_comments = true
