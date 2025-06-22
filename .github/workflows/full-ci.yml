@@ -51,6 +51,29 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r mybackend/requirements.txt
+        pip install black flake8 isort
+    
+    - name: Run Black
+      run: |
+        black --check mybackend/
+    
+    - name: Run isort
+      run: |
+        isort --check-only mybackend/
+    
+    - name: Run flake8
+      run: |
+        flake8 mybackend/
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
         cache: 'pip'
         cache-dependency-path: 'mybackend/requirements.txt'
     
