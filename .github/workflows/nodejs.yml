@@ -1,28 +1,74 @@
-name: Node.js CI
+name: Node.js CI/CD
 
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'myfront/**'
+      - '.github/workflows/**'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'myfront/**'
+      - '.github/workflows/**'
 
 jobs:
-  build:
+  build-and-test:
+    name: Build and Test
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        node-version: [18.x]
+
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Use Node.js 18.x
-      uses: actions/setup-node@v3
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
       with:
-        node-version: 18.x
+        node-version: ${{ matrix.node-version }}
         cache: 'npm'
-        
+        cache-dependency-path: 'myfront/package-lock.json'
+
     - name: Install dependencies
       working-directory: ./myfront
-      run: npm ci
-      
+      run: |
+        npm ci --prefer-offline
+        npm cache verify
+
+    - name: Lint
+      working-directory: ./myfront
+      run: npm run lint --if-present
+
     - name: Run tests
       working-directory: ./myfront
-      run: npm test
+      run: |
+        npm test -- --coverage
+        npm run test:coverage --if-present
+
+    - name: Upload test coverage
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-report
+        path: |
+          myfront/coverage/
+          myfront/coverage/lcov-report/
+        retention-days: 7
+
+    - name: Build
+      working-directory: ./myfront
+      run: |
+        npm run build --if-present
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: build-artifacts
+        path: |
+          myfront/build/**/*
+          myfront/dist/**/*
+        retention-days: 7
