@@ -15,7 +15,12 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+<<<<<<< HEAD
 # Django imports
+=======
+from django.contrib import admin
+from django.urls import path, include
+>>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -42,6 +47,7 @@ if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
+<<<<<<< HEAD
     # Debug toolbar
     if DEBUG_TOOLBAR_AVAILABLE:
         urlpatterns += [
@@ -49,6 +55,19 @@ if settings.DEBUG:
         ]
 
     # DRF login URLs
+=======
+    # 개발 환경에서만 DRF 로그인 화면 및 디버그 툴바 사용
+    try:
+        import debug_toolbar
+
+        urlpatterns += [
+            path("__debug__/", include(debug_toolbar.urls)),
+        ]
+    except ImportError:
+        pass  # debug_toolbar가 설치되지 않은 경우 무시
+
+    # DRF 로그인 URL (디버그 툴바와 별개로 항상 추가)
+>>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
     urlpatterns += [
         path("api-auth/", include("rest_framework.urls")),
     ]

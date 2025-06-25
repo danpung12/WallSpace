@@ -33,6 +33,7 @@ class RegisterView(APIView):
 
     permission_classes = [permissions.AllowAny]
 
+<<<<<<< HEAD
     def post(self, request: Request) -> Response:
         """Handle user registration.
 
@@ -42,6 +43,9 @@ class RegisterView(APIView):
         Returns:
             Response: JWT tokens and user data on success, or validation errors.
         """
+=======
+    def post(self, request):
+>>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
@@ -58,7 +62,11 @@ class RegisterView(APIView):
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
+<<<<<<< HEAD
     """View for retrieving and updating the authenticated user's profile."""
+=======
+    """사용자 프로필 조회 및 수정 뷰"""
+>>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
 
     serializer_class = UserSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -82,12 +90,17 @@ class ResumeViewSet(viewsets.ModelViewSet):
         """Associate the created resume with the authenticated user."""
         serializer.save(user=self.request.user)
 
+<<<<<<< HEAD
     def get_serializer_context(self) -> Dict[str, Any]:
         """Add the request to the serializer context."""
+=======
+    def get_serializer_context(self):
+>>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
         return {"request": self.request}
 
 
 class AnalyzeView(APIView):
+<<<<<<< HEAD
     """View for analyzing resumes and retrieving analysis results."""
 
     permission_classes = (permissions.IsAuthenticated,)
@@ -105,13 +118,33 @@ class AnalyzeView(APIView):
         try:
             resume = Resume.objects.get(pk=pk, user=request.user)
             analysis_result = self._perform_analysis(resume)
+=======
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk=None):
+        try:
+            resume = Resume.objects.get(pk=pk, user=request.user)
+            # TODO: 실제 분석 로직 구현 (현재는 더미 데이터 반환)
+            analysis_result = {
+                "score": 85,
+                "suggestions": [
+                    "자기소개서의 구체적인 경험을 더 추가해보세요.",
+                    "성과 중심의 표현을 사용해보세요.",
+                ],
+                "keywords": ["리더십", "도전정신", "성장"],
+            }
+>>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
             resume.analysis_result = analysis_result
             resume.save()
             return Response(analysis_result)
         except Resume.DoesNotExist:
             return Response(
+<<<<<<< HEAD
                 {"error": "Resume not found"},
                 status=status.HTTP_404_NOT_FOUND,
+=======
+                {"error": "Resume not found"}, status=status.HTTP_404_NOT_FOUND
+>>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
             )
 
     def get(self, request: Request, pk: Optional[int] = None) -> Response:
@@ -128,12 +161,17 @@ class AnalyzeView(APIView):
             resume = Resume.objects.get(pk=pk, user=request.user)
             if not resume.analysis_result:
                 return Response(
+<<<<<<< HEAD
                     {"status": "not_analyzed"},
                     status=status.HTTP_204_NO_CONTENT,
+=======
+                    {"status": "not_analyzed"}, status=status.HTTP_204_NO_CONTENT
+>>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
                 )
             return Response(resume.analysis_result)
         except Resume.DoesNotExist:
             return Response(
+<<<<<<< HEAD
                 {"error": "Resume not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
@@ -229,3 +267,17 @@ class AnalyzeResumeView(generics.GenericAPIView):
         if hasattr(resume, "analysis_result") and resume.analysis_result is not None:
             return Response(resume.analysis_result, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_204_NO_CONTENT)
+=======
+                {"error": "Resume not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class AnalyzeResumeView(generics.CreateAPIView):
+    """자소서 분석 뷰"""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        # 여기에 자소서 분석 로직 구현
+        return Response({"message": "Analysis endpoint"}, status=status.HTTP_200_OK)
+>>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
