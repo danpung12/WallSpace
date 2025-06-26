@@ -33,7 +33,6 @@ class RegisterView(APIView):
 
     permission_classes = [permissions.AllowAny]
 
-<<<<<<< HEAD
     def post(self, request: Request) -> Response:
         """Handle user registration.
 
@@ -43,9 +42,6 @@ class RegisterView(APIView):
         Returns:
             Response: JWT tokens and user data on success, or validation errors.
         """
-=======
-    def post(self, request):
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
@@ -62,11 +58,10 @@ class RegisterView(APIView):
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
-<<<<<<< HEAD
-    """View for retrieving and updating the authenticated user's profile."""
-=======
-    """사용자 프로필 조회 및 수정 뷰"""
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
+    """View for retrieving and updating the authenticated user's profile.
+
+    사용자 프로필 조회 및 수정 뷰
+    """
 
     serializer_class = UserSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -90,23 +85,21 @@ class ResumeViewSet(viewsets.ModelViewSet):
         """Associate the created resume with the authenticated user."""
         serializer.save(user=self.request.user)
 
-<<<<<<< HEAD
-    def get_serializer_context(self) -> Dict[str, Any]:
-        """Add the request to the serializer context."""
-=======
     def get_serializer_context(self):
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
+        """Add the request to the serializer context."""
         return {"request": self.request}
 
 
 class AnalyzeView(APIView):
-<<<<<<< HEAD
-    """View for analyzing resumes and retrieving analysis results."""
+    """View for analyzing resumes and retrieving analysis results.
+
+    자소서 분석 뷰
+    """
 
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request: Request, pk: Optional[int] = None) -> Response:
-        """Analyze a specific resume.
+        """Handle resume analysis requests.
 
         Args:
             request: The HTTP request.
@@ -118,33 +111,12 @@ class AnalyzeView(APIView):
         try:
             resume = Resume.objects.get(pk=pk, user=request.user)
             analysis_result = self._perform_analysis(resume)
-=======
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, pk=None):
-        try:
-            resume = Resume.objects.get(pk=pk, user=request.user)
-            # TODO: 실제 분석 로직 구현 (현재는 더미 데이터 반환)
-            analysis_result = {
-                "score": 85,
-                "suggestions": [
-                    "자기소개서의 구체적인 경험을 더 추가해보세요.",
-                    "성과 중심의 표현을 사용해보세요.",
-                ],
-                "keywords": ["리더십", "도전정신", "성장"],
-            }
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
             resume.analysis_result = analysis_result
             resume.save()
             return Response(analysis_result)
         except Resume.DoesNotExist:
             return Response(
-<<<<<<< HEAD
-                {"error": "Resume not found"},
-                status=status.HTTP_404_NOT_FOUND,
-=======
                 {"error": "Resume not found"}, status=status.HTTP_404_NOT_FOUND
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
             )
 
     def get(self, request: Request, pk: Optional[int] = None) -> Response:
@@ -161,19 +133,12 @@ class AnalyzeView(APIView):
             resume = Resume.objects.get(pk=pk, user=request.user)
             if not resume.analysis_result:
                 return Response(
-<<<<<<< HEAD
-                    {"status": "not_analyzed"},
-                    status=status.HTTP_204_NO_CONTENT,
-=======
                     {"status": "not_analyzed"}, status=status.HTTP_204_NO_CONTENT
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
                 )
             return Response(resume.analysis_result)
         except Resume.DoesNotExist:
             return Response(
-<<<<<<< HEAD
-                {"error": "Resume not found"},
-                status=status.HTTP_404_NOT_FOUND,
+                {"error": "Resume not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
     def _perform_analysis(self, resume: Resume) -> Dict[str, Any]:
@@ -200,14 +165,19 @@ class AnalyzeResumeView(generics.GenericAPIView):
     """View for analyzing resume content and retrieving analysis results.
 
     This endpoint accepts resume content and returns analysis results.
+
+    자소서 분석 뷰: 자소서 내용을 분석하고 결과를 반환합니다.
     """
 
     permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = ResumeSerializer
 
     def post(
         self, request: Request, pk: int = None, *args: Any, **kwargs: Any
     ) -> Response:
         """Analyze the provided resume content.
+
+        자소서 분석을 처리합니다.
 
         Args:
             request: The HTTP request containing resume data.
@@ -216,39 +186,47 @@ class AnalyzeResumeView(generics.GenericAPIView):
         Returns:
             Response: Analysis results or error message.
         """
-        # For the /analyze/ endpoint
+        # For the /analyze/ endpoint (without pk)
         if pk is None:
-            resume_id = request.data.get("resume_id")
-            if resume_id:
-                try:
-                    # Check if resume exists, but we don't need the actual object
-                    Resume.objects.get(pk=resume_id, user=request.user)
-                except Resume.DoesNotExist:
-                    return Response(
-                        {"error": "Resume not found"}, status=status.HTTP_404_NOT_FOUND
-                    )
-            return Response({"message": "Analysis endpoint"}, status=status.HTTP_200_OK)
+            serializer = self.get_serializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            # 분석 로직 구현 (현재는 예시로 더미 데이터 반환)
+            analysis_result = {
+                "score": 85,
+                "suggestions": [
+                    "자기소개서의 구체적인 경험을 더 추가해보세요.",
+                    "성과 중심의 표현을 사용해보세요.",
+                ],
+                "keywords": ["리더십", "도전정신", "성장"],
+            }
+            return Response(analysis_result, status=status.HTTP_200_OK)
 
         # For the /resumes/<pk>/analyze/ endpoint
         try:
-            Resume.objects.get(pk=pk, user=request.user)
+            resume = Resume.objects.get(pk=pk, user=request.user)
+            # TODO: Implement actual resume analysis logic
+            analysis_result = self._perform_analysis(resume)
+            resume.analysis_result = analysis_result
+            resume.save()
+            return Response(analysis_result, status=status.HTTP_200_OK)
+
         except Resume.DoesNotExist:
             return Response(
                 {"error": "Resume not found"}, status=status.HTTP_404_NOT_FOUND
             )
-
-        # TODO: Implement actual resume analysis logic
-        return Response({"message": "Analysis completed"}, status=status.HTTP_200_OK)
 
     def get(
         self, request: Request, pk: int = None, *args: Any, **kwargs: Any
     ) -> Response:
         """Retrieve analysis results for a resume.
 
+        자소서 분석 결과를 조회합니다.
+
         Args:
             request: The HTTP request.
             pk: Primary key of the resume.
-
 
         Returns:
             Response: Analysis results or status message.
@@ -260,24 +238,32 @@ class AnalyzeResumeView(generics.GenericAPIView):
 
         try:
             resume = Resume.objects.get(pk=pk, user=request.user)
-        except Resume.DoesNotExist:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        # Return analysis results if they exist
-        if hasattr(resume, "analysis_result") and resume.analysis_result is not None:
+            if not hasattr(resume, "analysis_result") or resume.analysis_result is None:
+                return Response(
+                    {"status": "not_analyzed"}, status=status.HTTP_204_NO_CONTENT
+                )
             return Response(resume.analysis_result, status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-=======
+
+        except Resume.DoesNotExist:
+            return Response(
                 {"error": "Resume not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
+    def _perform_analysis(self, resume: Resume) -> Dict[str, Any]:
+        """Perform analysis on the given resume.
 
-class AnalyzeResumeView(generics.CreateAPIView):
-    """자소서 분석 뷰"""
+        Args:
+            resume: The Resume instance to analyze.
 
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def post(self, request, *args, **kwargs):
-        # 여기에 자소서 분석 로직 구현
-        return Response({"message": "Analysis endpoint"}, status=status.HTTP_200_OK)
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
+        Returns:
+            Dict containing analysis results.
+        """
+        # TODO: Implement actual analysis logic
+        return {
+            "score": 85,
+            "suggestions": [
+                "자기소개서의 구체적인 경험을 더 추가해보세요.",
+                "성과 중심의 표현을 사용해보세요.",
+            ],
+            "keywords": ["리더십", "도전정신", "성장"],
+        }

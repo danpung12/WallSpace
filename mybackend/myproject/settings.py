@@ -138,21 +138,6 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-<<<<<<< HEAD
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "UserAttributeSimilarityValidator"
-        ),
-    },
-    {
-        "NAME": ("django.contrib.auth.password_validation." "MinimumLengthValidator"),
-    },
-    {
-        "NAME": ("django.contrib.auth.password_validation." "CommonPasswordValidator"),
-    },
-    {
-        "NAME": ("django.contrib.auth.password_validation." "NumericPasswordValidator"),
-=======
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
@@ -163,7 +148,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
     },
 ]
 
@@ -171,15 +155,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-<<<<<<< HEAD
 LANGUAGE_CODE = "ko-kr"
-
 TIME_ZONE = "Asia/Seoul"
-=======
-LANGUAGE_CODE = "en-us"
-
-TIME_ZONE = "UTC"
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
 
 USE_I18N = True
 
@@ -191,16 +168,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
+# Static files configuration
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
-<<<<<<< HEAD
-# Static files configuration
-STATIC_URL = "static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-=======
 # 개발 환경에서만 사용되는 정적 파일 디렉토리
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
 STATICFILES_DIRS = (
     [
         os.path.join(BASE_DIR, "static"),
@@ -212,19 +184,11 @@ STATICFILES_DIRS = (
 # Media files
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-<<<<<<< HEAD
-=======
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-]
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-<<<<<<< HEAD
 
 # Logging configuration
 LOGGING = {
@@ -240,5 +204,3 @@ LOGGING = {
         "level": "INFO",
     },
 }
-=======
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)

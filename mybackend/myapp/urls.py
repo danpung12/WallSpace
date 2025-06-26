@@ -18,14 +18,11 @@ urlpatterns = [
     path("auth/profile/", views.UserProfileView.as_view(), name="user_profile"),
     # 자소서 분석
     path("analyze/", views.AnalyzeResumeView.as_view(), name="analyze-resume"),
-<<<<<<< HEAD
     path(
         "resumes/<int:pk>/analyze/",
         views.AnalyzeResumeView.as_view(),
         name="resume-analyze",
     ),
-=======
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
     # 자소서 CRUD
     path("", include(router.urls)),
 ]

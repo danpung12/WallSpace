@@ -44,7 +44,7 @@ class AnalyzeTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertEqual(response.data['message'], 'Analysis completed')
+        self.assertEqual(response.data["message"], "Analysis completed")
 
     def test_get_analysis_result(self):
         """분석 결과 조회 테스트"""

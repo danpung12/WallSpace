@@ -96,22 +96,16 @@ class ResumeTests(APITestCase):
 
     def test_delete_resume(self):
         """자소서 삭제 테스트"""
-<<<<<<< HEAD
         # 초기 상태 확인: user1의 자소서 2개, user2의 자소서 1개
         self.assertEqual(Resume.objects.count(), 3)
 
         # user1의 자소서 1개 삭제
-=======
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
         url = reverse("resume-detail", args=[self.resume1.id])
         response = self.client.delete(url)
 
         # 상태 코드 검증
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-<<<<<<< HEAD
-
-        # 삭제 후 남은 자소서 수 검증 (user1: 1개, user2: 1개)
-        self.assertEqual(Resume.objects.count(), 2)
+        self.assertEqual(Resume.objects.count(), 2)  # 기존 3개 중 1개 삭제
 
         # 삭제된 자소서가 실제로 삭제되었는지 확인
         with self.assertRaises(Resume.DoesNotExist):
@@ -119,9 +113,6 @@ class ResumeTests(APITestCase):
 
         # user1의 남은 자소서가 정상적으로 조회되는지 확인
         self.assertTrue(Resume.objects.filter(pk=self.resume2.id).exists())
-=======
-        self.assertEqual(Resume.objects.count(), 2)  # 기존 3개 중 1개 삭제
->>>>>>> d1e23a3 (스타일: mybackend 전체 Black 포맷팅 적용)
 
     def test_unauthorized_access(self):
         """인증되지 않은 사용자 접근 테스트"""

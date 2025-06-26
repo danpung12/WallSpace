@@ -12,10 +12,8 @@ from myapp.models import Company, Resume
 User = get_user_model()
 
 
-
 @pytest.fixture
 def api_client():
-
     return APIClient()
 
 
@@ -49,7 +47,6 @@ def test_resume(test_user):
 def auth_client(api_client, test_user):
     # Third party imports
     from rest_framework_simplejwt.tokens import RefreshToken
-
 
     refresh = RefreshToken.for_user(test_user)
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
