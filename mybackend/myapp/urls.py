@@ -1,6 +1,7 @@
-# Third party imports
 # Django imports
 from django.urls import include, path
+
+# Third party imports
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 

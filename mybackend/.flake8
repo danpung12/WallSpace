@@ -1,5 +1,5 @@
 [flake8]
-max-line-length = 120
+max-line-length = 90
 extend-ignore = E203, I100, I201
 exclude = 
     .git,
@@ -7,7 +7,9 @@ exclude =
     */migrations/*,
     */static/*,
     */venv/*,
-    */migrations/*
+    .venv,
+    */migrations/*,
+    *migrations*
 max-complexity = 18
 per-file-ignores =
     # Ignore line length in migrations
