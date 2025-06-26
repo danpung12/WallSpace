@@ -6,13 +6,17 @@ resume CRUD operations, and resume analysis functionality.
 """
 
 # Standard library imports
+import os
 from typing import Any, Dict, Optional
 
 # Django imports
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 # Third party imports
 from rest_framework import generics, permissions, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -72,22 +76,226 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 
 
 class ResumeViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing user resumes."""
+    """ViewSet for managing user resumes.
+
+    사용자 이력서 관리 뷰셋. 이력서 CRUD 및 파일 업로드 기능을 제공합니다.
+    """
 
     serializer_class = ResumeSerializer
     permission_classes = (permissions.IsAuthenticated,)
+
+    # Use both JSON and multipart parsers
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def get_parsers(self):
+        """
+        파일 업로드 요청인 경우 MultiPartParser, 그 외에는 JSONParser를 사용합니다.
+        """
+        # Always return all parsers and let DRF handle the content type
+        return [parser() for parser in self.parser_classes]
 
     def get_queryset(self):
         """Return resumes belonging to the authenticated user."""
         return Resume.objects.filter(user=self.request.user)
 
-    def perform_create(self, serializer: ResumeSerializer) -> None:
-        """Associate the created resume with the authenticated user."""
-        serializer.save(user=self.request.user)
-
     def get_serializer_context(self):
         """Add the request to the serializer context."""
         return {"request": self.request}
+
+    def create(self, request, *args, **kwargs):
+        """Create a new resume with optional file upload.
+
+        파일 업로드가 포함된 이력서 생성을 처리합니다.
+        """
+        data = request.data.copy()
+        file_obj = request.FILES.get("file")
+
+        # 파일이 있는 경우 유효성 검사
+        if file_obj:
+            # 파일 유효성 검사
+            if not file_obj.name.lower().endswith((".pdf", ".docx", ".doc")):
+                return Response(
+                    {
+                        "error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # 파일 크기 검사 (5MB 제한)
+            if file_obj.size > 5 * 1024 * 1024:
+                return Response(
+                    {"error": "파일 크기는 5MB를 초과할 수 없습니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            data["file"] = file_obj
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
+
+    def update(self, request, *args, **kwargs):
+        """Update a resume with optional file upload.
+
+        파일 업데이트가 포함된 이력서 수정을 처리합니다.
+        """
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        data = request.data.copy()
+        file_obj = request.FILES.get("file")
+
+        # 파일이 있는 경우 유효성 검사
+        if file_obj:
+            # 파일 유효성 검사
+            if not file_obj.name.lower().endswith((".pdf", ".docx", ".doc")):
+                return Response(
+                    {
+                        "error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # 파일 크기 검사 (5MB 제한)
+            if file_obj.size > 5 * 1024 * 1024:
+                return Response(
+                    {"error": "파일 크기는 5MB를 초과할 수 없습니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # 기존 파일이 있으면 삭제
+            if instance.file:
+                instance.file.delete(save=False)
+
+            data["file"] = file_obj
+
+        serializer = self.get_serializer(instance, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], url_path="upload-file")
+    def upload_file(self, request, pk=None):
+        """Upload a file to an existing resume.
+
+        기존 이력서에 파일을 업로드합니다.
+        """
+        resume = self.get_object()
+
+        # Check if file is in the request
+        if "file" not in request.FILES:
+            return Response(
+                {"error": "파일이 제공되지 않았습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        file_obj = request.FILES["file"]
+
+        # 파일 유효성 검사
+        if not file_obj.name.lower().endswith((".pdf", ".docx", ".doc")):
+            return Response(
+                {
+                    "error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 파일 크기 검사 (5MB 제한)
+        if file_obj.size > 5 * 1024 * 1024:
+            return Response(
+                {"error": "파일 크기는 5MB를 초과할 수 없습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # 기존 파일이 있으면 삭제
+            if resume.file:
+                resume.file.delete(save=False)
+
+            # 파일 저장
+            resume.file = file_obj
+            resume.file_uploaded_at = timezone.now()
+
+            # 파일 확장자에 따라 file_type 설정
+            file_ext = file_obj.name.split(".")[-1].lower()
+            if file_ext == "pdf":
+                resume.file_type = "pdf"
+            elif file_ext in ["docx", "doc"]:
+                resume.file_type = "docx"
+            else:
+                resume.file_type = "other"
+
+            # 변경된 필드 저장
+            update_fields = ["file", "file_uploaded_at", "file_type", "updated_at"]
+            resume.save(update_fields=update_fields)
+
+            serializer = self.get_serializer(resume)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            import traceback
+
+            error_traceback = traceback.format_exc()
+            print(f"Error in upload_file: {error_traceback}")
+            return Response(
+                {"error": f"파일 업로드 중 오류가 발생했습니다: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(detail=True, methods=["delete"], url_path="delete-file")
+    def delete_file(self, request, pk=None):
+        """Delete the file associated with a resume."""
+        try:
+            resume = self.get_object()
+
+            if not resume.file:
+                return Response(
+                    {"error": "이력서에 첨부된 파일이 없습니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # 파일 삭제
+            try:
+                file_path = resume.file.path
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                # 파일 시스템에서 삭제 실패해도 DB 레코드는 업데이트 진행
+                print(
+                    f"Warning: 파일 삭제 중 오류 발생 (파일이 이미 삭제되었을 수 있음): {str(e)}"
+                )
+
+            # 파일 관련 필드 초기화
+            resume.file = None
+            resume.file_type = ""
+            resume.file_uploaded_at = None
+            resume.updated_at = timezone.now()
+            resume.save(
+                update_fields=["file", "file_type", "file_uploaded_at", "updated_at"]
+            )
+
+            return Response(
+                {"message": "파일이 성공적으로 삭제되었습니다.", "status": "success"},
+                status=status.HTTP_200_OK,
+            )
+
+        except Exception as e:
+            return Response(
+                {
+                    "error": f"파일 삭제 중 오류가 발생했습니다: {str(e)}",
+                    "status": "error",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def perform_create(self, serializer):
+        """Save the resume with the current user."""
+        serializer.save(user=self.request.user)
 
 
 class AnalyzeView(APIView):
