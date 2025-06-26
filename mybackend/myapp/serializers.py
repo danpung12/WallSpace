@@ -64,7 +64,9 @@ class ResumeSerializer(serializers.ModelSerializer):
     file_type = serializers.CharField(
         read_only=True, help_text="파일 유형 (PDF, DOC, DOCX)"
     )
-    file_uploaded_at = serializers.DateTimeField(read_only=True, help_text="파일 업로드 일시")
+    file_uploaded_at = serializers.DateTimeField(
+        read_only=True, help_text="파일 업로드 일시"
+    )
 
     class Meta:
         model = Resume
@@ -105,7 +107,9 @@ class ResumeSerializer(serializers.ModelSerializer):
             # 파일 크기 검증 (5MB 제한)
             max_size = 5 * 1024 * 1024  # 5MB
             if value.size > max_size:
-                raise serializers.ValidationError("파일 크기는 5MB를 초과할 수 없습니다.")
+                raise serializers.ValidationError(
+                    "파일 크기는 5MB를 초과할 수 없습니다."
+                )
 
             # 파일 확장자 검증
             valid_extensions = ["pdf", "doc", "docx"]

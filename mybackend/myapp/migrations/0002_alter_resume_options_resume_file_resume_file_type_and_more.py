@@ -52,7 +52,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="resume",
             name="file_uploaded_at",
-            field=models.DateTimeField(blank=True, help_text="파일 업로드 시간", null=True),
+            field=models.DateTimeField(
+                blank=True, help_text="파일 업로드 시간", null=True
+            ),
         ),
         migrations.AlterField(
             model_name="resume",
@@ -62,7 +64,9 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="resume",
             name="content",
-            field=models.TextField(blank=True, help_text="이력서 내용 (텍스트)", null=True),
+            field=models.TextField(
+                blank=True, help_text="이력서 내용 (텍스트)", null=True
+            ),
         ),
         migrations.AlterField(
             model_name="resume",

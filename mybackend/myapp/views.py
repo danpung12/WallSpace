@@ -115,7 +115,9 @@ class ResumeViewSet(viewsets.ModelViewSet):
             # 파일 유효성 검사
             if not file_obj.name.lower().endswith((".pdf", ".docx", ".doc")):
                 return Response(
-                    {"error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."},
+                    {
+                        "error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -152,7 +154,9 @@ class ResumeViewSet(viewsets.ModelViewSet):
             # 파일 유효성 검사
             if not file_obj.name.lower().endswith((".pdf", ".docx", ".doc")):
                 return Response(
-                    {"error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."},
+                    {
+                        "error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -186,7 +190,8 @@ class ResumeViewSet(viewsets.ModelViewSet):
         # Check if file is in the request
         if "file" not in request.FILES:
             return Response(
-                {"error": "파일이 제공되지 않았습니다."}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "파일이 제공되지 않았습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         file_obj = request.FILES["file"]
@@ -194,14 +199,17 @@ class ResumeViewSet(viewsets.ModelViewSet):
         # 파일 유효성 검사
         if not file_obj.name.lower().endswith((".pdf", ".docx", ".doc")):
             return Response(
-                {"error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."},
+                {
+                    "error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         # 파일 크기 검사 (5MB 제한)
         if file_obj.size > 5 * 1024 * 1024:
             return Response(
-                {"error": "파일 크기는 5MB를 초과할 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "파일 크기는 5MB를 초과할 수 없습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
@@ -247,7 +255,8 @@ class ResumeViewSet(viewsets.ModelViewSet):
 
             if not resume.file:
                 return Response(
-                    {"error": "이력서에 첨부된 파일이 없습니다."}, status=status.HTTP_400_BAD_REQUEST
+                    {"error": "이력서에 첨부된 파일이 없습니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
             # 파일 삭제
@@ -257,7 +266,9 @@ class ResumeViewSet(viewsets.ModelViewSet):
                     os.remove(file_path)
             except Exception as e:
                 # 파일 시스템에서 삭제 실패해도 DB 레코드는 업데이트 진행
-                print(f"Warning: 파일 삭제 중 오류 발생 (파일이 이미 삭제되었을 수 있음): {str(e)}")
+                print(
+                    f"Warning: 파일 삭제 중 오류 발생 (파일이 이미 삭제되었을 수 있음): {str(e)}"
+                )
 
             # 파일 관련 필드 초기화
             resume.file = None
@@ -275,7 +286,10 @@ class ResumeViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response(
-                {"error": f"파일 삭제 중 오류가 발생했습니다: {str(e)}", "status": "error"},
+                {
+                    "error": f"파일 삭제 중 오류가 발생했습니다: {str(e)}",
+                    "status": "error",
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

@@ -49,7 +49,10 @@ class Resume(models.Model):
     ]
 
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="resumes", help_text="이력서를 작성한 사용자"
+        User,
+        on_delete=models.CASCADE,
+        related_name="resumes",
+        help_text="이력서를 작성한 사용자",
     )
     title = models.CharField(max_length=200, help_text="이력서 제목")
     content = models.TextField(help_text="이력서 내용 (텍스트)", blank=True, null=True)
@@ -75,7 +78,9 @@ class Resume(models.Model):
     file_uploaded_at = models.DateTimeField(
         null=True, blank=True, help_text="파일 업로드 시간"
     )
-    analysis_result = models.JSONField(null=True, blank=True, help_text="분석 결과 JSON")
+    analysis_result = models.JSONField(
+        null=True, blank=True, help_text="분석 결과 JSON"
+    )
     created_at = models.DateTimeField(auto_now_add=True, help_text="생성 일시")
     updated_at = models.DateTimeField(auto_now=True, help_text="수정 일시")
 

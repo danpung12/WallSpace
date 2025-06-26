@@ -21,9 +21,9 @@ def create_test_file(filename, content=b"test content"):
     return SimpleUploadedFile(
         name=filename,
         content=content,
-        content_type="application/pdf"
-        if filename.endswith(".pdf")
-        else "application/msword",
+        content_type=(
+            "application/pdf" if filename.endswith(".pdf") else "application/msword"
+        ),
     )
 
 
@@ -128,7 +128,9 @@ class ResumeTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Resume.objects.count(), 4)
-        self.assertEqual(Resume.objects.latest("created_at").title, "파일이 포함된 자소서")
+        self.assertEqual(
+            Resume.objects.latest("created_at").title, "파일이 포함된 자소서"
+        )
         self.assertIsNotNone(Resume.objects.latest("created_at").file)
 
         # 생성된 파일 삭제
@@ -166,7 +168,8 @@ class ResumeTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn(
-            "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다.", response.data["error"]
+            "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다.",
+            response.data["error"],
         )
 
     def test_upload_large_file(self):
