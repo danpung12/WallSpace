@@ -1,9 +1,14 @@
-import json
+# Standard library imports
+
+# Third party imports
+# Django imports
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from django.contrib.auth import get_user_model
-from myapp.models import Resume, Company
+
+# Local application imports
+from myapp.models import Company, Resume
 
 User = get_user_model()
 
@@ -38,7 +43,8 @@ class AnalyzeTests(APITestCase):
         response = self.client.post(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["message"], "Analysis endpoint")
+
+        self.assertEqual(response.data['message'], 'Analysis completed')
 
     def test_get_analysis_result(self):
         """분석 결과 조회 테스트"""
