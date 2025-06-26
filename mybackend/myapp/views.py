@@ -160,7 +160,9 @@ class ResumeViewSet(viewsets.ModelViewSet):
             # 파일 유효성 검사
             if not file_obj.name.lower().endswith((".pdf", ".docx", ".doc")):
                 return Response(
-                    {"error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."},
+                    {
+                        "error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -208,7 +210,9 @@ class ResumeViewSet(viewsets.ModelViewSet):
             # 파일 유효성 검사
             if not file_obj.name.lower().endswith((".pdf", ".docx", ".doc")):
                 return Response(
-                    {"error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."},
+                    {
+                        "error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -299,7 +303,9 @@ class ResumeViewSet(viewsets.ModelViewSet):
         # 파일 유효성 검사
         if not file_obj.name.lower().endswith((".pdf", ".docx", ".doc")):
             return Response(
-                {"error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."},
+                {
+                    "error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -374,7 +380,9 @@ class ResumeViewSet(viewsets.ModelViewSet):
                     os.remove(file_path)
             except Exception as e:
                 # 파일 시스템에서 삭제 실패해도 DB 레코드는 업데이트 진행
-                print(f"Warning: 파일 삭제 중 오류 발생 (파일이 이미 삭제되었을 수 있음): {str(e)}")
+                print(
+                    f"Warning: 파일 삭제 중 오류 발생 (파일이 이미 삭제되었을 수 있음): {str(e)}"
+                )
 
             # 파일 관련 필드 초기화
             resume.file = None
