@@ -8,9 +8,11 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 # Local folder imports
 from . import views
 
+# 라우터 설정
 router = DefaultRouter()
 router.register(r"resumes", views.ResumeViewSet, basename="resume")
 
+# API URL 패턴
 urlpatterns = [
     # 인증 관련
     path("auth/register/", views.RegisterView.as_view(), name="register"),
