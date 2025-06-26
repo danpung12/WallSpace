@@ -14,6 +14,8 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 # Third party imports
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -37,6 +39,33 @@ class RegisterView(APIView):
 
     permission_classes = [permissions.AllowAny]
 
+    @swagger_auto_schema(
+        operation_summary="사용자 등록",
+        operation_description="새로운 사용자를 등록하고 JWT 토큰을 발급받습니다.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["username", "email", "password"],
+            properties={
+                "username": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="사용자명"
+                ),
+                "email": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    format=openapi.FORMAT_EMAIL,
+                    description="이메일",
+                ),
+                "password": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    format=openapi.FORMAT_PASSWORD,
+                    description="비밀번호 (8자 이상)",
+                ),
+            },
+        ),
+        responses={
+            201: "사용자 등록 성공",
+            400: "잘못된 요청 데이터",
+        },
+    )
     def post(self, request: Request) -> Response:
         """Handle user registration.
 
@@ -83,25 +112,41 @@ class ResumeViewSet(viewsets.ModelViewSet):
 
     serializer_class = ResumeSerializer
     permission_classes = (permissions.IsAuthenticated,)
-
-    # Use both JSON and multipart parsers
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
-    def get_parsers(self):
-        """
-        파일 업로드 요청인 경우 MultiPartParser, 그 외에는 JSONParser를 사용합니다.
-        """
-        # Always return all parsers and let DRF handle the content type
-        return [parser() for parser in self.parser_classes]
+    @swagger_auto_schema(
+        operation_summary="이력서 목록 조회",
+        operation_description="사용자의 모든 이력서 목록을 조회합니다.",
+        responses={
+            200: ResumeSerializer(many=True),
+            401: "인증 실패",
+        },
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
-    def get_queryset(self):
-        """Return resumes belonging to the authenticated user."""
-        return Resume.objects.filter(user=self.request.user)
+    @swagger_auto_schema(
+        operation_summary="이력서 상세 조회",
+        operation_description="특정 이력서의 상세 정보를 조회합니다.",
+        responses={
+            200: ResumeSerializer(),
+            401: "인증 실패",
+            404: "존재하지 않는 이력서",
+        },
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
-    def get_serializer_context(self):
-        """Add the request to the serializer context."""
-        return {"request": self.request}
-
+    @swagger_auto_schema(
+        operation_summary="이력서 생성",
+        operation_description="새로운 이력서를 생성합니다.",
+        request_body=ResumeSerializer,
+        responses={
+            201: ResumeSerializer(),
+            400: "잘못된 요청 데이터",
+            401: "인증 실패",
+        },
+    )
     def create(self, request, *args, **kwargs):
         """Create a new resume with optional file upload.
 
@@ -115,9 +160,7 @@ class ResumeViewSet(viewsets.ModelViewSet):
             # 파일 유효성 검사
             if not file_obj.name.lower().endswith((".pdf", ".docx", ".doc")):
                 return Response(
-                    {
-                        "error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."
-                    },
+                    {"error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -139,6 +182,17 @@ class ResumeViewSet(viewsets.ModelViewSet):
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
 
+    @swagger_auto_schema(
+        operation_summary="이력서 수정",
+        operation_description="기존 이력서를 수정합니다.",
+        request_body=ResumeSerializer,
+        responses={
+            200: ResumeSerializer(),
+            400: "잘못된 요청 데이터",
+            401: "인증 실패",
+            404: "존재하지 않는 이력서",
+        },
+    )
     def update(self, request, *args, **kwargs):
         """Update a resume with optional file upload.
 
@@ -154,9 +208,7 @@ class ResumeViewSet(viewsets.ModelViewSet):
             # 파일 유효성 검사
             if not file_obj.name.lower().endswith((".pdf", ".docx", ".doc")):
                 return Response(
-                    {
-                        "error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."
-                    },
+                    {"error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -167,19 +219,67 @@ class ResumeViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # 기존 파일이 있으면 삭제
-            if instance.file:
-                instance.file.delete(save=False)
-
             data["file"] = file_obj
 
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
+        if getattr(instance, "_prefetched_objects_cache", None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+
         return Response(serializer.data)
 
-    @action(detail=True, methods=["post"], url_path="upload-file")
+    @swagger_auto_schema(
+        operation_summary="이력서 삭제",
+        operation_description="기존 이력서를 삭제합니다.",
+        responses={
+            204: "삭제 성공",
+            401: "인증 실패",
+            404: "존재하지 않는 이력서",
+        },
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
+    def get_parsers(self):
+        """
+        파일 업로드 요청인 경우 MultiPartParser, 그 외에는 JSONParser를 사용합니다.
+        """
+        # Always return all parsers and let DRF handle the content type
+        return [parser() for parser in self.parser_classes]
+
+    def get_queryset(self):
+        """Return resumes belonging to the authenticated user."""
+        return Resume.objects.filter(user=self.request.user)
+
+    def get_serializer_context(self):
+        """Add the request to the serializer context."""
+        return {"request": self.request}
+
+    @swagger_auto_schema(
+        method="post",
+        operation_summary="파일 업로드",
+        operation_description="이력서에 파일을 업로드합니다. (PDF, DOC, DOCX 형식, 최대 5MB)",
+        manual_parameters=[
+            openapi.Parameter(
+                name="file",
+                in_=openapi.IN_FORM,
+                type=openapi.TYPE_FILE,
+                required=True,
+                description="업로드할 파일 (PDF, DOC, DOCX)",
+            ),
+        ],
+        responses={
+            200: ResumeSerializer(),
+            400: "잘못된 파일 형식 또는 크기 초과",
+            401: "인증 실패",
+            404: "존재하지 않는 이력서",
+        },
+    )
+    @action(detail=True, methods=["post"], parser_classes=[MultiPartParser])
     def upload_file(self, request, pk=None):
         """Upload a file to an existing resume.
 
@@ -199,9 +299,7 @@ class ResumeViewSet(viewsets.ModelViewSet):
         # 파일 유효성 검사
         if not file_obj.name.lower().endswith((".pdf", ".docx", ".doc")):
             return Response(
-                {
-                    "error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."
-                },
+                {"error": "지원하지 않는 파일 형식입니다. PDF, DOCX, DOC 파일만 업로드 가능합니다."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -247,7 +345,17 @@ class ResumeViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @action(detail=True, methods=["delete"], url_path="delete-file")
+    @swagger_auto_schema(
+        method="delete",
+        operation_summary="파일 삭제",
+        operation_description="이력서에 첨부된 파일을 삭제합니다.",
+        responses={
+            200: "파일 삭제 성공",
+            401: "인증 실패",
+            404: "존재하지 않는 이력서 또는 파일",
+        },
+    )
+    @action(detail=True, methods=["delete"])
     def delete_file(self, request, pk=None):
         """Delete the file associated with a resume."""
         try:
@@ -266,9 +374,7 @@ class ResumeViewSet(viewsets.ModelViewSet):
                     os.remove(file_path)
             except Exception as e:
                 # 파일 시스템에서 삭제 실패해도 DB 레코드는 업데이트 진행
-                print(
-                    f"Warning: 파일 삭제 중 오류 발생 (파일이 이미 삭제되었을 수 있음): {str(e)}"
-                )
+                print(f"Warning: 파일 삭제 중 오류 발생 (파일이 이미 삭제되었을 수 있음): {str(e)}")
 
             # 파일 관련 필드 초기화
             resume.file = None

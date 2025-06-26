@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "drf_yasg",
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
@@ -189,6 +190,34 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# DRF-YASG Settings
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"}
+    },
+    "DEFAULT_INFO": "myproject.urls.swagger_info",
+    "USE_SESSION_AUTH": False,
+    "JSON_EDITOR": True,
+    "DEFAULT_MODEL_RENDERING": "model",
+}
+
+# drf-yasg 스키마 정보
+SWAGGER_INFO = {
+    "title": "자소서 분석 API",
+    "default_version": "v1",
+    "description": "자소서 분석 및 관리 API 문서",
+    "terms_of_service": "https://www.example.com/terms/",
+    "contact": {
+        "name": "API Support",
+        "url": "https://www.example.com/support",
+        "email": "support@example.com",
+    },
+    "license": {
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+}
 
 # Logging configuration
 LOGGING = {
