@@ -188,25 +188,35 @@ class AnalyzeResumeView(generics.GenericAPIView):
         """
         # For the /analyze/ endpoint (without pk)
         if pk is None:
-            serializer = self.get_serializer(data=request.data)
-            if not serializer.is_valid():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # Get resume_id from request data
+            resume_id = request.data.get("resume_id")
+            if not resume_id:
+                return Response(
+                    {"error": "resume_id is required"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-            # 분석 로직 구현 (현재는 예시로 더미 데이터 반환)
-            analysis_result = {
-                "score": 85,
-                "suggestions": [
-                    "자기소개서의 구체적인 경험을 더 추가해보세요.",
-                    "성과 중심의 표현을 사용해보세요.",
-                ],
-                "keywords": ["리더십", "도전정신", "성장"],
-            }
-            return Response(analysis_result, status=status.HTTP_200_OK)
+            # Check if resume exists and belongs to the user
+            try:
+                resume = Resume.objects.get(pk=resume_id, user=request.user)
+            except Resume.DoesNotExist:
+                return Response(
+                    {"error": "Resume not found"}, status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Perform analysis
+            analysis_result = self._perform_analysis(resume)
+            resume.analysis_result = analysis_result
+            resume.save()
+
+            # Return success response with message as expected by tests
+            return Response(
+                {"message": "Analysis completed"}, status=status.HTTP_200_OK
+            )
 
         # For the /resumes/<pk>/analyze/ endpoint
         try:
             resume = Resume.objects.get(pk=pk, user=request.user)
-            # TODO: Implement actual resume analysis logic
             analysis_result = self._perform_analysis(resume)
             resume.analysis_result = analysis_result
             resume.save()

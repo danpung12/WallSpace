@@ -20,4 +20,4 @@ repos:
         - flake8-bugbear
         - flake8-comprehensions
         - flake8-import-order
-      args: [--config=/home/myharu01/바탕화면/mybackend/.flake8]
+      args: [--config=/home/myharu01/바탕화면/.flake8]
