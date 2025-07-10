@@ -66,7 +66,7 @@ const MainPage = () => (
 
     </header>
 
-    <div className="container  px-4 p-8 mx-auto text-center   bg-opacity-90 mt-[131px] rounded-xl font-black font-public xl:px-40 " >
+    <div className="container  px-4 p-8 mx-auto text-center   bg-opacity-90 md:mt-[131px] rounded-xl font-black font-public xl:px-40 " >
       <div className="z-10 flex flex-col min-h-[480px] justify-center shadow-lg items-center gap-2  md:rounded-xl" 
       style={{
         backgroundImage: "linear-gradient( rgba(0, 0, 0, 0.10) 0%, rgba(0, 0, 0, 0.40) 100%), url('/images/main1.png')",
@@ -76,7 +76,7 @@ const MainPage = () => (
         backgroundSize: "cover",
 
       }}>
-        <h1 className="text-white text-[2.25rem] mb-[24px] leading-relaxed " style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.3)" }} > 당신의 자소서를 분석해보세요 </h1>
+        <h1 className="text-white text-[1.8rem] mb-[24px] leading-relaxed md:text-[2.25rem]" style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.3)" }} > 당신의 자소서를 분석해보세요 </h1>
         <h1 className="text-white mb-[33px] leading-loose font-normal " style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.4)" }} > AI 기반 자소서 분석 플랫폼은 <br className="block md:hidden" /> 
            
           사용자의 자소서를 AI로 분석하여 점수화하고, <br className="block md:hidden" />
