@@ -16,12 +16,12 @@ import {
 const features = [
   {
     title: "자소서 관리",
-    desc: "자소서 작성/수정/삭제, 템플릿 제공 및 버전 관리, 클라우드 저장 및 동기화",
+    desc: "자소서 작성/수정/삭제, 템플릿 제공 및 버전 관리, \n클라우드 저장 및 동기화",
     image: "/images/feature1.jpg" 
   },
   {
     title: "AI 분석",
-    desc: "문법/맞춤법 검사, 키워드 추출 및 분석, 회사/직무별 핵심 역량 매칭, 경쟁력 분석 리포트",
+    desc: "문법/맞춤법 검사, 키워드 추출 및 분석, \n회사/직무별 핵심 역량 매칭, 경쟁력 분석 리포트",
     image: "/images/feature2.jpg"
   },
   {
@@ -34,9 +34,9 @@ const features = [
 
 
 const Process = [
-  { step: 1, title: "자소서 작성", desc: "제공된 템플릿을 활용하거나 직접 자소서를 작성하세요.", icon: "fas fa-pencil-alt" },
-  { step: 2, title: "AI 분석", desc: "AI가 자소서를 분석하여 점수와 개선점을 제시합니다.", icon: "fas fa-robot" },
-  { step: 3, title: "맞춤형 피드백", desc: "분석 결과를 바탕으로 자소서를 개선하고 완성도를 높이세요.", icon: "fas fa-chart-line" }
+  { step: 1, title: "자소서 작성", desc: "제공된 템플릿을 활용하거나,\n 자유롭게 자소서를 작성하세요.", icon: "fas fa-pencil-alt" },
+  { step: 2, title: "AI 분석", desc: "작성한 자소서를 AI가 꼼꼼하게 분석해\n 점수와 개선 방향을 안내해드립니다.", icon: "fas fa-robot" },
+  { step: 3, title: "맞춤형 피드백", desc: "분석 결과를 바탕으로 더 완성도 높게 다듬을 수 있도록,\n 맞춤형 피드백을 제공합니다.", icon: "fas fa-chart-line" }
 ] as const;
 
 const Footer = [
@@ -66,7 +66,7 @@ const MainPage = () => (
 
     </header>
 
-    <div className="container  px-4 p-8 mx-auto text-center   bg-opacity-90 mt-[131px] rounded-xl font-black font-public md:px-20 " >
+    <div className="container  px-4 p-8 mx-auto text-center   bg-opacity-90 mt-[131px] rounded-xl font-black font-public xl:px-40 " >
       <div className="z-10 flex flex-col min-h-[480px] justify-center shadow-lg items-center gap-2  md:rounded-xl" 
       style={{
         backgroundImage: "linear-gradient( rgba(0, 0, 0, 0.10) 0%, rgba(0, 0, 0, 0.40) 100%), url('/images/main1.png')",
@@ -76,9 +76,16 @@ const MainPage = () => (
         backgroundSize: "cover",
 
       }}>
-        <h1 className="text-white text-[2.25rem] mb-[24px] leading-relaxed " style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.5)" }} > 당신의 자소서를 분석해보세요 </h1>
-        <h1 className="text-white mb-[33px] leading-loose font-normal " style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.5)" }} > AI 기반 자소서 분석 플랫폼은 사용자의 자소서를 AI로 분석하여 점수화하고, 개선 방향을 제시하는 서비스입니다. 
-        <br/>회사/직무별 맞춤형 피드백을 제공하여 취업 준비생들의 자소서 작성을 도와줍니다. </h1>
+        <h1 className="text-white text-[2.25rem] mb-[24px] leading-relaxed " style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.3)" }} > 당신의 자소서를 분석해보세요 </h1>
+        <h1 className="text-white mb-[33px] leading-loose font-normal " style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.4)" }} > AI 기반 자소서 분석 플랫폼은 <br className="block md:hidden" /> 
+           
+          사용자의 자소서를 AI로 분석하여 점수화하고, <br className="block md:hidden" />
+          
+          개선 방향을 제시하는 서비스입니다. 
+        <br/> <br className="block md:hidden" />
+        회사/직무별 맞춤형 피드백을 제공하여 <br className="block md:hidden" />
+        
+         취업 준비생들의 자소서 작성을 도와줍니다. </h1>
           <Button className="flex rounded-full min-w-[84px] max-w-[480px]  bg-[#508ceb] text-white hover:bg-[#3877ce] px-6 h-10 font-bold">
             <span className="truncate">내 자기소개서 분석</span>
           </Button>
@@ -89,19 +96,21 @@ const MainPage = () => (
 
 
 
-             <section id="features" className="py-20">
+      <section id="features" className="py-20">
         <div className="container px-8 mx-auto md:px-20">
           <div className="text-3xl font-bold text-gray-800 md:text-4xl">
             AI 자소서 분석의 <span className="text-[#4880EE]">핵심 기능</span>
           </div>
           <div className="mt-4 text-xl text-[#4A5565]">
-            최신 AI 기술로 자소서를 분석하고, 맞춤형 피드백을 제공합니다.
+            최신 AI 기술로 자소서를 분석하고,  <br className="block md:hidden" /> 
+           
+            맞춤형 피드백을 제공합니다.
           </div>
 
           <div className="grid gap-8 mt-16 md:grid-cols-3">
             {features.map((items, index) => (
               <Card key={index}>
-                <div className="h-48 overflow-hidden">
+                <div className="h-48 overflow-hidden ">
                     <Image
                       src={items.image}
                       alt={items.title}
@@ -116,7 +125,7 @@ const MainPage = () => (
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600">{items.desc}</p>
+                  <p className="text-gray-600 min-h-[48px] whitespace-pre-line">{items.desc}</p>
                 </CardContent>
                 <CardFooter>
                   <Button variant="ghost" className="text-[#4880EE] hover:bg-[#f0f5ff]">더 알아보기 </Button>
@@ -137,20 +146,22 @@ const MainPage = () => (
                   <span className="text-[#4880EE]">3단계</span>로 완성하는 자소서
                 </h2>
                 <p className="mt-4 text-xl text-gray-600">
-                  간단한 단계를 통해 완벽한 자소서를 작성하고 분석 받아 보세요.
+                  간단한 단계를 통해 
+                  <br className="block md:hidden" />
+                  완벽한 자소서를 작성하고 분석 받아 보세요.
                 </p>
               </div>
               <div className="grid items-center justify-center gap-8 mt-16 md:grid-cols-3">
                 {Process.map((items,index)=> (
                   <div key={index}>
-                    <Card >
+                    <Card className="">
                       
                       <CardHeader >
-                        <div className="flex items-center justify-center w-12 h-12 mb-5 text-xl text-center text-white bg-blue-500 rounded-full">{items.step}</div>
+                        <div className="flex items-center justify-center w-12 mb-2 text-xl text-center text-white bg-blue-500 rounded-full h-11">{items.step}</div>
                         <CardTitle>{items.title}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-[#4A5565] mb-10">{items.desc}</div>
+                        <div className="text-[#4A5565] mb-10 whitespace-pre-line">{items.desc}</div>
                       </CardContent>
                     </Card>
                   </div>
@@ -166,7 +177,9 @@ const MainPage = () => (
             지금 바로 자소서 분석을 시작하세요.
           </h2>
           <p className="mt-6 text-xl text-white/90">
-            AI로 완성도 있는 자소서를 만들고, 취업 성공률을 높이세요.
+            AI로 완성도 있는 자소서를 만들고, 
+            <br className="block md:hidden" />
+            취업 성공률을 높이세요.
           </p>
           <Button className="mt-10 md-20 bg-white text-[#4880EE]">
             무료로 시작하기
