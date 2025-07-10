@@ -76,8 +76,8 @@ const MainPage = () => (
         backgroundSize: "cover",
 
       }}>
-        <h1 className="text-white text-[2.25rem] mb-[8px] "> 당신의 자소서를 분석해보세요 </h1>
-        <h1 className="text-white mb-[33px] font-normal "> AI 기반 자소서 분석 플랫폼은 사용자의 자소서를 AI로 분석하여 점수화하고, 개선 방향을 제시하는 서비스입니다. 
+        <h1 className="text-white text-[2.25rem] mb-[24px] leading-relaxed " style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.5)" }} > 당신의 자소서를 분석해보세요 </h1>
+        <h1 className="text-white mb-[33px] leading-loose font-normal " style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.5)" }} > AI 기반 자소서 분석 플랫폼은 사용자의 자소서를 AI로 분석하여 점수화하고, 개선 방향을 제시하는 서비스입니다. 
         <br/>회사/직무별 맞춤형 피드백을 제공하여 취업 준비생들의 자소서 작성을 도와줍니다. </h1>
           <Button className="flex rounded-full min-w-[84px] max-w-[480px]  bg-[#508ceb] text-white hover:bg-[#3877ce] px-6 h-10 font-bold">
             <span className="truncate">내 자기소개서 분석</span>
@@ -177,14 +177,14 @@ const MainPage = () => (
        </section>
 
         <footer>
-          <div className="container  mb-12 mt-[64px]   mx-auto grid md:grid-cols-4 text-left text-[#4A5565]">
+          <div className="container  mb-12 mt-[64px]   mx-auto grid md:grid-cols-4 md:text-left text-[#4A5565]">
               <div>
                 <div className="text-2xl text-[#4880EE]">자소서.ai</div>
-                <p>AI로 취업 준비생의 자소서 작성을 돕는 사이트입니다.</p>
+                <p className="mb-5">AI로 취업 준비생의 자소서 작성을 돕는 사이트입니다.</p>
               </div>
               {Footer.map((items, index)=> (
-                <div key={index} className="">
-                  <h3 className="mb-4 font-bold text-gray-800 ">
+                <div key={index} className="mb-5">
+                  <h3 className="mb-4 font-bold text-gray-800 md:mb-4 ">
                     {items.title}
                   </h3>
                   <ul className="space-y-2">
