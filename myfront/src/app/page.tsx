@@ -16,20 +16,38 @@ import {
 const features = [
   {
     title: "자소서 관리",
-    desc: "자소서 작성/수정/삭제, 템플릿 제공 및 버전 관리, \n클라우드 저장 및 동기화",
-    image: "/images/feature1.jpg" 
+    desc: (
+      <>
+        자소서 작성/수정/삭제,
+        <br className="block md:hidden" />
+        템플릿 제공 및 버전 관리, <br />
+        클라우드 저장 및 동기화
+      </>
+    ),
+    image: "/images/feature1.jpg"
   },
   {
     title: "AI 분석",
-    desc: "문법/맞춤법 검사, 키워드 추출 및 분석, \n회사/직무별 핵심 역량 매칭, 경쟁력 분석 리포트",
+    desc: (
+      <>
+        문법/맞춤법 검사, 키워드 추출 및 분석,
+        <br />
+        회사/직무별 핵심 역량 매칭, <br className="block md:hidden" />경쟁력 분석 리포트
+      </>
+    ),
     image: "/images/feature2.jpg"
   },
   {
     title: "개인화된 피드백",
-    desc: "맞춤형 개선 제안, 성공 사례 기반 추천, 실시간 작성 가이드",
+    desc: (
+      <>
+        맞춤형 개선 제안, 성공 사례 기반 추천, 실시간 작성 가이드
+      </>
+    ),
     image: "/images/feature3.jpg"
   }
-]
+];
+
 
 
 
