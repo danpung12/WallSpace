@@ -35,8 +35,8 @@ const features = [
 
 const Process = [
   { step: 1, title: "자소서 작성", desc: "제공된 템플릿을 활용하거나,\n 자유롭게 자소서를 작성하세요.", icon: "fas fa-pencil-alt" },
-  { step: 2, title: "AI 분석", desc: "작성한 자소서를 AI가 꼼꼼하게 분석해\n 점수와 개선 방향을 안내해드립니다.", icon: "fas fa-robot" },
-  { step: 3, title: "맞춤형 피드백", desc: "분석 결과를 바탕으로 더 완성도 높게 다듬을 수 있도록,\n 맞춤형 피드백을 제공합니다.", icon: "fas fa-chart-line" }
+  { step: 2, title: "AI 분석", desc: "작성한 자소서를 꼼꼼하게 분석해\n 점수와 개선 방향을 알려드립니다.", icon: "fas fa-robot" },
+  { step: 3, title: "맞춤형 피드백", desc: "분석 결과를 바탕으로 \n 맞춤형 피드백을 제공합니다.", icon: "fas fa-chart-line" }
 ] as const;
 
 const Footer = [
@@ -148,7 +148,7 @@ const MainPage = () => (
                 <p className="mt-4 text-xl text-gray-600">
                   간단한 단계를 통해 
                   <br className="block md:hidden" />
-                  완벽한 자소서를 작성하고 분석 받아 보세요.
+                  자소서를 작성하고 분석 받아 보세요.
                 </p>
               </div>
               <div className="grid items-center justify-center gap-8 mt-16 md:grid-cols-3">
@@ -174,12 +174,10 @@ const MainPage = () => (
          <section id="start" className="bg-[#4880EE] py-20">
         <div className="container px-4 mx-auto">
           <h2 className="text-3xl font-bold text-white md:text-4xl">
-            지금 바로 자소서 분석을 시작하세요.
+            지금 바로 <br className="block md:hidden" />자소서 분석을 시작하세요.
           </h2>
           <p className="mt-6 text-xl text-white/90">
-            AI로 완성도 있는 자소서를 만들고, 
-            <br className="block md:hidden" />
-            취업 성공률을 높이세요.
+            AI로 첨삭한 완성도 있는 자소서를 만드세요.
           </p>
           <Button className="mt-10 md-20 bg-white text-[#4880EE]">
             무료로 시작하기
