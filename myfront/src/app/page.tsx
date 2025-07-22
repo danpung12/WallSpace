@@ -9,6 +9,8 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card"
+import Nav from "./components/Nav";
+import Footer from "./components/Footer";
 
 
 
@@ -57,32 +59,13 @@ const Process = [
   { step: 3, title: "맞춤형 피드백", desc: "분석 결과를 바탕으로 \n 맞춤형 피드백을 제공합니다.", icon: "fas fa-chart-line" }
 ] as const;
 
-const Footer = [
-  { title: "서비스", links: ["자소서 분석", "맞춤형 피드백", "템플릿 제공", "성공 사례"] },
-  { title: "회사 정보", links: ["회사 소개", "팀 소개", "채용 정보", "뉴스룸"] },
-  { title: "고객 지원", links: ["FAQ", "문의하기", "개인정보처리방침", "이용약관"] }
-] as const;
 
 
 const MainPage = () => (
 
   <div className = "flex flex-col min-h-screen text-center">
     {/* 네비게이션 */}
-    <header className="sticky flex items-center justify-between w-full h-16 px-4 text-center bg-white shadow-sm">
-      <div className="cursor-pointer text-[#4880EE] text-[1.5rem]"> 
-        자소서.ai
-      </div>
-
-      <div className="cursor-pointer hidden md:flex ml-10 text-[#364153] text-[1rem] gap-x-8"> 
-
-      </div>
-
-      <div className="flex cursor-pointer gap-x-4">
-        <Button className="text-black bg-white"> 로그인 </Button>
-         <Button className="bg-[#4880EE]"> 회원가입 </Button>
-      </div>
-
-    </header>
+    <Nav />
 
     <div className="container  px-4 p-8 mx-auto text-center   bg-opacity-90 md:mt-[131px] rounded-xl font-black font-public xl:px-40 " >
       <div className="z-10 flex flex-col min-h-[480px] justify-center shadow-lg items-center gap-2  md:rounded-xl" 
@@ -205,31 +188,7 @@ const MainPage = () => (
 
        </section>
 
-        <footer>
-          <div className="container  mb-12 mt-[64px]   mx-auto grid md:grid-cols-4 md:text-left text-[#4A5565]">
-              <div>
-                <div className="text-2xl text-[#4880EE]">자소서.ai</div>
-                <p className="mb-5">AI로 취업 준비생의 자소서 작성을 돕는 사이트입니다.</p>
-              </div>
-              {Footer.map((items, index)=> (
-                <div key={index} className="mb-5">
-                  <h3 className="mb-4 font-bold text-gray-800 md:mb-4 ">
-                    {items.title}
-                  </h3>
-                  <ul className="space-y-2">
-                    {items.links.map((items,index)=>(
-                      <li key={index} className="text-gray-600 hover:text-[#4880EE]">
-                        {items}
-                    </li>
-                    ))}
-                  </ul>
-                </div>
-                
-                ))}
-
-              </div>
-          
-       </footer>
+        <Footer />
 
 
 
