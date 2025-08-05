@@ -35,11 +35,13 @@ export default function DateBookingPage() {
     <div className="relative flex size-full min-h-screen flex-col justify-between overflow-x-hidden bg-[var(--background-color)]">
       <div className="w-full max-w-md mx-auto bg-[var(--background-color)]">
         <header className=" flex items-center p-4 pb-2 justify-between bg-[#FDFBF8]  border-[#EAEAEA]">
-          <button className="text-[var(--text-primary)]">
+          <Link href="/profile" passHref>
+          <button className="text-[var(--text-primary)] cursor-pointer">
             <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="24">
               <path d="m15 18-6-6 6-6"></path>
             </svg>
           </button>
+          </Link>
           <h1 className="text-lg font-bold text-[var(--text-primary)] flex-1 text-center">날짜 선택</h1>
           <div className="w-8"></div>
         </header>
@@ -144,7 +146,7 @@ export default function DateBookingPage() {
         </main>
           <footer className="w-full max-w-md mx-auto bg-white p-4 border-t border-[#EAEAEA] fixed bottom-0">
             <Link href="/booking" passHref>
-              <button className="w-full button_primary">예약하기</button>
+              <button className="w-full cursor-pointer button_primary">예약하기</button>
             </Link>
           </footer>
       </div>
