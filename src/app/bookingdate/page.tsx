@@ -23,7 +23,7 @@ export default function DateBookingPage() {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   // 날짜별 클래스
-  function getDayClass(day) {
+  function getDayClass({ day }: { day: number }) {
     if (disabledDays.includes(day)) return "date-picker-day date-picker-day-disabled";
     if (day === selectedStart) return "date-picker-day date-picker-day-selected date-range-start";
     if (day === selectedEnd) return "date-picker-day date-picker-day-selected date-range-end";
@@ -73,7 +73,7 @@ export default function DateBookingPage() {
                 <div
                   key={day}
                   className={
-                    getDayClass(day) +
+                    getDayClass({day}) +
                     (i === 0 ? ` col-start-${startDayOfWeek}` : "")
                   }
                 >
@@ -88,7 +88,7 @@ export default function DateBookingPage() {
                 <span className="text-xs text-[var(--text-secondary)]">선택 날짜</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 rounded-full border border-gray-300 bg-white shadow-sm"></div>
+                <div className="w-4 h-4 bg-white border border-gray-300 rounded-full shadow-sm"></div>
                 <span className="text-xs text-[var(--text-secondary)]">예약 가능</span>
               </div>
               <div className="flex items-center space-x-2">
@@ -109,7 +109,7 @@ export default function DateBookingPage() {
                   role="button"
                   tabIndex={0}
                 >
-                  <p className="font-medium text-sm">{size.label}</p>
+                  <p className="text-sm font-medium">{size.label}</p>
                   <p className={`text-xs ${selectedSize === idx ? "" : "text-[var(--text-secondary)]"}`}>{size.desc}</p>
                 </div>
               ))}
@@ -144,7 +144,7 @@ export default function DateBookingPage() {
         </main>
           <footer className="w-full max-w-md mx-auto bg-white p-4 border-t border-[#EAEAEA] fixed bottom-0">
             <Link href="/booking" passHref>
-              <button className="button_primary w-full">예약하기</button>
+              <button className="w-full button_primary">예약하기</button>
             </Link>
           </footer>
       </div>
