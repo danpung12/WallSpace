@@ -15,9 +15,9 @@ export default function EditProfile() {
     phone: '+1 (555) 123-4567',
   });
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.id]: e.target.value });
-  };
+const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  setForm({ ...form, [e.target.id]: e.target.value });
+};
 
   return (
     <>

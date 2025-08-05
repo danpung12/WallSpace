@@ -206,9 +206,9 @@ export default function ProfilePage() {
 <NotificationSettingsModal
   open={showNotiModal}
   onClose={() => setShowNotiModal(false)}
-  onSave={(_: any) => {
-    setShowNotiModal(false);
-  }}
+onSave={() => {
+  setShowNotiModal(false);
+}}
 />
       {/* Pretendard font 적용 */}
       <style jsx global>{`

@@ -14,13 +14,12 @@ export default function EditProfile() {
 
   const [form, setForm] = useState(defaultForm);
   const [isEditing, setIsEditing] = useState(false);
-  const formRef = useRef();
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   // 입력 값 변경 핸들러
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
+const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  setForm({ ...form, [e.target.name]: e.target.value });
+};
   // 편집 시작
   const handleEdit = () => setIsEditing(true);
 
@@ -31,12 +30,11 @@ export default function EditProfile() {
   };
 
   // 저장
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // 저장 로직 (API 등)
-    setIsEditing(false);
-  };
-
+const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  // 저장 로직 (API 등)
+  setIsEditing(false);
+};
   return (
     <>
       <Head>
