@@ -34,7 +34,7 @@ export default function DateBookingPage() {
   return (
     <div className="relative flex size-full min-h-screen flex-col justify-between overflow-x-hidden bg-[var(--background-color)]">
       <div className="w-full max-w-md mx-auto bg-[var(--background-color)]">
-        <header className=" flex items-center p-4 pb-2 justify-between bg-white border-b border-[#EAEAEA]">
+        <header className=" flex items-center p-4 pb-2 justify-between bg-[#FDFBF8]  border-[#EAEAEA]">
           <button className="text-[var(--text-primary)]">
             <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="24">
               <path d="m15 18-6-6 6-6"></path>
@@ -153,7 +153,7 @@ export default function DateBookingPage() {
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700&display=swap');
         :root {
             --primary-color: #c57f39;
-            --background-color: #f9f9f9;
+            --background-color: #FDFBF8;
             --text-primary: #333333;
             --text-secondary: #666666;
             --accent-color: #e0d8c9;
