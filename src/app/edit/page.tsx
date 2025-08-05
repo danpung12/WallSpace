@@ -9,9 +9,9 @@ export default function EditProfile() {
   // 폼 상태
   const router = useRouter();
   const [form, setForm] = useState({
-    nickname: 'J. Miller Art',
+    nickname: 'Selena',
     name: '홍길동',
-    email: 'jessica@example.com',
+    email: 'selena@example.com',
     phone: '+1 (555) 123-4567',
   });
 
@@ -29,7 +29,7 @@ export default function EditProfile() {
         />
       </Head>
       <div
-        className="relative flex min-h-screen flex-col overflow-x-hidden"
+        className="relative flex flex-col min-h-screen overflow-x-hidden"
         id="app-container"
         style={{
           fontFamily: "'Pretendard', sans-serif",
@@ -61,7 +61,7 @@ export default function EditProfile() {
             <div className="relative inline-block">
               <img
                 alt="User profile picture"
-                className="w-24 h-24 rounded-full object-cover"
+                className="object-cover w-24 h-24 rounded-full"
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvM8BeQVRtX-JPgzmA6JCZ0Sx8m-Ver8hiSd4I9V_JbwzHPoychRH2Ok3qqU_bmgZPSQAn_047aMc8nCL1qI5qDcnERJC5Hqq2YwObo_LB9UrvnU4GTgYEp5aGCssWwnVl91-JOk2Nx9SY2vvbx16_bIBhG1DjRKgVPd3pt3GOOA1vAWxA8oGWfQy_pK3stg40qzQ4UZ1g0ywp9k6U8BQBA4cLy-blz0639c4a5y7sWmirFsfQByuYFDQAvMn-duibl6-hECUU606Z"
               />
               <button
@@ -79,15 +79,15 @@ export default function EditProfile() {
             </div>
           </section>
           {/* 폼 */}
-          <form className="space-y-4 px-3 max-w-md mx-auto">
+          <form className="max-w-md px-3 mx-auto space-y-4">
             <section
-              className="space-y-4 px-7 py-4 rounded-xl shadow-sm"
+              className="py-4 space-y-4 shadow-sm px-7 rounded-xl"
               style={{ background: '#fff' }}
             >
               {/* 닉네임 */}
               <div>
                 <label
-                  className="block text-sm font-medium mb-2"
+                  className="block mb-2 text-sm font-medium"
                   htmlFor="nickname"
                   style={{ color: '#A08C6E' }}
                 >
@@ -100,7 +100,7 @@ export default function EditProfile() {
                     </svg>
                   </span>
                   <input
-                    className="w-full rounded-lg pl-10 pr-3 py-2 transition-colors text-sm placeholder:text-sm"
+                    className="w-full py-2 pl-10 pr-3 text-sm transition-colors rounded-lg placeholder:text-sm"
                     style={{
                       border: '1px solid #F0EAD6',
                       background: '#FAF6F0',
@@ -118,7 +118,7 @@ export default function EditProfile() {
               {/* 이름 */}
               <div>
                 <label
-                  className="block text-sm font-medium mb-2"
+                  className="block mb-2 text-sm font-medium"
                   htmlFor="name"
                   style={{ color: '#A08C6E' }}
                 >
@@ -131,7 +131,7 @@ export default function EditProfile() {
                     </svg>
                   </span>
                   <input
-                    className="w-full rounded-lg pl-10 pr-3 py-2 transition-colors text-sm placeholder:text-sm"
+                    className="w-full py-2 pl-10 pr-3 text-sm transition-colors rounded-lg placeholder:text-sm"
                     style={{
                       border: '1px solid #F0EAD6',
                       background: '#FAF6F0',
@@ -149,7 +149,7 @@ export default function EditProfile() {
               {/* 이메일 */}
               <div>
                 <label
-                  className="block text-sm font-medium mb-2"
+                  className="block mb-2 text-sm font-medium"
                   htmlFor="email"
                   style={{ color: '#A08C6E' }}
                 >
@@ -162,7 +162,7 @@ export default function EditProfile() {
                     </svg>
                   </span>
                   <input
-                    className="w-full rounded-lg pl-10 pr-3 py-2 transition-colors text-sm placeholder:text-sm"
+                    className="w-full py-2 pl-10 pr-3 text-sm transition-colors rounded-lg placeholder:text-sm"
                     style={{
                       border: '1px solid #F0EAD6',
                       background: '#FAF6F0',
@@ -180,7 +180,7 @@ export default function EditProfile() {
               {/* 전화번호 */}
               <div>
                 <label
-                  className="block text-sm font-medium mb-2"
+                  className="block mb-2 text-sm font-medium"
                   htmlFor="phone"
                   style={{ color: '#A08C6E' }}
                 >
@@ -193,7 +193,7 @@ export default function EditProfile() {
                     </svg>
                   </span>
                   <input
-                    className="w-full rounded-lg pl-10 pr-3 py-2 transition-colors text-sm placeholder:text-sm"
+                    className="w-full py-2 pl-10 pr-3 text-sm transition-colors rounded-lg placeholder:text-sm"
                     style={{
                       border: '1px solid #F0EAD6',
                       background: '#FAF6F0',
@@ -213,7 +213,7 @@ export default function EditProfile() {
             <div className="px-2 pt-2 space-y-3">
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 font-semibold"
+                className="flex items-center justify-center w-full gap-2 font-semibold"
                 style={{
                   background: '#D2B48C',
                   color: '#fff',
@@ -229,7 +229,7 @@ export default function EditProfile() {
               </button>
               <button
                 type="button"
-                className="w-full flex items-center justify-center gap-2 font-semibold text-center"
+                className="flex items-center justify-center w-full gap-2 font-semibold text-center"
                 style={{
                   background: '#EAE3D9',
                   color: '#8C7853',

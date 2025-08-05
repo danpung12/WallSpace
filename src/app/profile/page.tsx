@@ -7,9 +7,9 @@ import NotificationSettingsModal from "../components/NotificationSettingsModal";
 import Link from "next/link";
 
 const USER_DEFAULT = {
-  nickname: "jessica_miller",
+  nickname: "Selena",
   name: "홍길동",
-  email: "jessica@example.com",
+  email: "selena@example.com",
   phone: "010-1234-5678",
 };
 
@@ -44,7 +44,7 @@ export default function ProfilePage() {
             <img
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvM8BeQVRtX-JPgzmA6JCZ0Sx8m-Ver8hiSd4I9V_JbwzHPoychRH2Ok3qqU_bmgZPSQAn_047aMc8nCL1qI5qDcnERJC5Hqq2YwObo_LB9UrvnU4GTgYEp5aGCssWwnVl91-JOk2Nx9SY2vvbx16_bIBhG1DjRKgVPd3pt3GOOA1vAWxA8oGWfQy_pK3stg40qzQ4UZ1g0ywp9k6U8BQBA4cLy-blz0639c4a5y7sWmirFsfQByuYFDQAvMn-duibl6-hECUU606Z"
               alt="User profile picture"
-              className="w-24 h-24 rounded-full object-cover"
+              className="object-cover w-24 h-24 rounded-full"
             />
             <button
               className="absolute bottom-0 right-0 bg-[#D2B48C] rounded-full p-1.5 shadow-md"
@@ -57,13 +57,13 @@ export default function ProfilePage() {
               </svg>
             </button>
           </div>
-          <h2 className="text-2xl font-bold mt-4">{user.nickname}</h2>
+          <h2 className="mt-4 text-2xl font-bold">{user.nickname}</h2>
           <p className="text-md text-[#8C7853]">{user.name}</p>
         </section>
 
         {/* Profile Info */}
-        <section className="bg-white rounded-xl shadow-sm px-7 py-4 mx-3 space-y-3">
-          <div className="flex justify-between items-center">
+        <section className="py-4 mx-3 space-y-3 bg-white shadow-sm rounded-xl px-7">
+          <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-[#3D2C1D]">사용자 정보</h3>
             {/* Edit 버튼 클릭 시 /edit로 이동 */}
             <Link
@@ -75,8 +75,8 @@ export default function ProfilePage() {
           </div>
           <div className="space-y-3">
             {/* Nickname */}
-            <div className="flex items-center p-2  rounded-lg">
-              <div className="p-2  rounded-full">
+            <div className="flex items-center p-2 rounded-lg">
+              <div className="p-2 rounded-full">
                 <svg className="w-6 h-6" fill="none" stroke="#D2B48C" viewBox="0 0 24 24">
                   <path 
                     d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" 
@@ -86,38 +86,38 @@ export default function ProfilePage() {
                   />
                 </svg>
               </div>
-              <div className="ml-3 flex-1">
+              <div className="flex-1 ml-3">
                 <p className="block text-sm font-medium text-[#8C7853] mb-1">필명</p>
                 <p className="text-sm font-medium text-[#3D2C1D]">{user.nickname}</p>
               </div>
             </div>
             {/* Full Name */}
-            <div className="flex items-center p-2  rounded-lg">
-              <div className="p-2  rounded-full">
+            <div className="flex items-center p-2 rounded-lg">
+              <div className="p-2 rounded-full">
                 <svg className="w-6 h-6 text-[#D2B48C]" fill="currentColor" viewBox="0 0 256 256">
                   <path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z" />
                 </svg>
               </div>
-              <div className="ml-3 flex-1">
+              <div className="flex-1 ml-3">
                 <p className="block text-sm font-medium text-[#8C7853] mb-1">이름</p>
                 <p className="text-sm font-medium text-[#3D2C1D]">{user.name}</p>
               </div>
             </div>
             {/* Email */}
             <div className="flex items-center p-2 rounded-lg">
-              <div className="p-2  rounded-full">
+              <div className="p-2 rounded-full">
                 <svg className="w-6 h-6 text-[#D2B48C]" fill="currentColor" viewBox="0 0 256 256">
                   <path d="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48Zm-8,144H40V74.19l83.53,52.2a8,8,0,0,0,9,0L216,74.19V192Z" />
                 </svg>
               </div>
-              <div className="ml-3 flex-1">
+              <div className="flex-1 ml-3">
                 <p className="block text-sm font-medium text-[#8C7853] mb-1">이메일 주소</p>
                 <p className="text-sm font-medium text-[#3D2C1D]">{user.email}</p>
               </div>
             </div>
             {/* Phone */}
-            <div className="flex items-center p-2  rounded-lg">
-              <div className="p-2  rounded-full">
+            <div className="flex items-center p-2 rounded-lg">
+              <div className="p-2 rounded-full">
                 <svg className="w-6 h-6" fill="none" stroke="#D2B48C" viewBox="0 0 24 24">
                   <path 
                     d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
@@ -127,7 +127,7 @@ export default function ProfilePage() {
                   />
                 </svg>
               </div>
-              <div className="ml-3 flex-1">
+              <div className="flex-1 ml-3">
                 <p className="block text-sm font-medium text-[#8C7853] mb-1">전화번호</p>
                 <p className="text-sm font-medium text-[#3D2C1D]">{user.phone}</p>
               </div>
@@ -136,8 +136,8 @@ export default function ProfilePage() {
         </section>
 
         {/* Account Management */}
-        <section className="bg-white rounded-xl shadow-sm py-6 px-8 mt-6 mx-3">
-          <h3 className="text-lg font-semibold mb-4">계정 관리</h3>
+        <section className="px-8 py-6 mx-3 mt-6 bg-white shadow-sm rounded-xl">
+          <h3 className="mb-4 text-lg font-semibold">계정 관리</h3>
           <div className="space-y-3 ">
             {/* Change Password */}
             <button
@@ -203,15 +203,13 @@ export default function ProfilePage() {
       />
 
       {/* 알림 설정 모달 */}
-      <NotificationSettingsModal
-        open={showNotiModal}
-        onClose={() => setShowNotiModal(false)}
-        onSave={(data) => {
-          // 실제 저장 처리 가능
-          setShowNotiModal(false);
-        }}
-      />
-
+<NotificationSettingsModal
+  open={showNotiModal}
+  onClose={() => setShowNotiModal(false)}
+  onSave={(_: any) => {
+    setShowNotiModal(false);
+  }}
+/>
       {/* Pretendard font 적용 */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap');

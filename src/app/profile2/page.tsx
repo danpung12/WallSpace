@@ -7,7 +7,7 @@ export default function EditProfile() {
   // 기본 폼 값
   const defaultForm = {
     nickname: "Jess",
-    name: "Jessica Miller",
+    name: "Selena",
     email: "jessica@example.com",
     phone: "+1 (555) 123-4567",
   };
@@ -47,7 +47,7 @@ export default function EditProfile() {
         />
       </Head>
       <div
-        className="relative flex min-h-screen flex-col overflow-x-hidden"
+        className="relative flex flex-col min-h-screen overflow-x-hidden"
         id="app-container"
         style={{
           fontFamily: "'Pretendard', sans-serif",
@@ -76,7 +76,7 @@ export default function EditProfile() {
             <div className="relative inline-block">
               <img
                 alt="User profile picture"
-                className="w-24 h-24 rounded-full object-cover"
+                className="object-cover w-24 h-24 rounded-full"
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvM8BeQVRtX-JPgzmA6JCZ0Sx8m-Ver8hiSd4I9V_JbwzHPoychRH2Ok3qqU_bmgZPSQAn_047aMc8nCL1qI5qDcnERJC5Hqq2YwObo_LB9UrvnU4GTgYEp5aGCssWwnVl91-JOk2Nx9SY2vvbx16_bIBhG1DjRKgVPd3pt3GOOA1vAWxA8oGWfQy_pK3stg40qzQ4UZ1g0ywp9k6U8BQBA4cLy-blz0639c4a5y7sWmirFsfQByuYFDQAvMn-duibl6-hECUU606Z"
               />
               <button
@@ -88,18 +88,18 @@ export default function EditProfile() {
                 </svg>
               </button>
             </div>
-            <h2 className="text-2xl font-bold mt-4">Jessica Miller</h2>
+            <h2 className="mt-4 text-2xl font-bold">Jessica Miller</h2>
             <p className="text-md text-[#8C7853]">Artist &amp; Designer</p>
           </section>
 
           <form
             ref={formRef}
             onSubmit={handleSubmit}
-            className="space-y-4 max-w-md mx-auto"
+            className="max-w-md mx-auto space-y-4"
           >
             {/* Personal Info */}
-            <section className="bg-white rounded-xl shadow-sm px-7 py-4 mx-3 space-y-3">
-              <div className="flex justify-between items-center">
+            <section className="py-4 mx-3 space-y-3 bg-white shadow-sm rounded-xl px-7">
+              <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-[#3D2C1D]">사용자 정보</h3>
                 {!isEditing && (
                   <div id="edit-button-container">
@@ -115,8 +115,8 @@ export default function EditProfile() {
               </div>
               <div className="space-y-3">
                 {/* Nickname */}
-                <div className="flex items-center p-2  rounded-lg">
-                  <div className="p-2  rounded-full">
+                <div className="flex items-center p-2 rounded-lg">
+                  <div className="p-2 rounded-full">
                   <svg className="w-6 h-6" fill="none" stroke="#D2B48C" viewBox="0 0 24 24">
                     <path 
                       d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" 
@@ -126,7 +126,7 @@ export default function EditProfile() {
                     />
                   </svg>
                 </div>
-                  <div className="ml-3 flex-1">
+                  <div className="flex-1 ml-3">
                     <p className="block text-sm font-medium text-[#8C7853] mb-1">필명</p>
                     {!isEditing ? (
                       <p className="text-sm font-medium text-[#3D2C1D]">{form.nickname}</p>
@@ -142,13 +142,13 @@ export default function EditProfile() {
                   </div>
                 </div>
                 {/* Full Name */}
-                <div className="flex items-center p-2  rounded-lg">
-                  <div className="p-2  rounded-full">
+                <div className="flex items-center p-2 rounded-lg">
+                  <div className="p-2 rounded-full">
                     <svg className="w-6 h-6 text-[#D2B48C]" fill="currentColor" viewBox="0 0 256 256">
                       <path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z" />
                     </svg>
                   </div>
-                  <div className="ml-3 flex-1">
+                  <div className="flex-1 ml-3">
                     <p className="block text-sm font-medium text-[#8C7853] mb-1">이름</p>
                     {!isEditing ? (
                       <p className="text-sm font-medium text-[#3D2C1D]">{form.name}</p>
@@ -165,12 +165,12 @@ export default function EditProfile() {
                 </div>
                 {/* Email */}
                 <div className="flex items-center p-2 rounded-lg">
-                  <div className="p-2  rounded-full">
+                  <div className="p-2 rounded-full">
                     <svg className="w-6 h-6 text-[#D2B48C]" fill="currentColor" viewBox="0 0 256 256">
                       <path d="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48Zm-8,144H40V74.19l83.53,52.2a8,8,0,0,0,9,0L216,74.19V192Z" />
                     </svg>
                   </div>
-                  <div className="ml-3 flex-1">
+                  <div className="flex-1 ml-3">
                     <p className="block text-sm font-medium text-[#8C7853] mb-1">이메일 주소</p>
                     {!isEditing ? (
                       <p className="text-sm font-medium text-[#3D2C1D]">{form.email}</p>
@@ -186,8 +186,8 @@ export default function EditProfile() {
                   </div>
                 </div>
                 {/* Phone */}
-                <div className="flex items-center p-2  rounded-lg">
-                  <div className="p-2  rounded-full">
+                <div className="flex items-center p-2 rounded-lg">
+                  <div className="p-2 rounded-full">
                     <svg className="w-6 h-6" fill="none" stroke="#D2B48C" viewBox="0 0 24 24">
                       <path 
                         d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
@@ -198,7 +198,7 @@ export default function EditProfile() {
                     </svg>
                   </div>
 
-                  <div className="ml-3 flex-1">
+                  <div className="flex-1 ml-3">
                     <p className="block text-sm font-medium text-[#8C7853] mb-1">전화번호</p>
                     {!isEditing ? (
                       <p className="text-sm font-medium text-[#3D2C1D]">{form.phone}</p>
@@ -217,7 +217,7 @@ export default function EditProfile() {
             </section>
 
             {/* 계정 설정 영역 */}
-            <section className="bg-white rounded-xl shadow-sm px-4 py-4">
+            <section className="px-4 py-4 bg-white shadow-sm rounded-xl">
               <h3 className="text-lg font-semibold text-[#3D2C1D] mb-4">Account</h3>
               <div className="space-y-3">
                 {/* Change Password */}
@@ -295,8 +295,8 @@ export default function EditProfile() {
         </main>
 
         {/* Footer */}
-        <footer className="sticky bottom-0 bg-white/90 backdrop-blur-sm border-t border-gray-100">
-          <nav className="flex justify-around items-center h-16">
+        <footer className="sticky bottom-0 border-t border-gray-100 bg-white/90 backdrop-blur-sm">
+          <nav className="flex items-center justify-around h-16">
             <a className="flex flex-col items-center justify-center gap-1 text-[#8C7853]" href="#">
               <svg fill="currentColor" height="24" viewBox="0 0 256 256" width="24">
                 <path d="M218.83,103.77l-80-75.48a1.14,1.14,0,0,1-.11-.11,16,16,0,0,0-21.53,0l-.11.11L37.17,103.77A16,16,0,0,0,32,115.55V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V160h32v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V115.55A16,16,0,0,0,218.83,103.77ZM208,208H160V160a16,16,0,0,0-16-16H112a16,16,0,0,0-16,16v48H48V115.55l.11-.1L128,40l79.9,75.43.11.1Z" />

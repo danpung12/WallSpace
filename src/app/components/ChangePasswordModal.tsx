@@ -1,23 +1,30 @@
 import { useEffect, useRef } from "react";
 
-export default function ChangePasswordModal({ open, onClose, onSubmit }) {
+export default function ChangePasswordModal({
+  open,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSubmit?: () => void;
+}){
   const overlayRef = useRef(null);
 
   // ESC나 배경 클릭시 닫기
   useEffect(() => {
     if (!open) return;
-    function handleKey(e) {
-      if (e.key === "Escape") onClose();
-    }
+ function handleKey(e: KeyboardEvent) {
+  if (e.key === "Escape") onClose();
+}
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [open, onClose]);
 
   // 바깥 클릭시 닫기
-  function handleOverlayClick(e) {
-    if (e.target === overlayRef.current) onClose();
-  }
-
+function handleOverlayClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+  if (e.target === overlayRef.current) onClose();
+}
   return (
     <div
       ref={overlayRef}
@@ -39,11 +46,11 @@ export default function ChangePasswordModal({ open, onClose, onSubmit }) {
           <div className="flex justify-center mb-2">
             <div className="w-10 h-1.5 bg-[#dcd6d1] rounded-full"></div>
           </div>
-          <h2 className="text-2xl font-bold text-center mb-6" style={{ color: "#4a3f3a" }}>
+          <h2 className="mb-6 text-2xl font-bold text-center" style={{ color: "#4a3f3a" }}>
             비밀번호 변경
           </h2>
           <form
-            className="space-y-5 px-4"
+            className="px-4 space-y-5"
             onSubmit={e => {
               e.preventDefault();
               onSubmit?.();
@@ -88,7 +95,7 @@ export default function ChangePasswordModal({ open, onClose, onSubmit }) {
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-4 mt-8 pb-2">
+            <div className="grid grid-cols-2 gap-4 pb-2 mt-8">
               <button
                 className="h-12 rounded-full bg-[#f5f3f1] text-[#4a3f3a] font-bold hover:bg-[#dcd6d1] transition-colors"
                 type="button"
