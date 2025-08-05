@@ -1,9 +1,27 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-function NotificationSettingsModal({ open, onClose, onSave }) {
+// 타입 선언
+type NotificationToggles = {
+  booking: boolean;
+  space: boolean;
+  promo: boolean;
+  news: boolean;
+};
+
+type NotificationSettingsModalProps = {
+  open: boolean;
+  onClose: () => void;
+  onSave?: (data: NotificationToggles) => void;
+};
+
+function NotificationSettingsModal({
+  open,
+  onClose,
+  onSave,
+}: NotificationSettingsModalProps) {
   // 상태 예시 (실제로는 props로 받거나 fetch/저장 처리)
-  const [toggles, setToggles] = useState({
+  const [toggles, setToggles] = useState<NotificationToggles>({
     booking: true,
     space: false,
     promo: true,
@@ -13,7 +31,7 @@ function NotificationSettingsModal({ open, onClose, onSave }) {
   // ESC로 닫기
   useEffect(() => {
     if (!open) return;
-    const handler = (e) => {
+    const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handler);
@@ -21,13 +39,13 @@ function NotificationSettingsModal({ open, onClose, onSave }) {
   }, [open, onClose]);
 
   // 바깥 클릭 닫기
-  const overlayRef = useRef(null);
-  function handleOverlayClick(e) {
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  function handleOverlayClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
     if (e.target === overlayRef.current) onClose();
   }
 
   // 스위치 토글 핸들러
-  function handleToggle(key) {
+  function handleToggle(key: keyof NotificationToggles) {
     setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
@@ -57,13 +75,12 @@ function NotificationSettingsModal({ open, onClose, onSave }) {
           color: "#181411",
         }}
       >
-        <div className="flex h-8 w-full items-center justify-center pt-3">
+        <div className="flex items-center justify-center w-full h-8 pt-3">
           <div className="h-1.5 w-10 rounded-full bg-gray-300"></div>
         </div>
         <div className="p-6 pt-4">
           <h1 className="text-2xl font-bold mb-6 text-[#181411]">사용자 알림 설정</h1>
           <div className="space-y-4">
-            {/* 각 항목별 스위치 */}
             <SettingItem
               label="예약 알림"
               desc="예정된 예약에 대해 알림을 받습니다."
@@ -76,9 +93,20 @@ function NotificationSettingsModal({ open, onClose, onSave }) {
               checked={toggles.space}
               onChange={() => handleToggle("space")}
             />
-
+            <SettingItem
+              label="프로모션"
+              desc="이벤트, 쿠폰 등 프로모션 정보를 받습니다."
+              checked={toggles.promo}
+              onChange={() => handleToggle("promo")}
+            />
+            <SettingItem
+              label="소식 및 뉴스"
+              desc="서비스 소식, 공지, 업데이트 정보를 받습니다."
+              checked={toggles.news}
+              onChange={() => handleToggle("news")}
+            />
           </div>
-          <div className="mt-8 flex gap-3">
+          <div className="flex gap-3 mt-8">
             <button
               type="button"
               className="bg-[#f2f2f2] text-[#181411] rounded-full px-6 py-3 font-bold text-sm w-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 transition-colors"
@@ -101,8 +129,16 @@ function NotificationSettingsModal({ open, onClose, onSave }) {
   );
 }
 
+// 스위치 항목 컴포넌트 타입 정의
+type SettingItemProps = {
+  label: string;
+  desc: string;
+  checked: boolean;
+  onChange: () => void;
+};
+
 // 스위치 항목 컴포넌트
-function SettingItem({ label, desc, checked, onChange }) {
+function SettingItem({ label, desc, checked, onChange }: SettingItemProps) {
   return (
     <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
       <div className="flex-grow pr-4">
