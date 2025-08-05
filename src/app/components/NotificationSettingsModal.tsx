@@ -89,22 +89,11 @@ function NotificationSettingsModal({
             />
             <SettingItem
               label="새벽 시간 알림"
-              desc="오후 10시부터 오전 6시까지의 예약 알림을 받습니다."
+              desc="오후 10시 ~ 오전 6시까지의 예약 알림을 받습니다."
               checked={toggles.space}
               onChange={() => handleToggle("space")}
             />
-            <SettingItem
-              label="프로모션"
-              desc="이벤트, 쿠폰 등 프로모션 정보를 받습니다."
-              checked={toggles.promo}
-              onChange={() => handleToggle("promo")}
-            />
-            <SettingItem
-              label="소식 및 뉴스"
-              desc="서비스 소식, 공지, 업데이트 정보를 받습니다."
-              checked={toggles.news}
-              onChange={() => handleToggle("news")}
-            />
+
           </div>
           <div className="flex gap-3 mt-8">
             <button

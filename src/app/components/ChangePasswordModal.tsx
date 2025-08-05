@@ -61,7 +61,8 @@ function handleOverlayClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
                 현재 비밀번호
               </label>
               <input
-                className="w-full h-14 px-4 py-3 bg-[#f5f3f1] rounded-xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#a58a78] text-[#4a3f3a] placeholder-[#9e8a7e]"
+                className="w-full h-14 px-4 py-3 bg-[#f5f3f1] rounded-xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#a58a78] text-[#4a3f3a] placeholder-[#9e8a7e] text-sm
+"
                 id="current-password"
                 placeholder="현재 비밀번호를 입력하세요"
                 type="password"
@@ -74,7 +75,8 @@ function handleOverlayClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
                 새 비밀번호
               </label>
               <input
-                className="w-full h-14 px-4 py-3 bg-[#f5f3f1] rounded-xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#a58a78] text-[#4a3f3a] placeholder-[#9e8a7e]"
+                className="w-full h-14 px-4 py-3 bg-[#f5f3f1] rounded-xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#a58a78] text-[#4a3f3a] placeholder-[#9e8a7e] text-sm
+"
                 id="new-password"
                 placeholder="새 비밀번호를 입력하세요"
                 type="password"
