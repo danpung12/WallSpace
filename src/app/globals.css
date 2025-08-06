@@ -14,8 +14,6 @@
 }
 
 /* ✨ Tailwind에서 컴포넌트 별로 bg-.../50 등 활용 가능! */
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: 'Pretendard', Arial, Helvetica, sans-serif;
+html, body {
+  font-family: 'Pretendard', Arial, Helvetica, sans-serif !important;
 }
