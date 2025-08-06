@@ -10,9 +10,6 @@ export default function BookingConfirmation() {
       <Head>
         <title>Booking Confirmation</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700&display=swap" rel="stylesheet" />
       </Head>
       <div className="relative min-h-screen font-[Pretendard] bg-[#FDFBF7] text-[#3A2E27]">
         <header className="flex items-center justify-between p-4">

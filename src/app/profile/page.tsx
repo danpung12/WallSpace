@@ -136,14 +136,14 @@ export default function ProfilePage() {
         </section>
 
         {/* Account Management */}
-        <section className="px-8 py-6 mx-3 mt-6 bg-white shadow-sm rounded-xl">
+        <section className="px-8 py-6 mx-3 mt-6 mb-14 bg-white shadow-sm rounded-xl">
           <h3 className="mb-4 text-lg font-semibold">계정 관리</h3>
           <div className="space-y-3 ">
             {/* Change Password */}
             <button
               type="button"
               onClick={() => setShowChangePw(true)}
-              className="flex items-center p-3 bg-[#FAF8F2] rounded-lg hover:bg-[#F5F3EC] transition-colors w-full"
+              className="flex items-center p-3  rounded-lg hover:bg-[#F5F3EC] transition-colors w-full"
             >
               <div className="p-2 bg-[#D2B48C]/20 rounded-full">
                 {/* Lock Icon */}
@@ -151,7 +151,7 @@ export default function ProfilePage() {
                   <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}/>
                 </svg>
               </div>
-              <span className="ml-4 font-medium text-[#3D2C1D]">비밀번호 변경</span>
+              <span className="ml-4 font-medium text-[#3D2C1D] text-sm">비밀번호 변경</span>
               <svg className="ml-auto w-5 h-5 text-[#8C7853]" fill="currentColor" viewBox="0 0 256 256">
                 <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/>
               </svg>
@@ -160,7 +160,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={() => setShowNotiModal(true)}
-              className="flex items-center p-3 bg-[#FAF8F2] rounded-lg hover:bg-[#F5F3EC] transition-colors w-full"
+              className="flex items-center p-3  rounded-lg hover:bg-[#F5F3EC] transition-colors w-full"
             >
               <div className="p-2 bg-[#D2B48C]/20 rounded-full">
                 {/* Bell Icon */}
@@ -168,20 +168,20 @@ export default function ProfilePage() {
                   <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}/>
                 </svg>
               </div>
-              <span className="ml-4 font-medium text-[#3D2C1D]">사용자 알림 설정</span>
+              <span className="ml-4 font-medium text-[#3D2C1D] text-sm">사용자 알림 설정</span>
               <svg className="ml-auto w-5 h-5 text-[#8C7853]" fill="currentColor" viewBox="0 0 256 256">
                 <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/>
               </svg>
             </button>
             {/* Payment Methods */}
-            <a className="flex items-center p-3 bg-[#FAF8F2] rounded-lg hover:bg-[#F5F3EC] transition-colors" href="#">
+            <a className="flex items-center p-3  rounded-lg hover:bg-[#F5F3EC] transition-colors" href="#">
               <div className="p-2 bg-[#D2B48C]/20 rounded-full">
                 {/* Card Icon */}
                 <svg className="w-6 h-6 text-[#D2B48C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}/>
                 </svg>
               </div>
-              <span className="ml-4 font-medium text-[#3D2B1D]">결제 설정</span>
+              <span className="ml-4 font-medium text-[#3D2B1D] text-sm">결제 설정</span>
               <svg className="ml-auto w-5 h-5 text-[#8C7853]" fill="currentColor" viewBox="0 0 256 256">
                 <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/>
               </svg>
@@ -206,17 +206,12 @@ export default function ProfilePage() {
 <NotificationSettingsModal
   open={showNotiModal}
   onClose={() => setShowNotiModal(false)}
-onSave={() => {
-  setShowNotiModal(false);
-}}
+  onSave={() => {
+    setShowNotiModal(false);
+  }}
 />
       {/* Pretendard font 적용 */}
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap');
-        html {
-          font-family: 'Pretendard', sans-serif;
-        }
-      `}</style>
+
     </div>
   );
 }

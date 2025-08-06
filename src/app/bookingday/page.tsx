@@ -10,9 +10,7 @@ export default function Dashboard() {
         <title>Stitch Design</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         {/* Pretendard 폰트 */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet" />
+     
       </Head>
       <div className="relative min-h-screen font-[Pretendard] bg-[#FDFBF8] text-[#3D2C1D] antialiased overflow-x-hidden">
         <header className="sticky top-0 z-10 bg-[#FDFBF8]/80 backdrop-blur-sm">
@@ -42,7 +40,7 @@ export default function Dashboard() {
                 ></div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-[#8C7853]">예약 ID: #12345</p>
-                  <h3 className="text-lg font-bold text-[#3D2C1D] mt-1">시간의 흐름</h3>
+                  <h3 className="text-lg font-bold text-[#3D2C1D] mt-1">예약 A</h3>
                   <p className="text-sm text-[#8C7853] mt-2">2025년 7월 20일 ~ 7월 27일</p>
                 </div>
                 <span className="absolute top-4 right-4 text-xs font-semibold text-green-600 bg-green-100 py-1 px-2 rounded-full">확정</span>
@@ -58,7 +56,7 @@ export default function Dashboard() {
                 ></div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-[#8C7853]">예약 ID: #67890</p>
-                  <h3 className="text-lg font-bold text-[#3D2C1D] mt-1">낯선 오후의 기억</h3>
+                  <h3 className="text-lg font-bold text-[#3D2C1D] mt-1">예약 B</h3>
                   <p className="text-sm text-[#8C7853] mt-2">2025년 8월 1일 ~ 8월 7일</p>
                 </div>
                 <span className="absolute top-4 right-4 text-xs font-semibold text-yellow-600 bg-yellow-100 py-1 px-2 rounded-full">확인 중</span>
@@ -79,7 +77,7 @@ export default function Dashboard() {
               ></div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-[#8C7853]">예약 ID: #11223</p>
-                <h3 className="text-lg font-bold text-[#3D2C1D] mt-1">분홍빛 여름날</h3>
+                <h3 className="text-lg font-bold text-[#3D2C1D] mt-1">예약 C</h3>
                 <p className="text-sm text-[#8C7853] mt-2">Jun 15 - Jun 22, 2024</p>
               </div>
               <span className="absolute top-4 right-4 text-xs font-semibold text-gray-600 bg-gray-200 py-1 px-2 rounded-full">종료</span>

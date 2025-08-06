@@ -12,9 +12,7 @@ export default function Home() {
       <Head>
         <title>WallSpace - Sign Up / Login</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700&display=swap" rel="stylesheet" />
+      
       </Head>
 
       <main className="bg-[#FAF8F6] min-h-screen flex flex-col justify-center px-6 font-[Pretendard]">

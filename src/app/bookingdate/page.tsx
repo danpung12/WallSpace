@@ -152,7 +152,6 @@ export default function DateBookingPage() {
       </div>
       {/* Pretendard 폰트 및 변수 예시. 실제로는 전역 styles/globals.css 등에서 관리 권장 */}
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700&display=swap');
         :root {
             --primary-color: #c57f39;
             --background-color: #FDFBF8;
