@@ -39,10 +39,7 @@ const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     <>
       <Head>
         <title>User Profile</title>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
+
       </Head>
       <div
         className="relative flex flex-col min-h-screen overflow-x-hidden"
