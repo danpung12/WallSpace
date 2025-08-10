@@ -16,7 +16,7 @@ export default function MyExhibitionsPage() {
           --text-secondary: #795548;
           --glass: rgba(255, 255, 255, 0.30);
         }
-        html, body { height: 100%; }
+        html, body { height: 100%; margin: 0; }
       `}</style>
 
       <div
@@ -34,7 +34,7 @@ export default function MyExhibitionsPage() {
 
         <div className="relative z-10 flex min-h-screen flex-col justify-between overflow-x-hidden">
           {/* Intro / Profile */}
-          <section className="px-6 pt-16 md:pt-24 pb-8 md:pb-12">
+          <section className="px-6 pt-14 md:pt-24 pb-8 md:pb-12">
             <div className="flex w-full flex-col items-center gap-4">
               <div
                 className="h-32 w-32 md:h-48 md:w-48 rounded-full bg-cover bg-center ring-4 ring-white/80 shadow-[0_25px_55px_rgba(0,0,0,0.45)]"
@@ -44,10 +44,10 @@ export default function MyExhibitionsPage() {
                 }}
               />
               <div className="flex flex-col items-center justify-center text-center">
-                <p className="text-3xl md:text-4xl font-bold tracking-tight text-white drop-shadow-[0_3px_8px_rgba(0,0,0,0.6)]">
+                <p className="text-[24px] md:text-4xl font-bold tracking-tight text-white drop-shadow-[0_3px_8px_rgba(0,0,0,0.6)]">
                   환영합니다, Selena님!
                 </p>
-                <p className="text-lg md:text-xl font-normal text-gray-200 drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">예술가</p>
+                <p className="text-lg md:text-xl font-normal text-gray-200 drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">미술가</p>
               </div>
             </div>
           </section>
@@ -62,7 +62,7 @@ export default function MyExhibitionsPage() {
                 <div className="relative w-full h-40 md:h-48">
                   <Image
                     alt="전시 작품 이미지"
-                    src="https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?q=80&w=1200&auto=format&fit=crop"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1hI9oEpCk1Pbvkp_kEABsMwq3UiQpEXgkQAjoKq3zsxh-1zCYNITVvuXmpNpLF9VoSrWCoNDyoRdxjyqMpDNrTBUpb1pjkgZe5LWlm7gnI0w_y_Q1ei5WNLT30zg7ppiyZf-7lqwmBeZH_SBYUF2jG9N9RewMBMkuchWyUez73Nu8RP_KzNk9qWCHKfu8BIpEzj-f2AZxHz8T-Bo5p7miSGc16CS856SoAquozkXt_T7iQLzYApp90MHErVPMIiIin7npi3pLCGH9"
                     fill
                     className="rounded-xl object-cover"
                     sizes="(max-width: 768px) 100vw, 600px"
@@ -70,7 +70,7 @@ export default function MyExhibitionsPage() {
                   />
                 </div>
               </div>
-              <p className="mt-6 text-base sm:text-lg md:text-2xl tracking-tight text-[var(--text-secondary)] leading-tight">
+              <p className="mt-7 mb-1 text-[17px] sm:text-lg md:text-2xl tracking-tight text-[var(--text-secondary)] leading-tight">
                 <span className="md:hidden">
                   다음 전시는 <span className="font-semibold text-[var(--text-primary)]">7월 20일</span>{' '}
                   <span className="font-semibold text-[var(--text-primary)]">공간 A</span>에서 열립니다!
@@ -86,14 +86,14 @@ export default function MyExhibitionsPage() {
             </div>
           </section>
 
-          {/* Past exhibitions */}
-          <section className="relative z-10 max-w-4xl mx-auto px-6 mt-4 md:mt-8 w-full mb-20">
+          {/* Past exhibitions — 레이아웃 영향 없이 시각적으로만 위로 이동 */}
+          <section className="relative -top-6 md:-top-4 z-10 max-w-4xl mx-auto px-6 mt-0 w-full mb-20">
             <h3 className="mb-4 text-xl font-bold text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">지난 전시</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
               <div className="flex items-center gap-4 rounded-2xl p-4 shadow-md border border-white/20 bg-[rgba(255,255,255,0.25)] backdrop-blur-[10px]">
                 <Image
                   alt="지난 전시 썸네일"
-                  src="https://images.unsplash.com/photo-1526318472351-c75fcf070305?auto=format&fit=crop&w=200&q=60"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXN0jW9dNacMfUY9Z3bjC1_xCiS15tb-fbfkWAYsD4VZCqx2nvEDgCN5wP6FL6OejGRVn4Eulfteh41r_bOXziuW42R0g6AU-l7dKL7n-hgiMCjmU9WFRSYH6kezy3-ftseDg8p36pj2mdHxEKF8_zZh6pP-sJ__iaMHZw7Xs5ohv9UbA_IWKWQfo4SMO1xKqEm0DFPbSLowGMZ3sE6YCvwt7YrBBV4vaYdyCpTJrFTrJzQRbocN3Z77WgS2xiA_y7q-hEYaBbEiiG"
                   width={80}
                   height={80}
                   className="h-16 w-16 sm:h-20 sm:w-20 rounded-md object-cover shadow"
