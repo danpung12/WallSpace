@@ -168,7 +168,7 @@ export default function WallSpaceAuthPage() {
                     <button
                       className="primary-button"
                       type="button"
-                      onClick={() => router.push('/profile')}
+                      onClick={() => router.push('/home')}
                     >
                       <span>로그인</span>
                     </button>
