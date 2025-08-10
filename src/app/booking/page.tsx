@@ -54,7 +54,7 @@ export default function BookingConfirmation() {
           </div>
 
           {/* 버튼 그룹 아래쪽 완전 붙이기! */}
-          <div className="pb-0 mt-8 mb-0 space-y-3">
+          <div className="pb-25 mt-8 mb-0 space-y-3">
             <Link href="/bookingday" passHref>
               <button
                 className="block w-full bg-[#D2B48C] text-white py-3 px-6 rounded-lg text-base font-bold shadow-md hover:bg-opacity-90 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#D2B48C] focus:ring-opacity-50 mb-3"

@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import BottomNav from '../components/BottomNav'
 
 export default function MyExhibitionsPage() {
@@ -80,9 +81,14 @@ export default function MyExhibitionsPage() {
                   <span className="font-semibold text-[var(--text-primary)]">공간 A</span>에서 열립니다!
                 </span>
               </p>
-              <button className="w-full mt-4 bg-[var(--primary-color)] text-white rounded-full px-6 py-3 font-semibold hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] focus:ring-opacity-50">
+
+              {/* 예약 상세 보기 → /bookingdetail */}
+              <Link
+                href="/bookingdetail"
+                className="w-full mt-4 inline-flex items-center justify-center bg-[var(--primary-color)] text-white rounded-full px-6 py-3 font-semibold hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] focus:ring-opacity-50"
+              >
                 예약 상세 보기
-              </button>
+              </Link>
             </div>
           </section>
 
