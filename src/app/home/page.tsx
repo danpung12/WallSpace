@@ -1,13 +1,11 @@
 'use client'
 
-import Head from 'next/head'
+import Image from 'next/image'
 import BottomNav from '../components/BottomNav'
 
 export default function MyExhibitionsPage() {
   return (
     <>
-
-
       {/* Global CSS variables for theme */}
       <style jsx global>{`
         :root {
@@ -19,7 +17,6 @@ export default function MyExhibitionsPage() {
           --glass: rgba(255, 255, 255, 0.30);
         }
         html, body { height: 100%; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
       `}</style>
 
       <div
@@ -62,11 +59,16 @@ export default function MyExhibitionsPage() {
                 <span className="absolute left-2 top-2 z-10 rounded-full bg-black/70 text-white text-xs font-semibold px-2.5 py-1">
                   예정
                 </span>
-                <img
-                  className="w-full h-40 md:h-48 rounded-xl object-cover"
-                  alt="전시 작품 이미지"
-                  src="https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?q=80&w=1200&auto=format&fit=crop"
-                />
+                <div className="relative w-full h-40 md:h-48">
+                  <Image
+                    alt="전시 작품 이미지"
+                    src="https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?q=80&w=1200&auto=format&fit=crop"
+                    fill
+                    className="rounded-xl object-cover"
+                    sizes="(max-width: 768px) 100vw, 600px"
+                    priority
+                  />
+                </div>
               </div>
               <p className="mt-6 text-base sm:text-lg md:text-2xl tracking-tight text-[var(--text-secondary)] leading-tight">
                 <span className="md:hidden">
@@ -89,14 +91,16 @@ export default function MyExhibitionsPage() {
             <h3 className="mb-4 text-xl font-bold text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]">지난 전시</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
               <div className="flex items-center gap-4 rounded-2xl p-4 shadow-md border border-white/20 bg-[rgba(255,255,255,0.25)] backdrop-blur-[10px]">
-                <img
+                <Image
                   alt="지난 전시 썸네일"
-                  className="h-16 w-16 sm:h-20 sm:w-20 rounded-md object-cover shadow"
                   src="https://images.unsplash.com/photo-1526318472351-c75fcf070305?auto=format&fit=crop&w=200&q=60"
+                  width={80}
+                  height={80}
+                  className="h-16 w-16 sm:h-20 sm:w-20 rounded-md object-cover shadow"
                 />
                 <div className="flex-1">
                   <p className="font-bold text-[var(--text-primary)]">6월 12일, 합정점</p>
-                  <p className="text-sm text-[var(--text-secondary)]">'봄의 기억'</p>
+                  <p className="text-sm text-[var(--text-secondary)]">&lsquo;봄의 기억&rsquo;</p>
                 </div>
               </div>
               {/* 더 많은 아이템 가능 */}
@@ -105,8 +109,7 @@ export default function MyExhibitionsPage() {
 
           {/* Bottom nav */}
           <BottomNav />
-        
-      </div>
+        </div>
       </div>
     </>
   )
