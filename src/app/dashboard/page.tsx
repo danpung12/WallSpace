@@ -173,8 +173,12 @@ export default function Dashboard() {
           <section className="animate-fadeUp" style={{ animationDelay: '0ms' }}>
             <div className="flex items-center justify-between mb-4 px-1">
               <h2 className="text-2xl font-bold text-[#3D2C1D]">내 작품</h2>
-              {/* 섹션 전체 편집(옵션) 필요 없으면 제거 */}
-              {/* <Link href="/artworks" className="text-[#D2B48C] font-semibold text-sm hover:opacity-80">Edit</Link> */}
+              <Link
+                href="/artworks/new"
+                className="bg-[#D2B48C] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90"
+              >
+                Add Artwork
+              </Link>
             </div>
 
             <div
@@ -187,12 +191,12 @@ export default function Dashboard() {
                 return (
                   <div
                     key={art.slug}
-                    ref={(el) => (itemRefs.current[idx] = el)}
-                    className={`
-                      snap-center flex-shrink-0 w-[75%] sm:w-[60%]
-                      transition-all duration-300
-                      ${isActive ? 'opacity-100 scale-100' : 'opacity-50 scale-[0.98]'}
-                    `}
+                    ref={(el) => {
+                      itemRefs.current[idx] = el;
+                    }}
+                    className={`snap-center flex-shrink-0 w-[75%] sm:w-[60%] transition-all duration-300 ${
+                      isActive ? 'opacity-100 scale-100' : 'opacity-50 scale-[0.98]'
+                    }`}
                   >
                     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                       <div
@@ -200,17 +204,19 @@ export default function Dashboard() {
                         style={{ backgroundImage: `url("${art.image}")` }}
                       />
                       <div className="p-4">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-bold text-lg text-[#3D2C1D]">{art.title}</h3>
-                          {/* My Artworks 카드에만 Edit */}
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-bold text-lg text-[#3D2C1D]">{art.title}</h3>
+                            <p className="text-sm text-[#8C7853] mt-1">크기: {art.size}</p>
+                          </div>
+                          {/* My Artworks 카드 개별 Edit */}
                           <Link
                             href={`/artworks/${art.slug}/edit`}
-                            className="text-[#D2B48C] font-semibold text-sm transition-colors hover:opacity-80 active:opacity-90"
+                            className="text-sm font-semibold text-[#8C7853] hover:text-[#3D2C1D] transition-colors"
                           >
                             Edit
                           </Link>
                         </div>
-                        <p className="text-sm text-[#8C7853] mt-1">크기: {art.size}</p>
                       </div>
                     </div>
                   </div>
