@@ -177,7 +177,7 @@ export default function Dashboard() {
                 href="/artworks/new"
                 className="bg-[#D2B48C] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90"
               >
-                Add Artwork
+                작품 추가
               </Link>
             </div>
 
@@ -227,7 +227,7 @@ export default function Dashboard() {
 
           {/* 전시중 */}
           <section className="animate-fadeUp" style={{ animationDelay: '40ms' }}>
-            <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">전시중</h2>
+            <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">전시 중</h2>
             <div className="bg-white rounded-xl shadow-sm p-4">
               <p className="text-center text-[#8C7853]">현재 진행 중인 전시가 없습니다.</p>
             </div>
