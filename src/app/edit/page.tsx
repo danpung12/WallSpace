@@ -12,12 +12,20 @@ export default function EditProfile() {
     nickname: 'Selena',
     name: '홍길동',
     email: 'selena@example.com',
-    phone: '+1 (555) 123-4567',
+    phone: '010-1234-5678',
   });
 
-const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  setForm({ ...form, [e.target.id]: e.target.value });
-};
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.id]: e.target.value });
+  };
+
+  // 비활성(읽기 전용) 스타일 공통
+  const readOnlyInputStyle: React.CSSProperties = {
+    border: '1px solid #E7DDC8',
+    background: '#F5EFE4',
+    color: '#8C7853',
+    cursor: 'not-allowed',
+  };
 
   return (
     <>
@@ -44,7 +52,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           style={{ background: '#FDFBF8CC', backdropFilter: 'blur(4px)' }}
         >
           <div className="flex items-center justify-between p-4">
-            <button style={{ color: '#3D2C1D' }}>
+            <button style={{ color: '#3D2C1D' }} onClick={() => router.back()}>
               <svg fill="currentColor" height="24" viewBox="0 0 256 256" width="24">
                 <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path>
               </svg>
@@ -78,13 +86,14 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               </button>
             </div>
           </section>
+
           {/* 폼 */}
           <form className="max-w-md px-3 mx-auto space-y-4">
             <section
               className="py-4 space-y-4 shadow-sm px-7 rounded-xl"
               style={{ background: '#fff' }}
             >
-              {/* 닉네임 */}
+              {/* 닉네임 (편집 가능) */}
               <div>
                 <label
                   className="block mb-2 text-sm font-medium"
@@ -115,14 +124,16 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   />
                 </div>
               </div>
-              {/* 이름 */}
+
+              {/* 이름 (편집 불가) */}
               <div>
                 <label
-                  className="block mb-2 text-sm font-medium"
+                  className="block mb-2 text-sm font-medium flex items-center gap-2"
                   htmlFor="name"
                   style={{ color: '#A08C6E' }}
                 >
                   이름
+
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -131,22 +142,23 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                     </svg>
                   </span>
                   <input
-                    className="w-full py-2 pl-10 pr-3 text-sm transition-colors rounded-lg placeholder:text-sm"
-                    style={{
-                      border: '1px solid #F0EAD6',
-                      background: '#FAF6F0',
-                      outline: 'none',
-                      color: '#3D2C1D',
-                    }}
+                    className="w-full py-2 pl-10 pr-3 text-sm transition-colors rounded-lg placeholder:text-sm cursor-not-allowed select-none"
+                    style={readOnlyInputStyle}
                     id="name"
                     type="text"
                     value={form.name}
                     onChange={handleChange}
                     placeholder="성함을 입력해주세요"
+                    disabled
+                    readOnly
+                    aria-disabled="true"
+                    tabIndex={-1}
+                    title="이름은 변경할 수 없습니다."
                   />
                 </div>
               </div>
-              {/* 이메일 */}
+
+              {/* 이메일 (편집 가능) */}
               <div>
                 <label
                   className="block mb-2 text-sm font-medium"
@@ -177,14 +189,16 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   />
                 </div>
               </div>
-              {/* 전화번호 */}
+
+              {/* 전화번호 (편집 불가) */}
               <div>
                 <label
-                  className="block mb-2 text-sm font-medium"
+                  className="block mb-2 text-sm font-medium flex items-center gap-2"
                   htmlFor="phone"
                   style={{ color: '#A08C6E' }}
                 >
                   전화번호
+
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -193,22 +207,23 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                     </svg>
                   </span>
                   <input
-                    className="w-full py-2 pl-10 pr-3 text-sm transition-colors rounded-lg placeholder:text-sm"
-                    style={{
-                      border: '1px solid #F0EAD6',
-                      background: '#FAF6F0',
-                      outline: 'none',
-                      color: '#3D2C1D',
-                    }}
+                    className="w-full py-2 pl-10 pr-3 text-sm transition-colors rounded-lg placeholder:text-sm cursor-not-allowed select-none"
+                    style={readOnlyInputStyle}
                     id="phone"
                     type="tel"
                     value={form.phone}
                     onChange={handleChange}
                     placeholder="전화번호를 입력해주세요"
+                    disabled
+                    readOnly
+                    aria-disabled="true"
+                    tabIndex={-1}
+                    title="전화번호는 변경할 수 없습니다."
                   />
                 </div>
               </div>
             </section>
+
             {/* 버튼 */}
             <div className="px-2 pt-2 space-y-3">
               <button
@@ -247,6 +262,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             </div>
           </form>
         </main>
+
         {/* Footer */}
         <BottomNav />
       </div>

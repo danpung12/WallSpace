@@ -3,8 +3,84 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import BottomNav from '@/app/components/BottomNav';
+import { useEffect, useRef, useState } from 'react';
+
+type Artwork = {
+  title: string;
+  size: string;
+  image: string;
+  slug: string;
+};
+
+const ARTWORKS: Artwork[] = [
+  {
+    title: '작품 1',
+    size: '50x70cm',
+    slug: 'serene-waters',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuBXN0jW9dNacMfUY9Z3bjC1_xCiS15tb-fbfkWAYsD4VZCqx2nvEDgCN5wP6FL6OejGRVn4Eulfteh41r_bOXziuW42R0g6AU-l7dKL7n-hgiMCjmU9WFRSYH6kezy3-ftseDg8p36pj2mdHxEKF8_zZh6pP-sJ__iaMHZw7Xs5ohv9UbA_IWKWQfo4SMO1xKqEm0DFPbSLowGMZ3sE6YCvwt7YrBBV4vaYdyCpTJrFTrJzQRbocN3Z77WgS2xiA_y7q-hEYaBbEiiG',
+  },
+  {
+    title: '작품 2',
+    size: '60x60cm',
+    slug: 'urban-dreams',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuCrqrYmsEJa0Sd-hyxHCUnQfvGlC17-VRZFqnO2KJssC_FYvOvejVsv7MDblTqQo6GXa4feOkp2Q9XqoTkiTS3ieGWS7NEEh4j3q6Z4-eyXJ8dljd-kcVFiAIawmbP_BuTVX12EfItqKhwuqpNyubC79EynA2WMfBUv8XdIKZ04xV24RvUJ9eSGjWOP0XGLSb6t6Q6Zf8kMWVGlOT2lftAg6ni-rUQlECOCpekjm8vYjB8hR4N7amKCJyQx-YHmgbj3wXX_wF-XWZU4',
+  },
+  {
+    title: '작품 3',
+    size: '40x80cm',
+    slug: 'coastal-whispers',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuB1hI9oEpCk1Pbvkp_kEABsMwq3UiQpEXgkQAjoKq3zsxh-1zCYNITVvuXmpNpLF9VoSrWCoNDyoRdxjyqMpDNrTBUpb1pjkgZe5LWlm7gnI0w_y_Q1ei5WNLT30zg7ppiyZf-7lqwmBeZH_SBYUF2jG9N9RewMBMkuchWyUez73Nu8RP_KzNk9qWCHKfu8BIpEzj-f2AZxHz8T-Bo5p7miSGc16CS856SoAquozkXt_T7iQLzYApp90MHErVPMIiIin7npi3pLCGH9',
+  },
+];
 
 export default function Dashboard() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const tickingRef = useRef(false);
+
+  const calcActive = () => {
+    const c = containerRef.current;
+    if (!c) return;
+    const centerX = c.scrollLeft + c.clientWidth / 2;
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    itemRefs.current.forEach((el, idx) => {
+      if (!el) return;
+      const cardCenter = el.offsetLeft + el.clientWidth / 2;
+      const dist = Math.abs(cardCenter - centerX);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = idx;
+      }
+    });
+    setActiveIndex(bestIdx);
+  };
+
+  const onScroll = () => {
+    if (tickingRef.current) return;
+    tickingRef.current = true;
+    requestAnimationFrame(() => {
+      calcActive();
+      tickingRef.current = false;
+    });
+  };
+
+  useEffect(() => {
+    const c = containerRef.current;
+    if (!c) return;
+    calcActive();
+    c.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', calcActive);
+    return () => {
+      c.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', calcActive);
+    };
+  }, []);
+
   return (
     <>
       <Head>
@@ -12,7 +88,7 @@ export default function Dashboard() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
 
-      {/* 애니메이션 선언 (global) */}
+      {/* 전역 스타일(애니메이션 + 스크롤바 숨김 클래스) */}
       <style jsx global>{`
         @media (prefers-reduced-motion: no-preference) {
           .animate-fadeUp {
@@ -29,55 +105,143 @@ export default function Dashboard() {
           }
         }
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(14px); filter: saturate(0.96); }
-          to   { opacity: 1; transform: translateY(0);    filter: saturate(1); }
+          from {
+            opacity: 0;
+            transform: translateY(14px);
+            filter: saturate(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+            filter: saturate(1);
+          }
         }
         @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.96); }
-          to   { opacity: 1; transform: scale(1); }
+          from {
+            opacity: 0;
+            transform: scale(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
         }
         @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-10px); }
-          to   { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         @keyframes fadeIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        /* 스크롤바 숨김 유틸 */
+        .no-scrollbar {
+          -ms-overflow-style: none; /* IE/Edge */
+          scrollbar-width: none; /* Firefox */
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none; /* Chrome/Safari */
         }
       `}</style>
 
       <div className="relative min-h-screen font-[Pretendard] bg-[#FDFBF8] text-[#3D2C1D] antialiased overflow-x-hidden">
-        {/* 헤더: 슬라이드다운 */}
+        {/* 헤더 */}
         <header className="sticky top-0 z-10 bg-[#FDFBF8]/80 backdrop-blur-sm animate-slideDown">
           <div className="flex items-center justify-between p-4">
-            <button className="text-[#3D2C1D] active:scale-95 transition-transform">
+            <button className="text-[#3D2C1D] active:scale-95 transition-transform" type="button">
               <svg fill="currentColor" height="28" width="28" viewBox="0 0 256 256">
                 <path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z" />
               </svg>
             </button>
             <h1 className="text-xl font-bold text-[#3D2C1D]">대시보드</h1>
-            <div className="w-7"></div>
+            <div className="w-7" />
           </div>
         </header>
 
         <main className="p-4 space-y-8 pb-24">
-          {/* 예정된 예약 */}
+          {/* My Artworks */}
+          <section className="animate-fadeUp" style={{ animationDelay: '0ms' }}>
+            <div className="flex items-center justify-between mb-4 px-1">
+              <h2 className="text-2xl font-bold text-[#3D2C1D]">내 작품</h2>
+              {/* 섹션 전체 편집(옵션) 필요 없으면 제거 */}
+              {/* <Link href="/artworks" className="text-[#D2B48C] font-semibold text-sm hover:opacity-80">Edit</Link> */}
+            </div>
+
+            <div
+              ref={containerRef}
+              className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-4 pb-2 px-1 no-scrollbar"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+              {ARTWORKS.map((art, idx) => {
+                const isActive = idx === activeIndex;
+                return (
+                  <div
+                    key={art.slug}
+                    ref={(el) => (itemRefs.current[idx] = el)}
+                    className={`
+                      snap-center flex-shrink-0 w-[75%] sm:w-[60%]
+                      transition-all duration-300
+                      ${isActive ? 'opacity-100 scale-100' : 'opacity-50 scale-[0.98]'}
+                    `}
+                  >
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                      <div
+                        className="w-full h-40 bg-center bg-no-repeat bg-cover"
+                        style={{ backgroundImage: `url("${art.image}")` }}
+                      />
+                      <div className="p-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-bold text-lg text-[#3D2C1D]">{art.title}</h3>
+                          {/* My Artworks 카드에만 Edit */}
+                          <Link
+                            href={`/artworks/${art.slug}/edit`}
+                            className="text-[#D2B48C] font-semibold text-sm transition-colors hover:opacity-80 active:opacity-90"
+                          >
+                            Edit
+                          </Link>
+                        </div>
+                        <p className="text-sm text-[#8C7853] mt-1">크기: {art.size}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* 전시중 */}
           <section className="animate-fadeUp" style={{ animationDelay: '40ms' }}>
+            <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">전시중</h2>
+            <div className="bg-white rounded-xl shadow-sm p-4">
+              <p className="text-center text-[#8C7853]">현재 진행 중인 전시가 없습니다.</p>
+            </div>
+          </section>
+
+          {/* 예정된 예약 */}
+          <section className="animate-fadeUp" style={{ animationDelay: '80ms' }}>
             <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">예정된 예약</h2>
             <div className="space-y-4">
-
-              {/* 카드 1 (클릭 시 /bookingdetail 이동) */}
               <Link href="/bookingdetail" className="block">
                 <div
                   className="bg-white rounded-xl shadow-sm p-4 relative flex items-start gap-4 animate-scaleIn cursor-pointer"
-                  style={{ animationDelay: '80ms' }}
+                  style={{ animationDelay: '100ms' }}
                 >
                   <div
                     className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0 animate-scaleIn"
                     style={{
                       backgroundImage:
                         'url("https://lh3.googleusercontent.com/aida-public/AB6AXuB1hI9oEpCk1Pbvkp_kEABsMwq3UiQpEXgkQAjoKq3zsxh-1zCYNITVvuXmpNpLF9VoSrWCoNDyoRdxjyqMpDNrTBUpb1pjkgZe5LWlm7gnI0w_y_Q1ei5WNLT30zg7ppiyZf-7lqwmBeZH_SBYUF2jG9N9RewMBMkuchWyUez73Nu8RP_KzNk9qWCHKfu8BIpEzj-f2AZxHz8T-Bo5p7miSGc16CS856SoAquozkXt_T7iQLzYApp90MHErVPMIiIin7npi3pLCGH9")',
-                      animationDelay: '100ms',
+                      animationDelay: '120ms',
                     }}
                   />
                   <div className="flex-1">
@@ -91,7 +255,6 @@ export default function Dashboard() {
                 </div>
               </Link>
 
-              {/* 카드 2 */}
               <Link href="/bookingdetail" className="block">
                 <div
                   className="bg-white rounded-xl shadow-sm p-4 relative flex items-start gap-4 animate-scaleIn cursor-pointer"
@@ -146,46 +309,9 @@ export default function Dashboard() {
               </div>
             </Link>
           </section>
-
-          {/* 결제 내역 */}
-          <section className="animate-fadeUp" style={{ animationDelay: '280ms' }}>
-            <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">결제 내역</h2>
-            <div className="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
-              <div
-                className="flex items-center justify-between p-4 animate-fadeUp"
-                style={{ animationDelay: '300ms' }}
-              >
-                <div>
-                  <p className="text-base font-semibold text-[#3D2C1D]">₩ 100,000</p>
-                  <p className="text-sm text-[#8C7853]">예약 ID: #12345</p>
-                </div>
-                <p className="text-sm text-[#8C7853]">2025년 7월 15일</p>
-              </div>
-              <div
-                className="flex items-center justify-between p-4 animate-fadeUp"
-                style={{ animationDelay: '320ms' }}
-              >
-                <div>
-                  <p className="text-base font-semibold text-[#3D2C1D]">₩ 120,000</p>
-                  <p className="text-sm text-[#8C7853]">예약 ID: #67890</p>
-                </div>
-                <p className="text-sm text-[#8C7853]">2025년 7월 1일</p>
-              </div>
-              <div
-                className="flex items-center justify-between p-4 opacity-70 animate-fadeUp"
-                style={{ animationDelay: '340ms' }}
-              >
-                <div>
-                  <p className="text-base font-semibold text-[#3D2C1D]">₩ 90,000</p>
-                  <p className="text-sm text-[#8C7853]">예약 ID: #11223</p>
-                </div>
-                <p className="text-sm text-[#8C7853]">2025년 6월 15일</p>
-              </div>
-            </div>
-          </section>
         </main>
 
-        {/* 네비게이션 바: opacity만 페이드 (fixed 깨지지 않게) */}
+        {/* 네비게이션 바 */}
         <div className="animate-fadeIn" style={{ animationDelay: '360ms' }}>
           <BottomNav />
         </div>
