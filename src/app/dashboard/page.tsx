@@ -174,7 +174,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between mb-4 px-1">
               <h2 className="text-2xl font-bold text-[#3D2C1D]">내 작품</h2>
               <Link
-                href="/artworks/new"
+                href="/dashboard/add"
                 className="bg-[#D2B48C] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90"
               >
                 작품 추가
