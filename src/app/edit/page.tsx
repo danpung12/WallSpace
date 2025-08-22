@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import BottomNav from '../components/BottomNav';
 
 export default function EditProfile() {
-  // 폼 상태
   const router = useRouter();
   const [form, setForm] = useState({
     nickname: 'Selena',
@@ -19,7 +18,6 @@ export default function EditProfile() {
     setForm({ ...form, [e.target.id]: e.target.value });
   };
 
-  // 비활성(읽기 전용) 스타일 공통
   const readOnlyInputStyle: React.CSSProperties = {
     border: '1px solid #E7DDC8',
     background: '#F5EFE4',
@@ -36,9 +34,24 @@ export default function EditProfile() {
           rel="stylesheet"
         />
       </Head>
+
+      {/* 이 페이지 범위에서 모든 애니메이션/트랜지션 비활성화 */}
+      <style jsx global>{`
+        #app-container .animate-fadeUp,
+        #app-container .animate-fadeIn,
+        #app-container .animate-scaleIn,
+        #app-container .animate-slideDown {
+          animation: none !important;
+        }
+        /* tailwind transition-* 류도 비활성화 */
+        #app-container [class*="transition"] {
+          transition: none !important;
+        }
+      `}</style>
+
       <div
-        className="relative flex flex-col min-h-screen overflow-x-hidden"
         id="app-container"
+        className="relative flex flex-col min-h-screen overflow-x-hidden"
         style={{
           fontFamily: "'Pretendard', sans-serif",
           backgroundColor: '#FDFBF8',
@@ -58,7 +71,7 @@ export default function EditProfile() {
               </svg>
             </button>
             <h1 className="text-xl font-bold" style={{ color: '#3D2C1D' }}>내 정보 수정</h1>
-            <div className="w-6"></div>
+            <div className="w-6" />
           </div>
         </header>
 
@@ -73,7 +86,7 @@ export default function EditProfile() {
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvM8BeQVRtX-JPgzmA6JCZ0Sx8m-Ver8hiSd4I9V_JbwzHPoychRH2Ok3qqU_bmgZPSQAn_047aMc8nCL1qI5qDcnERJC5Hqq2YwObo_LB9UrvnU4GTgYEp5aGCssWwnVl91-JOk2Nx9SY2vvbx16_bIBhG1DjRKgVPd3pt3GOOA1vAWxA8oGWfQy_pK3stg40qzQ4UZ1g0ywp9k6U8BQBA4cLy-blz0639c4a5y7sWmirFsfQByuYFDQAvMn-duibl6-hECUU606Z"
               />
               <button
-                className="absolute bottom-0 right-0 shadow-md"
+                className="absolute bottom-0 right-0"
                 style={{
                   background: '#D2B48C',
                   borderRadius: '9999px',
@@ -89,17 +102,10 @@ export default function EditProfile() {
 
           {/* 폼 */}
           <form className="max-w-md px-3 mx-auto space-y-4">
-            <section
-              className="py-4 space-y-4 shadow-sm px-7 rounded-xl"
-              style={{ background: '#fff' }}
-            >
-              {/* 닉네임 (편집 가능) */}
+            <section className="py-4 space-y-4 shadow-sm px-7 rounded-xl" style={{ background: '#fff' }}>
+              {/* 닉네임 */}
               <div>
-                <label
-                  className="block mb-2 text-sm font-medium"
-                  htmlFor="nickname"
-                  style={{ color: '#A08C6E' }}
-                >
+                <label className="block mb-2 text-sm font-medium" htmlFor="nickname" style={{ color: '#A08C6E' }}>
                   필명
                 </label>
                 <div className="relative">
@@ -109,7 +115,7 @@ export default function EditProfile() {
                     </svg>
                   </span>
                   <input
-                    className="w-full py-2 pl-10 pr-3 text-sm transition-colors rounded-lg placeholder:text-sm"
+                    className="w-full py-2 pl-10 pr-3 text-sm rounded-lg placeholder:text-sm"
                     style={{
                       border: '1px solid #F0EAD6',
                       background: '#FAF6F0',
@@ -125,15 +131,10 @@ export default function EditProfile() {
                 </div>
               </div>
 
-              {/* 이름 (편집 불가) */}
+              {/* 이름 (읽기 전용) */}
               <div>
-                <label
-                  className="block mb-2 text-sm font-medium flex items-center gap-2"
-                  htmlFor="name"
-                  style={{ color: '#A08C6E' }}
-                >
+                <label className="block mb-2 text-sm font-medium flex items-center gap-2" htmlFor="name" style={{ color: '#A08C6E' }}>
                   이름
-
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -142,7 +143,7 @@ export default function EditProfile() {
                     </svg>
                   </span>
                   <input
-                    className="w-full py-2 pl-10 pr-3 text-sm transition-colors rounded-lg placeholder:text-sm cursor-not-allowed select-none"
+                    className="w-full py-2 pl-10 pr-3 text-sm rounded-lg placeholder:text-sm cursor-not-allowed select-none"
                     style={readOnlyInputStyle}
                     id="name"
                     type="text"
@@ -158,13 +159,9 @@ export default function EditProfile() {
                 </div>
               </div>
 
-              {/* 이메일 (편집 가능) */}
+              {/* 이메일 */}
               <div>
-                <label
-                  className="block mb-2 text-sm font-medium"
-                  htmlFor="email"
-                  style={{ color: '#A08C6E' }}
-                >
+                <label className="block mb-2 text-sm font-medium" htmlFor="email" style={{ color: '#A08C6E' }}>
                   이메일 주소
                 </label>
                 <div className="relative">
@@ -174,7 +171,7 @@ export default function EditProfile() {
                     </svg>
                   </span>
                   <input
-                    className="w-full py-2 pl-10 pr-3 text-sm transition-colors rounded-lg placeholder:text-sm"
+                    className="w-full py-2 pl-10 pr-3 text-sm rounded-lg placeholder:text-sm"
                     style={{
                       border: '1px solid #F0EAD6',
                       background: '#FAF6F0',
@@ -190,15 +187,10 @@ export default function EditProfile() {
                 </div>
               </div>
 
-              {/* 전화번호 (편집 불가) */}
+              {/* 전화번호 (읽기 전용) */}
               <div>
-                <label
-                  className="block mb-2 text-sm font-medium flex items-center gap-2"
-                  htmlFor="phone"
-                  style={{ color: '#A08C6E' }}
-                >
+                <label className="block mb-2 text-sm font-medium flex items-center gap-2" htmlFor="phone" style={{ color: '#A08C6E' }}>
                   전화번호
-
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -207,7 +199,7 @@ export default function EditProfile() {
                     </svg>
                   </span>
                   <input
-                    className="w-full py-2 pl-10 pr-3 text-sm transition-colors rounded-lg placeholder:text-sm cursor-not-allowed select-none"
+                    className="w-full py-2 pl-10 pr-3 text-sm rounded-lg placeholder:text-sm cursor-not-allowed select-none"
                     style={readOnlyInputStyle}
                     id="phone"
                     type="tel"

@@ -1,10 +1,11 @@
+// src/app/profile/page.tsx
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import BottomNav from "../components/BottomNav";
 import ChangePasswordModal from "../components/ChangePasswordModal";
 import NotificationSettingsModal from "../components/NotificationSettingsModal";
-import Link from "next/link";
 
 const USER_DEFAULT = {
   nickname: "Selena",
@@ -19,12 +20,13 @@ export default function ProfilePage() {
   const [showNotiModal, setShowNotiModal] = useState(false);
 
   return (
-    <div
-      className="relative flex min-h-screen flex-col bg-[#FDFBF8] text-[#3D2C1D] font-pretendard"
-      style={{ minHeight: "max(884px, 100dvh)" }}
-    >
-      {/* Animations */}
+    <div className="relative flex min-h-[100dvh] flex-col bg-[#FDFBF8] text-[#3D2C1D] font-pretendard">
+      {/* 로컬 애니메이션 키프레임 (페이지 전환 아님) */}
       <style jsx global>{`
+        :root {
+          /* BottomNav 높이(필요 시 전역과 동일하게 맞춰주세요) */
+          --bottom-nav-h: 64px;
+        }
         @media (prefers-reduced-motion: no-preference) {
           .animate-fadeUp {
             animation: fadeUp 600ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
@@ -35,57 +37,43 @@ export default function ProfilePage() {
           .animate-slideDown {
             animation: slideDown 420ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
           }
+          .animate-fadeIn {
+            animation: fadeIn 360ms ease forwards;
+          }
         }
-
         @keyframes fadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(14px);
-            filter: saturate(0.96);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-            filter: saturate(1);
-          }
+          from { opacity: 0; transform: translateY(14px); filter: saturate(0.96); }
+          to   { opacity: 1; transform: translateY(0);    filter: saturate(1);   }
         }
         @keyframes scaleIn {
-          from {
-            opacity: 0;
-            transform: scale(0.96);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
+          from { opacity: 0; transform: scale(0.96); }
+          to   { opacity: 1; transform: scale(1);    }
         }
         @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(-10px); }
+          to   { opacity: 1; transform: translateY(0);      }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
         }
       `}</style>
 
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-[#FDFBF8]/80 backdrop-blur-sm animate-slideDown">
+      {/* Header (로컬 애니메이션만) */}
+      <header className="sticky top-0 z-20 bg-[#FDFBF8]/80 backdrop-blur-sm animate-slideDown">
         <div className="flex items-center justify-between p-4">
-          <button className="text-[#3D2C1D] active:scale-95 transition-transform">
+          <button className="text-[#3D2C1D] active:scale-95 transition-transform" type="button">
             <svg fill="currentColor" height="24" width="24" viewBox="0 0 256 256">
               <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z" />
             </svg>
           </button>
           <h1 className="text-xl font-bold">내 정보</h1>
-          <div className="w-6"></div>
+          <div className="w-6" />
         </div>
       </header>
 
-      <main className="flex-1 p-4 space-y-6">
-        {/* Profile Avatar */}
+      <main className="flex-1 p-4 space-y-6 pb-0">
+        {/* Avatar */}
         <section className="text-center animate-fadeUp" style={{ animationDelay: "40ms" }}>
           <div className="relative inline-block">
             <img
@@ -96,29 +84,23 @@ export default function ProfilePage() {
             />
             <button
               className="absolute bottom-0 right-0 bg-[#D2B48C] rounded-full p-1.5 shadow-md active:scale-95 transition-transform"
-              tabIndex={-1}
               type="button"
+              tabIndex={-1}
             >
               <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 256 256">
-                <path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,164.12V208a16,16,0,0,0,16,16H92.12A15.86,15.86,0,0,0,104.24,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.12,208H48V164.12L152,60.12l43.89,43.89ZM161.37,94.63l-43.89-43.89L136,32.12,180,76.11Zm30.26-30.25-11.31-11.32,11.31-11.31,11.32,11.31Z" />
+                <path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,164.12V208a16,16,0,0,0,16,16H92.12A15.86,15.86,0,0,0,104.24,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.12,208H48V164.12L152,60.12l43.89,43.89Z" />
               </svg>
             </button>
           </div>
-          <h2
-            className="mt-4 text-2xl font-bold animate-fadeUp"
-            style={{ animationDelay: "120ms" }}
-          >
+          <h2 className="mt-4 text-2xl font-bold animate-fadeUp" style={{ animationDelay: "120ms" }}>
             {user.nickname}
           </h2>
-          <p
-            className="text-md text-[#8C7853] animate-fadeUp"
-            style={{ animationDelay: "160ms" }}
-          >
+          <p className="text-md text-[#8C7853] animate-fadeUp" style={{ animationDelay: "160ms" }}>
             {user.name}
           </p>
         </section>
 
-        {/* Profile Info */}
+        {/* 사용자 정보 */}
         <section
           className="py-4 mx-3 space-y-3 bg-white shadow-sm rounded-xl px-7 animate-fadeUp"
           style={{ animationDelay: "200ms" }}
@@ -132,76 +114,78 @@ export default function ProfilePage() {
               Edit
             </Link>
           </div>
-          <div className="space-y-3">
-            {/* Nickname */}
-            <div className="flex items-center p-2 rounded-lg transition-transform hover:translate-x-0.5 will-change-transform">
-              <div className="p-2 rounded-full">
-                <svg className="w-6 h-6" fill="none" stroke="#D2B48C" viewBox="0 0 24 24">
-                  <path
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1 ml-3">
-                <p className="block text-sm font-medium text-[#8C7853] mb-1">필명</p>
-                <p className="text-sm font-medium text-[#3D2C1D]">{user.nickname}</p>
-              </div>
+
+          {/* 닉네임 */}
+          <div className="flex items-center p-2 rounded-lg transition-transform hover:translate-x-0.5 will-change-transform">
+            <div className="p-2 rounded-full">
+              <svg className="w-6 h-6" fill="none" stroke="#D2B48C" viewBox="0 0 24 24">
+                <path
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                />
+              </svg>
             </div>
-            {/* Full Name */}
-            <div className="flex items-center p-2 rounded-lg transition-transform hover:translate-x-0.5 will-change-transform">
-              <div className="p-2 rounded-full">
-                <svg className="w-6 h-6 text-[#D2B48C]" fill="currentColor" viewBox="0 0 256 256">
-                  <path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z" />
-                </svg>
-              </div>
-              <div className="flex-1 ml-3">
-                <p className="block text-sm font-medium text-[#8C7853] mb-1">이름</p>
-                <p className="text-sm font-medium text-[#3D2C1D]">{user.name}</p>
-              </div>
+            <div className="flex-1 ml-3">
+              <p className="block text-sm font-medium text-[#8C7853] mb-1">필명</p>
+              <p className="text-sm font-medium text-[#3D2C1D]">{user.nickname}</p>
             </div>
-            {/* Email */}
-            <div className="flex items-center p-2 rounded-lg transition-transform hover:translate-x-0.5 will-change-transform">
-              <div className="p-2 rounded-full">
-                <svg className="w-6 h-6 text-[#D2B48C]" fill="currentColor" viewBox="0 0 256 256">
-                  <path d="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48Zm-8,144H40V74.19l83.53,52.2a8,8,0,0,0,9,0L216,74.19V192Z" />
-                </svg>
-              </div>
-              <div className="flex-1 ml-3">
-                <p className="block text-sm font-medium text-[#8C7853] mb-1">이메일 주소</p>
-                <p className="text-sm font-medium text-[#3D2C1D]">{user.email}</p>
-              </div>
+          </div>
+
+          {/* 이름 */}
+          <div className="flex items-center p-2 rounded-lg transition-transform hover:translate-x-0.5 will-change-transform">
+            <div className="p-2 rounded-full">
+              <svg className="w-6 h-6 text-[#D2B48C]" fill="currentColor" viewBox="0 0 256 256">
+                <path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z" />
+              </svg>
             </div>
-            {/* Phone */}
-            <div className="flex items-center p-2 rounded-lg transition-transform hover:translate-x-0.5 will-change-transform">
-              <div className="p-2 rounded-full">
-                <svg className="w-6 h-6" fill="none" stroke="#D2B48C" viewBox="0 0 24 24">
-                  <path
-                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1 ml-3">
-                <p className="block text-sm font-medium text-[#8C7853] mb-1">전화번호</p>
-                <p className="text-sm font-medium text-[#3D2C1D]">{user.phone}</p>
-              </div>
+            <div className="flex-1 ml-3">
+              <p className="block text-sm font-medium text-[#8C7853] mb-1">이름</p>
+              <p className="text-sm font-medium text-[#3D2C1D]">{user.name}</p>
+            </div>
+          </div>
+
+          {/* 이메일 */}
+          <div className="flex items-center p-2 rounded-lg transition-transform hover:translate-x-0.5 will-change-transform">
+            <div className="p-2 rounded-full">
+              <svg className="w-6 h-6 text-[#D2B48C]" fill="currentColor" viewBox="0 0 256 256">
+                <path d="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48Zm-8,144H40V74.19l83.53,52.2a8,8,0,0,0,9,0L216,74.19V192Z" />
+              </svg>
+            </div>
+            <div className="flex-1 ml-3">
+              <p className="block text-sm font-medium text-[#8C7853] mb-1">이메일 주소</p>
+              <p className="text-sm font-medium text-[#3D2C1D]">{user.email}</p>
+            </div>
+          </div>
+
+          {/* 전화번호 */}
+          <div className="flex items-center p-2 rounded-lg transition-transform hover:translate-x-0.5 will-change-transform">
+            <div className="p-2 rounded-full">
+              <svg className="w-6 h-6" fill="none" stroke="#D2B48C" viewBox="0 0 24 24">
+                <path
+                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                />
+              </svg>
+            </div>
+            <div className="flex-1 ml-3">
+              <p className="block text-sm font-medium text-[#8C7853] mb-1">전화번호</p>
+              <p className="text-sm font-medium text-[#3D2C1D]">{user.phone}</p>
             </div>
           </div>
         </section>
 
-        {/* Account Management */}
+        {/* 계정 관리 */}
         <section
-          className="px-8 py-6 mx-3 mt-6 mb-14 bg-white shadow-sm rounded-xl animate-fadeUp"
+          className="px-8 py-6 mx-3 mt-6 bg-white shadow-sm rounded-xl animate-fadeUp"
           style={{ animationDelay: "260ms" }}
         >
           <h3 className="mb-4 text-lg font-semibold">계정 관리</h3>
           <div className="space-y-3">
-            {/* Change Password */}
+            {/* 비밀번호 변경 */}
             <button
               type="button"
               onClick={() => setShowChangePw(true)}
@@ -223,7 +207,7 @@ export default function ProfilePage() {
               </svg>
             </button>
 
-            {/* Notification Settings */}
+            {/* 사용자 알림 설정 */}
             <button
               type="button"
               onClick={() => setShowNotiModal(true)}
@@ -245,11 +229,8 @@ export default function ProfilePage() {
               </svg>
             </button>
 
-            {/* Payment Methods */}
-            <a
-              className="group flex items-center p-3 rounded-lg hover:bg-[#F5F3EC] transition-colors"
-              href="#"
-            >
+            {/* 결제 설정 */}
+            <a className="group flex items-center p-3 rounded-lg hover:bg-[#F5F3EC] transition-colors" href="#">
               <div className="p-2 bg-[#D2B48C]/20 rounded-full transition-transform group-active:scale-95">
                 <svg className="w-6 h-6 text-[#D2B48C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -267,29 +248,24 @@ export default function ProfilePage() {
             </a>
           </div>
         </section>
+
+        {/* 고정 네비에 가리지 않도록 정확히 그 높이만큼만 여백 확보 */}
+        <div aria-hidden className="h-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom))]" />
       </main>
 
-      {/* Footer Navigation */}
-      <div className="animate-fadeIn" style={{ animationDelay: '360ms' }}>
-        <BottomNav />
-      </div>
+      {/* 고정 하단 네비 */}
+      <BottomNav />
 
-      {/* 비밀번호 변경 모달 */}
+      {/* 모달들 */}
       <ChangePasswordModal
         open={showChangePw}
         onClose={() => setShowChangePw(false)}
-        onSubmit={() => {
-          setShowChangePw(false);
-        }}
+        onSubmit={() => setShowChangePw(false)}
       />
-
-      {/* 알림 설정 모달 */}
       <NotificationSettingsModal
         open={showNotiModal}
         onClose={() => setShowNotiModal(false)}
-        onSave={() => {
-          setShowNotiModal(false);
-        }}
+        onSave={() => setShowNotiModal(false)}
       />
     </div>
   );

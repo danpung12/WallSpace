@@ -1,4 +1,4 @@
-// components/BottomNav.tsx (or .jsx)
+// components/BottomNav.tsx
 'use client';
 
 import Link from 'next/link';
@@ -19,7 +19,10 @@ function BottomNav() {
     `text-xs ${isActive(href) ? 'font-bold' : 'font-medium'}`;
 
   return (
-    <footer className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-sm border-t border-gray-100 z-50">
+    <footer
+      className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-100 z-50"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} // iOS 안전영역
+    >
       <nav className="flex justify-around items-center h-16">
         <Link className={linkCls('/home')} href="/home">
           <svg fill="currentColor" height="24" width="24" viewBox="0 0 256 256">
@@ -44,7 +47,7 @@ function BottomNav() {
 
         <Link className={linkCls('/profile')} href="/profile">
           <svg fill="currentColor" height="24" width="24" viewBox="0 0 256 256">
-            <path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"></path>
+            <path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z" />
           </svg>
           <p className={textCls('/profile')}>내 정보</p>
         </Link>

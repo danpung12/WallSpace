@@ -88,63 +88,8 @@ export default function Dashboard() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
 
-      {/* 전역 스타일(애니메이션 + 스크롤바 숨김 클래스) */}
+      {/* 전역 스타일(스크롤바 숨김만 유지) */}
       <style jsx global>{`
-        @media (prefers-reduced-motion: no-preference) {
-          .animate-fadeUp {
-            animation: fadeUp 600ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
-          }
-          .animate-scaleIn {
-            animation: scaleIn 480ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
-          }
-          .animate-slideDown {
-            animation: slideDown 420ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
-          }
-          .animate-fadeIn {
-            animation: fadeIn 360ms ease forwards;
-          }
-        }
-        @keyframes fadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(14px);
-            filter: saturate(0.96);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-            filter: saturate(1);
-          }
-        }
-        @keyframes scaleIn {
-          from {
-            opacity: 0;
-            transform: scale(0.96);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-        /* 스크롤바 숨김 유틸 */
         .no-scrollbar {
           -ms-overflow-style: none; /* IE/Edge */
           scrollbar-width: none; /* Firefox */
@@ -155,8 +100,8 @@ export default function Dashboard() {
       `}</style>
 
       <div className="relative min-h-screen font-[Pretendard] bg-[#FDFBF8] text-[#3D2C1D] antialiased overflow-x-hidden">
-        {/* 헤더 */}
-        <header className="sticky top-0 z-10 bg-[#FDFBF8]/80 backdrop-blur-sm animate-slideDown">
+        {/* 헤더 (로컬 진입 애니메이션 제거) */}
+        <header className="sticky top-0 z-10 bg-[#FDFBF8]/80 backdrop-blur-sm">
           <div className="flex items-center justify-between p-4">
             <button className="text-[#3D2C1D] active:scale-95 transition-transform" type="button">
               <svg fill="currentColor" height="28" width="28" viewBox="0 0 256 256">
@@ -169,8 +114,8 @@ export default function Dashboard() {
         </header>
 
         <main className="p-4 space-y-8 pb-24">
-          {/* My Artworks */}
-          <section className="animate-fadeUp" style={{ animationDelay: '0ms' }}>
+          {/* My Artworks (로컬 진입 애니메이션 제거) */}
+          <section>
             <div className="flex items-center justify-between mb-4 px-1">
               <h2 className="text-2xl font-bold text-[#3D2C1D]">내 작품</h2>
               <Link
@@ -225,29 +170,25 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* 전시중 */}
-          <section className="animate-fadeUp" style={{ animationDelay: '40ms' }}>
+          {/* 전시중 (로컬 진입 애니메이션 제거) */}
+          <section>
             <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">전시 중</h2>
             <div className="bg-white rounded-xl shadow-sm p-4">
               <p className="text-center text-[#8C7853]">현재 진행 중인 전시가 없습니다.</p>
             </div>
           </section>
 
-          {/* 예정된 예약 */}
-          <section className="animate-fadeUp" style={{ animationDelay: '80ms' }}>
+          {/* 예정된 예약 (로컬 진입 애니메이션 제거) */}
+          <section>
             <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">예정된 예약</h2>
             <div className="space-y-4">
               <Link href="/bookingdetail" className="block">
-                <div
-                  className="bg-white rounded-xl shadow-sm p-4 relative flex items-start gap-4 animate-scaleIn cursor-pointer"
-                  style={{ animationDelay: '100ms' }}
-                >
+                <div className="bg-white rounded-xl shadow-sm p-4 relative flex items-start gap-4 cursor-pointer">
                   <div
-                    className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0 animate-scaleIn"
+                    className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0"
                     style={{
                       backgroundImage:
                         'url("https://lh3.googleusercontent.com/aida-public/AB6AXuB1hI9oEpCk1Pbvkp_kEABsMwq3UiQpEXgkQAjoKq3zsxh-1zCYNITVvuXmpNpLF9VoSrWCoNDyoRdxjyqMpDNrTBUpb1pjkgZe5LWlm7gnI0w_y_Q1ei5WNLT30zg7ppiyZf-7lqwmBeZH_SBYUF2jG9N9RewMBMkuchWyUez73Nu8RP_KzNk9qWCHKfu8BIpEzj-f2AZxHz8T-Bo5p7miSGc16CS856SoAquozkXt_T7iQLzYApp90MHErVPMIiIin7npi3pLCGH9")',
-                      animationDelay: '120ms',
                     }}
                   />
                   <div className="flex-1">
@@ -262,16 +203,12 @@ export default function Dashboard() {
               </Link>
 
               <Link href="/bookingdetail" className="block">
-                <div
-                  className="bg-white rounded-xl shadow-sm p-4 relative flex items-start gap-4 animate-scaleIn cursor-pointer"
-                  style={{ animationDelay: '140ms' }}
-                >
+                <div className="bg-white rounded-xl shadow-sm p-4 relative flex items-start gap-4 cursor-pointer">
                   <div
-                    className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0 animate-scaleIn"
+                    className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0"
                     style={{
                       backgroundImage:
                         'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCrqrYmsEJa0Sd-hyxHCUnQfvGlC17-VRZFqnO2KJssC_FYvOvejVsv7MDblTqQo6GXa4feOkp2Q9XqoTkiTS3ieGWS7NEEh4j3q6Z4-eyXJ8dljd-kcVFiAIawmbP_BuTVX12EfItqKhwuqpNyubC79EynA2WMfBUv8XdIKZ04xV24RvUJ9eSGjWOP0XGLSb6t6Q6Zf8kMWVGlOT2lftAg6ni-rUQlECOCpekjm8vYjB8hR4N7amKCJyQx-YHmgbj3wXX_wF-XWZU4")',
-                      animationDelay: '160ms',
                     }}
                   />
                   <div className="flex-1">
@@ -287,21 +224,17 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* 지난 예약 */}
-          <section className="animate-fadeUp" style={{ animationDelay: '200ms' }}>
+          {/* 지난 예약 (로컬 진입 애니메이션 제거) */}
+          <section>
             <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">지난 예약</h2>
 
             <Link href="/bookingdetail" className="block">
-              <div
-                className="bg-gray-50 opacity-80 rounded-xl shadow-sm p-4 relative flex items-start gap-4 animate-scaleIn cursor-pointer"
-                style={{ animationDelay: '240ms' }}
-              >
+              <div className="bg-gray-50 opacity-80 rounded-xl shadow-sm p-4 relative flex items-start gap-4 cursor-pointer">
                 <div
-                  className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0 animate-scaleIn"
+                  className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0"
                   style={{
                     backgroundImage:
                       'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBXN0jW9dNacMfUY9Z3bjC1_xCiS15tb-fbfkWAYsD4VZCqx2nvEDgCN5wP6FL6OejGRVn4Eulfteh41r_bOXziuW42R0g6AU-l7dKL7n-hgiMCjmU9WFRSYH6kezy3-ftseDg8p36pj2mdHxEKF8_zZh6pP-sJ__iaMHZw7Xs5ohv9UbA_IWKWQfo4SMO1xKqEm0DFPbSLowGMZ3sE6YCvwt7YrBBV4vaYdyCpTJrFTrJzQRbocN3Z77WgS2xiA_y7q-hEYaBbEiiG")',
-                    animationDelay: '260ms',
                   }}
                 />
                 <div className="flex-1">
@@ -317,10 +250,7 @@ export default function Dashboard() {
           </section>
         </main>
 
-        {/* 네비게이션 바 */}
-        <div className="animate-fadeIn" style={{ animationDelay: '360ms' }}>
-          <BottomNav />
-        </div>
+
       </div>
     </>
   );

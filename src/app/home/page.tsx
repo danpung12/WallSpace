@@ -114,7 +114,7 @@ export default function MyExhibitionsPage() {
           </section>
 
           {/* Bottom nav */}
-          <BottomNav />
+          
         </div>
       </div>
     </>
