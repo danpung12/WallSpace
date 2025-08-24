@@ -5,14 +5,6 @@ import React, { useMemo, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 
-const theme = {
-  primary: "var(--primary-color)",
-  bg: "var(--background-color)",
-  text: "var(--text-primary)",
-  textSub: "var(--text-secondary)",
-  accent: "var(--accent-color)",
-};
-
 type Place = {
   id: string;
   name: string;
@@ -41,7 +33,6 @@ function mapSrc(center: { lat: number; lng: number }, query?: string) {
   return `https://www.google.com/maps?q=${q}&ll=${center.lat},${center.lng}&z=15&output=embed`;
 }
 
-// body 포털
 function BottomSheetPortal({ children }: { children: React.ReactNode }) {
   const [mountNode, setMountNode] = useState<HTMLElement | null>(null);
   useEffect(() => {
@@ -59,9 +50,8 @@ function BottomSheetPortal({ children }: { children: React.ReactNode }) {
 
 export default function ExplorePlacesPage() {
   const [activeCategory, setActiveCategory] = useState<Place["category"] | "전체">("전체");
-  const [center] = useState(DEFAULT_CENTER); // 항목 클릭 시 상세로 이동
+  const [center] = useState(DEFAULT_CENTER);
 
-  const categories: (Place["category"] | "전체")[] = ["전체", "갤러리", "카페", "복합문화공간"];
   const featured = useMemo(() => PLACES.filter((p) => p.featured), []);
   const filtered = useMemo(() => {
     const base = activeCategory === "전체" ? PLACES : PLACES.filter((p) => p.category === activeCategory);
@@ -70,90 +60,52 @@ export default function ExplorePlacesPage() {
 
   const headerLabel = "공간 찾기";
 
-  // ====== 바텀시트 크기(드래그로 조절) ======
+  // 바텀시트 높이 드래그
   const MIN_PX = 220;
-  const MAX_VH = 0.7; // 화면 70%까지
+  const MAX_VH = 0.7;
   const DEFAULT_VH = 0.36;
 
   const [sheetPx, setSheetPx] = useState<number>(320);
-  const [dragging, setDragging] = useState<boolean>(false);
-  const startYRef = useRef<number>(0);
-  const startHRef = useRef<number>(0);
+  const [dragging, setDragging] = useState(false);
+  const startYRef = useRef(0);
+  const startHRef = useRef(320);
+  const maxPxRef = useRef(520);
 
   const BOTTOM_NAV_PX = 64;
 
-  const getMaxHeightPx = (): number => {
-    if (typeof window === "undefined") return 520;
-    return Math.min(window.innerHeight * MAX_VH, 520);
-  };
-
-  // 초기 높이: clamp(240px, 36vh, 380px) 근사값
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const h = Math.max(MIN_PX, Math.min(window.innerHeight * DEFAULT_VH, 380));
-    setSheetPx(Math.round(h));
+    const initial = Math.max(MIN_PX, Math.min(window.innerHeight * DEFAULT_VH, 380));
+    setSheetPx(Math.round(initial));
   }, []);
 
-  // 드래그 시작(핸들)
-  const onHandleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (typeof window !== "undefined") {
+      maxPxRef.current = Math.max(MIN_PX, window.innerHeight * MAX_VH);
+    }
     setDragging(true);
     startYRef.current = e.clientY;
     startHRef.current = sheetPx;
     document.body.style.overflow = "hidden";
-    window.addEventListener("mousemove", onMouseMove, { passive: false });
-    window.addEventListener("mouseup", onMouseUp, { passive: true });
-  };
-  const onHandleTouchStart = (e: React.TouchEvent<HTMLButtonElement>) => {
-    const t = e.touches[0];
-    setDragging(true);
-    startYRef.current = t.clientY;
-    startHRef.current = sheetPx;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("touchmove", onTouchMove as EventListener, { passive: false });
-    window.addEventListener("touchend", onTouchEnd as EventListener, { passive: true });
-    window.addEventListener("touchcancel", onTouchEnd as EventListener, { passive: true });
+    e.currentTarget.setPointerCapture(e.pointerId);
   };
 
-  const onMouseMove = (e: MouseEvent) => {
-    e.preventDefault();
-    const dy = startYRef.current - e.clientY; // 위로 드래그 = 양수
-    const next = Math.max(MIN_PX, Math.min(startHRef.current + dy, getMaxHeightPx()));
-    setSheetPx(Math.round(next));
-  };
-  const onMouseUp = () => {
-    setDragging(false);
-    document.body.style.overflow = "";
-    window.removeEventListener("mousemove", onMouseMove);
-    window.removeEventListener("mouseup", onMouseUp);
-  };
-
-  const onTouchMove = (e: TouchEvent) => {
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragging) return;
-    e.preventDefault();
-    const t = e.touches[0];
-    const dy = startYRef.current - t.clientY;
-    const next = Math.max(MIN_PX, Math.min(startHRef.current + dy, getMaxHeightPx()));
+    const dy = startYRef.current - e.clientY; // 위로 끌면 +
+    const next = Math.max(MIN_PX, Math.min(startHRef.current + dy, maxPxRef.current));
     setSheetPx(Math.round(next));
-  };
-  const onTouchEnd = () => {
-    setDragging(false);
-    document.body.style.overflow = "";
-    window.removeEventListener("touchmove", onTouchMove as EventListener);
-    window.removeEventListener("touchend", onTouchEnd as EventListener);
-    window.removeEventListener("touchcancel", onTouchEnd as EventListener);
+    e.preventDefault();
   };
 
-  useEffect(() => {
-    // 안전 정리
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-      window.removeEventListener("touchmove", onTouchMove as EventListener);
-      window.removeEventListener("touchend", onTouchEnd as EventListener);
-      window.removeEventListener("touchcancel", onTouchEnd as EventListener);
-    };
-  }, []);
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging) return;
+    setDragging(false);
+    document.body.style.overflow = "";
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+  };
 
   return (
     <div className="relative flex size-full min-h-screen flex-col justify-between overflow-x-hidden bg-[var(--background-color)]">
@@ -204,12 +156,12 @@ export default function ExplorePlacesPage() {
           {/* 카테고리 */}
           <section className="mb-3">
             <div className="flex gap-2 overflow-x-auto no-scrollbar">
-              {categories.map((c) => {
+              {["전체", "갤러리", "카페", "복합문화공간"].map((c) => {
                 const active = c === activeCategory;
                 return (
                   <button
                     key={c}
-                    onClick={() => setActiveCategory(c)}
+                    onClick={() => setActiveCategory(c as Place["category"] | "전체")}
                     className={`px-3 py-2 rounded-full text-sm border transition ${
                       active ? "bg-[var(--accent-color)] border-[var(--primary-color)] text-[var(--primary-color)] font-semibold" : "bg-white border-[#EAEAEA] text-[var(--text-secondary)]"
                     }`}
@@ -252,7 +204,7 @@ export default function ExplorePlacesPage() {
         </main>
       </div>
 
-      {/* 하단 고정 지도 (드래그 핸들 포함) */}
+      {/* 하단 고정 지도 (지도 내부 상단 8px이 드래그 영역) */}
       <BottomSheetPortal>
         <section
           role="region"
@@ -265,33 +217,33 @@ export default function ExplorePlacesPage() {
               className={`overflow-hidden rounded-t-2xl shadow-[0_-12px_28px_rgba(0,0,0,0.12)] border bg-white/60 backdrop-blur-[2px] ${dragging ? "select-none" : ""}`}
               style={{ borderColor: "var(--accent-color)" }}
             >
-              {/* 드래그 핸들 */}
-              <div className="relative">
-                <button
-                  aria-label="지도의 높이 조절"
-                  onMouseDown={onHandleMouseDown}
-                  onTouchStart={onHandleTouchStart}
-                  className="w-full h-8 flex items-center justify-center cursor-row-resize touch-none"
-                  style={{ WebkitTapHighlightColor: "transparent" }}
-                >
-                  <span className="block w-10 h-1.5 rounded-full bg-[var(--accent-color)]" />
-                </button>
-              </div>
-
-              {/* 지도 */}
+              {/* 지도 컨테이너 */}
               <div className="relative" style={{ height: sheetPx, minHeight: MIN_PX }}>
+                {/* 🔸 드래그 오버레이: 지도 안의 맨 위 8px */}
+                <div
+                  aria-label="지도의 높이 조절"
+                  onPointerDown={onPointerDown}
+                  onPointerMove={onPointerMove}
+                  onPointerUp={onPointerUp}
+                  className="absolute inset-x-0 top-0 h-2 cursor-ns-resize z-[30]"
+                  style={{ touchAction: "none", WebkitTapHighlightColor: "transparent", background: "transparent" }}
+                />
+                {/* 지도 iframe (드래그 중엔 패닝 방지) */}
                 <iframe
                   key={`${center.lat}-${center.lng}-${activeCategory}`}
                   title="nearby-map"
-                  className="absolute inset-0 w-full h-full border-0"
+                  className="absolute inset-0 w-full h-full border-0 z-[10]"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                   src={mapSrc(center, activeCategory === "전체" ? undefined : `${activeCategory} near ${center.lat},${center.lng}`)}
+                  style={{ pointerEvents: dragging ? "none" as const : "auto" as const }}
                 />
-                {/* 상단 그라데이션 / 틴트 / 헤어라인 */}
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-[var(--background-color)]/95 via-[var(--background-color)]/55 to-transparent" />
-                <div className="pointer-events-none absolute inset-0" style={{ backgroundColor: "var(--accent-color)", mixBlendMode: "multiply", opacity: 0.06 }} />
-                <div className="pointer-events-none absolute -top-px left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, var(--accent-color), transparent)", opacity: 0.85 }} />
+                {/* 상단 페이드(작게) */}
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-2 z-[20] bg-gradient-to-b from-[var(--background-color)]/90 via-[var(--background-color)]/45 to-transparent" />
+                {/* 아주 옅은 브랜드 틴트 */}
+                <div className="pointer-events-none absolute inset-0 z-[15]" style={{ backgroundColor: "var(--accent-color)", mixBlendMode: "multiply", opacity: 0.06 }} />
+                {/* 헤어라인 */}
+                <div className="pointer-events-none absolute -top-px left-0 right-0 h-px z-[25]" style={{ background: "linear-gradient(90deg, transparent, var(--accent-color), transparent)", opacity: 0.85 }} />
               </div>
             </div>
           </div>
