@@ -21,46 +21,8 @@ export default function ProfilePage() {
 
   return (
     <div className="relative flex min-h-[100dvh] flex-col bg-[#FDFBF8] text-[#3D2C1D] font-pretendard">
-      {/* 로컬 애니메이션 키프레임 (페이지 전환 아님) */}
-      <style jsx global>{`
-        :root {
-          /* BottomNav 높이(필요 시 전역과 동일하게 맞춰주세요) */
-          --bottom-nav-h: 64px;
-        }
-        @media (prefers-reduced-motion: no-preference) {
-          .animate-fadeUp {
-            animation: fadeUp 600ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
-          }
-          .animate-scaleIn {
-            animation: scaleIn 480ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
-          }
-          .animate-slideDown {
-            animation: slideDown 420ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
-          }
-          .animate-fadeIn {
-            animation: fadeIn 360ms ease forwards;
-          }
-        }
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(14px); filter: saturate(0.96); }
-          to   { opacity: 1; transform: translateY(0);    filter: saturate(1);   }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.96); }
-          to   { opacity: 1; transform: scale(1);    }
-        }
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-10px); }
-          to   { opacity: 1; transform: translateY(0);      }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
-      `}</style>
-
-      {/* Header (로컬 애니메이션만) */}
-      <header className="sticky top-0 z-20 bg-[#FDFBF8]/80 backdrop-blur-sm animate-slideDown">
+      {/* Header (애니메이션 제거) */}
+      <header className="sticky top-0 z-20 bg-[#FDFBF8]/80 backdrop-blur-sm">
         <div className="flex items-center justify-between p-4">
           <button className="text-[#3D2C1D] active:scale-95 transition-transform" type="button">
             <svg fill="currentColor" height="24" width="24" viewBox="0 0 256 256">
@@ -74,13 +36,12 @@ export default function ProfilePage() {
 
       <main className="flex-1 p-4 space-y-6 pb-0">
         {/* Avatar */}
-        <section className="text-center animate-fadeUp" style={{ animationDelay: "40ms" }}>
+        <section className="text-center">
           <div className="relative inline-block">
             <img
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvM8BeQVRtX-JPgzmA6JCZ0Sx8m-Ver8hiSd4I9V_JbwzHPoychRH2Ok3qqU_bmgZPSQAn_047aMc8nCL1qI5qDcnERJC5Hqq2YwObo_LB9UrvnU4GTgYEp5aGCssWwnVl91-JOk2Nx9SY2vvbx16_bIBhG1DjRKgVPd3pt3GOOA1vAWxA8oGWfQy_pK3stg40qzQ4UZ1g0ywp9k6U8BQBA4cLy-blz0639c4a5y7sWmirFsfQByuYFDQAvMn-duibl6-hECUU606Z"
               alt="User profile picture"
-              className="object-cover w-24 h-24 rounded-full animate-scaleIn shadow-sm"
-              style={{ animationDelay: "80ms" }}
+              className="object-cover w-24 h-24 rounded-full shadow-sm"
             />
             <button
               className="absolute bottom-0 right-0 bg-[#D2B48C] rounded-full p-1.5 shadow-md active:scale-95 transition-transform"
@@ -92,19 +53,12 @@ export default function ProfilePage() {
               </svg>
             </button>
           </div>
-          <h2 className="mt-4 text-2xl font-bold animate-fadeUp" style={{ animationDelay: "120ms" }}>
-            {user.nickname}
-          </h2>
-          <p className="text-md text-[#8C7853] animate-fadeUp" style={{ animationDelay: "160ms" }}>
-            {user.name}
-          </p>
+          <h2 className="mt-4 text-2xl font-bold">{user.nickname}</h2>
+          <p className="text-md text-[#8C7853]">{user.name}</p>
         </section>
 
         {/* 사용자 정보 */}
-        <section
-          className="py-4 mx-3 space-y-3 bg-white shadow-sm rounded-xl px-7 animate-fadeUp"
-          style={{ animationDelay: "200ms" }}
-        >
+        <section className="py-4 mx-3 space-y-3 bg-white shadow-sm rounded-xl px-7">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-[#3D2C1D]">사용자 정보</h3>
             <Link
@@ -179,10 +133,7 @@ export default function ProfilePage() {
         </section>
 
         {/* 계정 관리 */}
-        <section
-          className="px-8 py-6 mx-3 mt-6 bg-white shadow-sm rounded-xl animate-fadeUp"
-          style={{ animationDelay: "260ms" }}
-        >
+        <section className="px-8 py-6 mx-3 mt-6 bg-white shadow-sm rounded-xl">
           <h3 className="mb-4 text-lg font-semibold">계정 관리</h3>
           <div className="space-y-3">
             {/* 비밀번호 변경 */}
@@ -250,7 +201,7 @@ export default function ProfilePage() {
         </section>
 
         {/* 고정 네비에 가리지 않도록 정확히 그 높이만큼만 여백 확보 */}
-        <div aria-hidden className="h-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom))]" />
+        <div aria-hidden className="h-[calc(64px+env(safe-area-inset-bottom))]" />
       </main>
 
       {/* 고정 하단 네비 */}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 
@@ -59,7 +59,7 @@ function BottomSheetPortal({ children }: { children: React.ReactNode }) {
 
 export default function ExplorePlacesPage() {
   const [activeCategory, setActiveCategory] = useState<Place["category"] | "전체">("전체");
-  const [center] = useState(DEFAULT_CENTER); // 선택에 따른 이동 제거(항목 클릭 시 /bookingdate로 이동)
+  const [center] = useState(DEFAULT_CENTER); // 선택시 /bookingdate로 이동하므로 지도 이동은 유지 X
 
   const categories: (Place["category"] | "전체")[] = ["전체", "갤러리", "카페", "복합문화공간"];
   const featured = useMemo(() => PLACES.filter((p) => p.featured), []);
@@ -69,9 +69,71 @@ export default function ExplorePlacesPage() {
   }, [activeCategory]);
 
   const headerLabel = "공간 찾기";
-  // 지도 높이 (현재 페이지 설정 유지)
-  const SHEET_HEIGHT = "clamp(240px, 36vh, 380px)";
+
+  // -------- 바텀시트 높이: 드래그로 조절 --------
   const BOTTOM_NAV_PX = 64; // 실제 바텀 내비 높이에 맞게 조정
+  const SHEET_MIN_PX = 220;
+
+  const [sheetMaxPx, setSheetMaxPx] = useState(500);
+  const [sheetPx, setSheetPx] = useState(320); // 초기 값(마운트 후 실제 화면에 맞춰 재계산)
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef<{ startY: number; startH: number; dragging: boolean }>({
+    startY: 0,
+    startH: 0,
+    dragging: false,
+  });
+
+  // 뷰포트 기반 초기/최대 높이 계산
+  useEffect(() => {
+    const h = window.innerHeight || 800;
+    const max = Math.min(Math.round(h * 0.78), 520); // 최대 78vh 또는 520px
+    const initial = Math.min(Math.max(Math.round(h * 0.36), SHEET_MIN_PX), 380); // 36vh ~ 380 사이
+    setSheetMaxPx(max);
+    setSheetPx(initial);
+  }, []);
+
+  // 드래그 핸들러
+  useEffect(() => {
+    function onMove(e: PointerEvent) {
+      if (!dragRef.current.dragging) return;
+      const dy = dragRef.current.startY - e.clientY; // 위로 드래그: dy>0
+      let next = dragRef.current.startH + dy;
+      if (next < SHEET_MIN_PX) next = SHEET_MIN_PX;
+      if (next > sheetMaxPx) next = sheetMaxPx;
+      setSheetPx(next);
+    }
+    function onUp() {
+      dragRef.current.dragging = false;
+      setDragging(false);
+      // 드래그 끝나면 스크롤/선택 복원
+      document.body.style.userSelect = "";
+      (document.body.style as any).touchAction = "";
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    }
+    if (dragRef.current.dragging) {
+      window.addEventListener("pointermove", onMove, { passive: true });
+      window.addEventListener("pointerup", onUp, { passive: true });
+    }
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [sheetMaxPx]);
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    // 드래그 시작
+    dragRef.current.startY = e.clientY;
+    dragRef.current.startH = sheetPx;
+    dragRef.current.dragging = true;
+    setDragging(true);
+    // 페이지 스크롤/텍스트 선택 방지
+    document.body.style.userSelect = "none";
+    (document.body.style as any).touchAction = "none";
+  }
+
+  // 메인 콘텐츠가 바텀시트/내비에 가리지 않게 여백 확보
+  const contentPaddingBottom = `calc(${Math.round(sheetPx)}px + ${BOTTOM_NAV_PX}px + 24px + env(safe-area-inset-bottom))`;
 
   return (
     <div className="relative flex size-full min-h-screen flex-col justify-between overflow-x-hidden bg-[var(--background-color)]">
@@ -91,10 +153,7 @@ export default function ExplorePlacesPage() {
 
         <main
           className="p-4 pb-6"
-          style={{
-            // 바텀시트 + 바텀내비 여백
-            paddingBottom: `calc(${SHEET_HEIGHT} + ${BOTTOM_NAV_PX}px + 24px + env(safe-area-inset-bottom))`,
-          }}
+          style={{ paddingBottom: contentPaddingBottom }}
         >
           {/* 추천 */}
           <section className="mb-6">
@@ -159,7 +218,7 @@ export default function ExplorePlacesPage() {
                     <p className="text-xs text-[var(--text-secondary)] mt-1">{p.address}</p>
                     <p className="text-xs text-[var(--text-secondary)] mt-1">약 {p.distanceKm.toFixed(1)}km</p>
                   </div>
-                  {/* 우측 화살표 아이콘(탭 유도) */}
+                  {/* 우측 화살표 아이콘 */}
                   <div aria-hidden className="ml-2 shrink-0 opacity-60">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M9 18l6-6-6-6" />
@@ -172,7 +231,7 @@ export default function ExplorePlacesPage() {
         </main>
       </div>
 
-      {/* 하단 고정 지도 (브랜드 톤에 자연스럽게 어울리도록 스타일링) */}
+      {/* 하단 고정 지도 (드래그로 높이 조절) */}
       <BottomSheetPortal>
         <section
           role="region"
@@ -185,7 +244,22 @@ export default function ExplorePlacesPage() {
               className="overflow-hidden rounded-t-2xl shadow-[0_-12px_28px_rgba(0,0,0,0.12)] border bg-white/60 backdrop-blur-[2px]"
               style={{ borderColor: "var(--accent-color)" }}
             >
-              <div className="relative" style={{ height: SHEET_HEIGHT as any, minHeight: 240 }}>
+              <div className="relative" style={{ height: `${Math.round(sheetPx)}px`, minHeight: SHEET_MIN_PX }}>
+                {/* 드래그 핸들 (iframe 위로, 상단에 고정) */}
+                <div
+                  role="slider"
+                  aria-label="지도 높이 조절"
+                  aria-valuemin={SHEET_MIN_PX}
+                  aria-valuemax={sheetMaxPx}
+                  aria-valuenow={Math.round(sheetPx)}
+                  className={`absolute left-0 right-0 top-0 h-6 flex items-center justify-center ${dragging ? "cursor-grabbing" : "cursor-grab"} select-none`}
+                  onPointerDown={onPointerDown}
+                  style={{ touchAction: "none", WebkitUserSelect: "none", zIndex: 2 }}
+                >
+                  <div className="w-9 h-1.5 rounded-full bg-[var(--accent-color)]/80" />
+                </div>
+
+                {/* 지도 iframe */}
                 <iframe
                   key={`${center.lat}-${center.lng}-${activeCategory}`}
                   title="nearby-map"
@@ -194,6 +268,8 @@ export default function ExplorePlacesPage() {
                   referrerPolicy="no-referrer-when-downgrade"
                   src={mapSrc(center, activeCategory === "전체" ? undefined : `${activeCategory} near ${center.lat},${center.lng}`)}
                 />
+
+                {/* 상단 페이드 + 틴트 + 헤어라인 */}
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-[var(--background-color)]/95 via-[var(--background-color)]/55 to-transparent" />
                 <div className="pointer-events-none absolute inset-0" style={{ backgroundColor: "var(--accent-color)", mixBlendMode: "multiply", opacity: 0.06 }} />
                 <div className="pointer-events-none absolute -top-px left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, var(--accent-color), transparent)", opacity: 0.85 }} />
