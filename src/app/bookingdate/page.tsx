@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 
-const disabledDays = [28]; // 현재 보이는 달의 28일만 비활성 예시
+const disabledDays = [28];
 
 const artworkSizes = [
   { label: "소형", desc: "30x30cm 이하" },
@@ -40,36 +40,29 @@ const daysDiffInclusive = (a: Date, b: Date) =>
 const fmtKoreanDate = (d: Date) =>
   `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
 
-// 6주 그리드 셀 생성 (전/다음 달 흐릿 표시)
+// 6주 그리드 셀 생성
 function getCalendarCells(viewDate: Date) {
   const y = viewDate.getFullYear();
   const m = viewDate.getMonth();
-  const firstWeekday = new Date(y, m, 1).getDay();     // 0(일)~6(토)
-  const daysInMonth  = new Date(y, m + 1, 0).getDate();
+  const firstWeekday = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
   const prevMonthDays = new Date(y, m, 0).getDate();
-
-  // 이 달의 날짜들을 요일 맞춰 배치하는 데 필요한 '주' 수 (4~6)
-  const numWeeks   = Math.ceil((firstWeekday + daysInMonth) / 7);
+  const numWeeks = Math.ceil((firstWeekday + daysInMonth) / 7);
   const totalCells = numWeeks * 7;
 
   const cells: { date: Date; inMonth: boolean }[] = [];
-
-  // 앞쪽(이전 달) 패딩
   for (let i = firstWeekday - 1; i >= 0; i--) {
     const day = prevMonthDays - i;
     cells.push({ date: new Date(y, m - 1, day), inMonth: false });
   }
-  // 이번 달
   for (let d = 1; d <= daysInMonth; d++) {
     cells.push({ date: new Date(y, m, d), inMonth: true });
   }
-  // 뒤쪽(다음 달) 패딩 → 필요한 칸까지만
   while (cells.length < totalCells) {
     const last = cells[cells.length - 1].date;
     const next = new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1);
     cells.push({ date: next, inMonth: next.getMonth() === m });
   }
-
   return cells;
 }
 
@@ -81,16 +74,15 @@ export default function DateBookingPage() {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [selectedSize, setSelectedSize] = useState(1);
-  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null); // ★ 공간 선택
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
-
   const cells = useMemo(() => getCalendarCells(viewDate), [viewDate]);
 
   const hasRange = !!(startDate && endDate);
   const hasSpace = !!selectedSpaceId;
-  const canShowPricing = hasRange && hasSpace; // ★ 가격 노출 조건
+  const canShowPricing = hasRange && hasSpace;
   const durationDays = hasRange ? daysDiffInclusive(startDate!, endDate!) : 0;
 
   const gotoMonth = (offset: number) =>
@@ -101,8 +93,6 @@ export default function DateBookingPage() {
 
   function onClickDay(cell: Date) {
     if (isDisabled(cell)) return;
-
-    // 범위 완성 상태면 리셋 후 시작
     if (startDate && endDate) {
       setStartDate(cell);
       setEndDate(null);
@@ -113,12 +103,10 @@ export default function DateBookingPage() {
       setEndDate(null);
       return;
     }
-
     const s = toYMD(startDate);
     const c = toYMD(cell);
-
     if (isSameDay(s, c)) {
-      setEndDate(c); // 단일일
+      setEndDate(c);
       return;
     }
     if (c < s) {
@@ -131,8 +119,8 @@ export default function DateBookingPage() {
 
   function getDayClass(cell: Date, inMonth: boolean) {
     if (isDisabled(cell)) return "date-picker-day date-picker-day-disabled";
-
-    const selectedSingle = startDate && endDate && isSameDay(startDate, endDate) && startDate && isSameDay(cell, startDate);
+    const selectedSingle =
+      startDate && endDate && isSameDay(startDate, endDate) && startDate && isSameDay(cell, startDate);
     const isStart = startDate && isSameDay(cell, startDate);
     const isEnd = endDate && isSameDay(cell, endDate);
     const inRange =
@@ -142,10 +130,7 @@ export default function DateBookingPage() {
     if (isStart) return "date-picker-day date-picker-day-selected date-range-start";
     if (isEnd) return "date-picker-day date-picker-day-selected date-range-end";
     if (inRange) return "date-picker-day date-picker-day-in-range shadow-none";
-
-    // 이번 달이 아니면 흐릿하게
     if (!inMonth) return "date-picker-day bg-white date-picker-day-muted";
-
     return "date-picker-day bg-white";
   }
 
@@ -167,7 +152,14 @@ export default function DateBookingPage() {
           <div className="w-8" />
         </header>
 
-        <main className="p-4 pb-28">
+        <main
+          className="p-4"
+          // ✅ 아래 네비(고정) + 이 페이지의 예약 풋터(고정) + 안전영역 고려한 여백
+          style={{
+            paddingBottom:
+              "calc(var(--booking-footer-h) + var(--bottom-nav-h) + env(safe-area-inset-bottom) + 24px)",
+          }}
+        >
           {/* Date Picker */}
           <div className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-4">
             <div className="flex items-center justify-between mb-4">
@@ -223,7 +215,7 @@ export default function DateBookingPage() {
             </div>
           </div>
 
-          {/* 이용 가능한 공간: 범위 선택 시 스르륵 노출 */}
+          {/* 이용 가능한 공간 */}
           <div
             className={`transition-all duration-500 ease-out overflow-hidden ${
               hasRange ? "max-h-[1200px] opacity-100 translate-y-0 mt-6 pt-6 border-t border-[#EAEAEA]" : "max-h-0 opacity-0 -translate-y-2 pointer-events-none"
@@ -266,7 +258,6 @@ export default function DateBookingPage() {
                         <span className="text-sm text-[var(--text-secondary)]"> / 일</span>
                       </div>
                     </div>
-                    {/* 선택 체크 아이콘 */}
                     <div aria-hidden className={`ml-2 shrink-0 transition-opacity ${selected ? "opacity-100" : "opacity-0"}`}>
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M20 6L9 17l-5-5" />
@@ -278,7 +269,7 @@ export default function DateBookingPage() {
             </div>
           </div>
 
-          {/* 예약 요약: 날짜 + 공간이 선택된 경우에만 노출 */}
+          {/* 예약 요약 */}
           <div
             className={`transition-all duration-500 ease-out overflow-hidden ${
               canShowPricing ? "max-h-[1000px] opacity-100 translate-y-0 mt-6 pt-6 border-t border-[#EAEAEA]" : "max-h-0 opacity-0 -translate-y-2 pointer-events-none"
@@ -305,7 +296,6 @@ export default function DateBookingPage() {
                 <p className="text-[var(--text-secondary)]">기간</p>
                 <p className="text-[var(--text-primary)] font-medium">{hasRange ? `${durationDays}일` : "-"}</p>
               </div>
-              {/* ↓ 금액 파트: 기존 값 유지. 필요하면 selectedSpace.price 반영 로직도 넣어줄 수 있어요. */}
               <div className="flex justify-between">
                 <p className="text-[var(--text-secondary)]">기간에 따른 비용</p>
                 <p className="text-[var(--text-primary)] font-medium">₩30,000</p>
@@ -318,9 +308,20 @@ export default function DateBookingPage() {
           </div>
         </main>
 
-        <footer className="w-full max-w-md mx-auto bg-white p-4 border-t border-[#EAEAEA] fixed bottom-0">
+        {/* ✅ 예약하기 풋터: 고정 네비 위로 올림 */}
+        <footer
+          className="w-full max-w-md mx-auto bg-white p-4 border-t border-[#EAEAEA] fixed"
+          style={{
+            bottom: "calc(var(--bottom-nav-h) + env(safe-area-inset-bottom))",
+            left: 0,
+            right: 0,
+            margin: "0 auto",
+          }}
+        >
           <Link href="/booking" passHref>
-            <button className="w-full cursor-pointer button_primary">예약하기</button>
+            <button className="w-full cursor-pointer button_primary" style={{ height: "48px" }}>
+              예약하기
+            </button>
           </Link>
         </footer>
       </div>
@@ -335,6 +336,9 @@ export default function DateBookingPage() {
           --accent-color: #e0d8c9;
           --card-background: #FFFFFF;
           --unavailable-color: #F3F4F6;
+          /* ✅ 고정 네비/풋터 높이 */
+          --bottom-nav-h: 64px;
+          --booking-footer-h: 72px; /* 여유 포함 높이(컨테이너 패딩 포함) */
         }
         body {
           font-family: "Pretendard", sans-serif;
@@ -357,11 +361,9 @@ export default function DateBookingPage() {
         .date-picker-day-in-range {
           background: var(--accent-color); color: var(--text-primary); border-radius: 0;
         }
-        .date-picker-day-muted {
-          color: #9aa0a6; opacity: 0.55;
-        }
+        .date-picker-day-muted { color: #9aa0a6; opacity: 0.55; }
         .date-range-start { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-        .date-range-end { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+        .date-range-end   { border-top-left-radius: 0; border-bottom-left-radius: 0; }
 
         .button_primary {
           background: var(--primary-color); color: #fff;
@@ -371,7 +373,6 @@ export default function DateBookingPage() {
         }
         .button_primary:hover { background: #ac651b; }
 
-        /* 공간 카드 선택 효과 */
         .space-card { border: 2px solid transparent; transition: border-color .2s, box-shadow .2s, transform .2s; }
         .space-card-selected { border-color: var(--primary-color); box-shadow: 0 6px 14px rgba(197,127,57,0.25); transform: translateY(-2px); }
       `}</style>

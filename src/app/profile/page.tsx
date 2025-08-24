@@ -205,7 +205,7 @@ export default function ProfilePage() {
       </main>
 
       {/* 고정 하단 네비 */}
-      <BottomNav />
+      
 
       {/* 모달들 */}
       <ChangePasswordModal

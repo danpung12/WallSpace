@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import TransitionProvider from "./transition-provider";
-import BottomNav from "./components/BottomNav";
+import BottomNavGate from "./components/BottomNavGate"; // ⬅️ 여기로 변경
 
 export const metadata: Metadata = {
   title: "Stitch Design",
@@ -18,7 +18,7 @@ export default function RootLayout({
         <TransitionProvider>{children}</TransitionProvider>
 
         {/* ✅ transform 영향 밖(형제)에 둠: 진짜 뷰포트 고정 */}
-        <BottomNav />
+        <BottomNavGate />
       </body>
     </html>
   );
