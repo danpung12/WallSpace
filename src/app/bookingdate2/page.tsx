@@ -2,9 +2,8 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 
 /* =========================
@@ -95,6 +94,7 @@ function KakaoMapView({ center }: { center: LatLng }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<KakaoMap | null>(null);
 
+  // SDK 로드 + 지도 초기화(초기 center는 고정값 → 의존성 경고X)
   useEffect(() => {
     let canceled = false;
     (async () => {
@@ -108,12 +108,12 @@ function KakaoMapView({ center }: { center: LatLng }) {
       if (canceled) return;
       window.kakao?.maps.load(() => {
         if (!containerRef.current || canceled) return;
-        const kakaoLatLng = new window.kakao!.maps.LatLng(center.lat, center.lng);
+        const init = new window.kakao!.maps.LatLng(37.5663, 126.9779);
         const map = new window.kakao!.maps.Map(containerRef.current, {
-          center: kakaoLatLng,
+          center: init,
           level: 5,
         });
-        new window.kakao!.maps.Marker({ map, position: kakaoLatLng });
+        new window.kakao!.maps.Marker({ map, position: init });
         mapRef.current = map;
       });
     })();
@@ -122,6 +122,7 @@ function KakaoMapView({ center }: { center: LatLng }) {
     };
   }, []);
 
+  // center 변경 시 지도 업데이트
   useEffect(() => {
     const m = mapRef.current;
     if (!m || !window.kakao) return;
@@ -151,6 +152,7 @@ function DraggableMapSheet({
   initialHeightPx?: number;
   onHeightChange?: (h: number) => void;
 }) {
+  // 첫 페인트에서 0이 보이지 않도록 초기값을 바로 세팅
   const [height, setHeight] = useState<number>(initialHeightPx);
 
   useEffect(() => {
@@ -227,13 +229,13 @@ function DraggableMapSheet({
 /* =========================
  *  페이지
  * ========================= */
-export default function ExplorePlacesPage() {
-  const router = useRouter();
+const CATEGORIES = ["전체", "갤러리", "카페", "복합문화공간"] as const;
+type Category = typeof CATEGORIES[number];
 
-  const [activeCategory, setActiveCategory] = useState<Place["category"] | "전체">("전체");
+export default function ExplorePlacesPage() {
+  const [activeCategory, setActiveCategory] = useState<Category>("전체");
   const [center, setCenter] = useState<LatLng>(DEFAULT_CENTER);
   const [mapHeight, setMapHeight] = useState<number>(260);
-  const [locLoading, setLocLoading] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
 
   // 추천 카드 스냅/중앙감지
@@ -242,7 +244,7 @@ export default function ExplorePlacesPage() {
   const [featuredActiveIdx, setFeaturedActiveIdx] = useState(0);
   const tickingRef = useRef(false);
 
-  const calcFeaturedActive = () => {
+  const calcFeaturedActive = useCallback(() => {
     const c = featuredContainerRef.current;
     if (!c) return;
     const centerX = c.scrollLeft + c.clientWidth / 2;
@@ -258,16 +260,16 @@ export default function ExplorePlacesPage() {
       }
     });
     setFeaturedActiveIdx(bestIdx);
-  };
+  }, []);
 
-  const onFeaturedScroll = () => {
+  const onFeaturedScroll = useCallback(() => {
     if (tickingRef.current) return;
     tickingRef.current = true;
     requestAnimationFrame(() => {
       calcFeaturedActive();
       tickingRef.current = false;
     });
-  };
+  }, [calcFeaturedActive]);
 
   useEffect(() => {
     const c = featuredContainerRef.current;
@@ -279,34 +281,21 @@ export default function ExplorePlacesPage() {
       c.removeEventListener("scroll", onFeaturedScroll);
       window.removeEventListener("resize", calcFeaturedActive);
     };
-  }, []);
+  }, [calcFeaturedActive, onFeaturedScroll]);
 
-  const requestLocation = () => {
+  // 현재 위치 요청 (버튼 없이 자동 1회)
+  useEffect(() => {
     if (!("geolocation" in navigator)) {
       setLocError("이 브라우저는 위치 서비스를 지원하지 않습니다.");
       return;
     }
-    setLocLoading(true);
-    setLocError(null);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setLocLoading(false);
-      },
-      (err) => {
-        setLocLoading(false);
-        setLocError(err.message || "위치 정보를 가져오지 못했습니다.");
-      },
+      (pos) => setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => setLocError(err.message || "위치 정보를 가져오지 못했습니다."),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
-  };
-
-  useEffect(() => {
-    requestLocation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const categories: (Place["category"] | "전체")[] = ["전체", "갤러리", "카페", "복합문화공간"];
   const featured = useMemo(() => PLACES.filter((p) => p.featured), []);
   const filtered = useMemo(() => {
     const base = activeCategory === "전체" ? PLACES : PLACES.filter((p) => p.category === activeCategory);
@@ -320,21 +309,19 @@ export default function ExplorePlacesPage() {
   return (
     <div className="relative flex size-full min-h-screen flex-col justify-between overflow-x-hidden bg-[var(--background-color)]">
       <div className="w-full max-w-md mx-auto bg-[var(--background-color)]">
-        {/* 헤더 (뒤로가기 / 타이틀 / 오른쪽 빈칸) */}
+        {/* 헤더 */}
         <header className="flex items-center p-4 pb-2 justify-between bg-[#FDFBF8] border-[#EAEAEA]">
-          <button
-            onClick={() => router.back()}
-            className="text-[var(--text-primary)] cursor-pointer"
-            aria-label="뒤로 가기"
-          >
-            <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="24">
-              <path d="m15 18-6-6 6-6"></path>
-            </svg>
-          </button>
+          <Link href="/profile">
+            <button className="text-[var(--text-primary)] cursor-pointer" aria-label="뒤로 가기">
+              <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="24">
+                <path d="m15 18-6-6 6-6"></path>
+              </svg>
+            </button>
+          </Link>
 
           <h1 className="text-lg font-bold text-[var(--text-primary)] flex-1 text-center">{headerLabel}</h1>
 
-          {/* 오른쪽 아이콘 제거 → 균형용 빈 박스 */}
+          {/* 우측: 문양/아이콘 제거 → 균형 맞춤용 빈 박스 */}
           <div className="w-8" />
         </header>
 
@@ -343,10 +330,7 @@ export default function ExplorePlacesPage() {
 
           {/* 추천 - 스냅 & 중앙 활성화 */}
           <section className="mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold text-[var(--text-primary)]">추천 장소</h2>
-              <Link href="/bookingdate2" className="text-xs text-[var(--text-secondary)] underline">더 보기</Link>
-            </div>
+            <h2 className="text-base font-bold text-[var(--text-primary)] mb-3">추천 장소</h2>
 
             <div
               ref={featuredContainerRef}
@@ -358,8 +342,10 @@ export default function ExplorePlacesPage() {
                 return (
                   <div
                     key={p.id}
-                    ref={(el) => { featuredItemRefs.current[idx] = el; }}
-                    className={`snap-center flex-shrink-0 w-[75%] sm:w-[60%] max-w-[360px] transition-all duration-300 ${isActive ? "opacity-100 scale-100" : "opacity-50 scale-[0.98]"}`}
+                    ref={(el) => { featuredItemRefs.current[idx] = el; }} {/* ✅ 반환값 없는 콜백(ref 타입 오류 해결) */}
+                    className={`snap-center flex-shrink-0 w-[75%] sm:w-[60%] max-w-[360px] transition-all duration-300 ${
+                      isActive ? "opacity-100 scale-100" : "opacity-50 scale-[0.98]"
+                    }`}
                   >
                     <Link
                       href={{ pathname: "/bookingdate", query: { place: p.id } }}
@@ -384,12 +370,12 @@ export default function ExplorePlacesPage() {
           {/* 카테고리 */}
           <section className="mb-3">
             <div className="flex gap-2 overflow-x-auto no-scrollbar">
-              {["전체", "갤러리", "카페", "복합문화공간"].map((c) => {
+              {CATEGORIES.map((c) => {
                 const active = c === activeCategory;
                 return (
                   <button
                     key={c}
-                    onClick={() => setActiveCategory(c as any)}
+                    onClick={() => setActiveCategory(c)}
                     className={`px-3 py-2 rounded-full text-sm border transition ${
                       active ? "bg-[var(--accent-color)] border-[var(--primary-color)] text-[var(--primary-color)] font-semibold" : "bg-white border-[#EAEAEA] text-[var(--text-secondary)]"
                     }`}
@@ -436,7 +422,7 @@ export default function ExplorePlacesPage() {
       <BottomSheetPortal>
         <DraggableMapSheet
           center={center}
-          bottomOffsetPx={BOTTOM_NAV_PX}
+          bottomOffsetPx={64}
           minHeight={200}
           maxHeight={520}
           initialHeightPx={260}
