@@ -3,37 +3,45 @@
 
 import { AnimatePresence, motion, cubicBezier, type Transition } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import { PropsWithChildren, useEffect, useRef, useState } from 'react';
+import { PropsWithChildren, useRef, useEffect } from 'react';
 
 const easeFn = cubicBezier(0.2, 0.7, 0.2, 1);
-const pageTransition: Transition = { duration: 0.38, ease: easeFn };
+const pageTransition: Transition = { duration: 0.25, ease: easeFn };
+
+// ✅ 오직 페이드인만. (exit 없음 → 이전 페이지는 즉시 제거)
+const variants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+};
 
 export default function TransitionProvider({ children }: PropsWithChildren) {
   const pathname = usePathname();
 
-  // ✅ 초기 한 틱 동안 exit 비활성화 → StrictMode의 테스트 언마운트에도 깜빡임 없음
-  const [allowExit, setAllowExit] = useState(false);
-  const timerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    timerRef.current = window.setTimeout(() => setAllowExit(true), 0);
-    return () => {
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-    };
-  }, []);
+  // 첫 렌더는 애니메이션 없이
+  const first = useRef(true);
+  useEffect(() => { first.current = false; }, []);
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={pathname}
-        initial={false} // 초기 진입 애니메이션 없음
-        animate={{ opacity: 1, y: 0, scale: 1, filter: 'saturate(1)' }}
-        exit={allowExit ? { opacity: 0, y: -10, scale: 0.995, filter: 'saturate(0.92)' } : undefined}
-        transition={pageTransition}
-        style={{ minHeight: '100svh', willChange: 'transform, opacity, filter' }}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    // 겹칠 때 투명 배경 문제가 안 나도록 배경을 깔아줌
+    <div style={{ position: 'relative', minHeight: '100svh', background: 'var(--background-color, #FDFBF8)' }}>
+      <AnimatePresence mode="sync" initial={false}>
+        <motion.div
+          key={pathname}
+          initial={first.current ? false : 'initial'}
+          animate="animate"
+          // exit를 지정하지 않음 → 이전 페이지 즉시 언마운트, 새 페이드인만 1회
+          variants={variants}
+          transition={pageTransition}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            willChange: 'opacity', // transform·filter 제거 → 튐 현상 방지
+            background: 'var(--background-color, #FDFBF8)',
+          }}
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
+    </div>
   );
 }
