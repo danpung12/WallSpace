@@ -4,6 +4,7 @@
 /* eslint-disable @next/next/no-img-element */
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 
 /* =========================
@@ -98,7 +99,7 @@ function KakaoMapView({ center }: { center: LatLng }) {
     let canceled = false;
     (async () => {
       const appKey = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
-      if (!appKey) return; // 키 없으면 조용히 패스
+      if (!appKey) return;
 
       await loadScriptOnce(
         `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&autoload=false`,
@@ -227,13 +228,15 @@ function DraggableMapSheet({
  *  페이지
  * ========================= */
 export default function ExplorePlacesPage() {
+  const router = useRouter();
+
   const [activeCategory, setActiveCategory] = useState<Place["category"] | "전체">("전체");
   const [center, setCenter] = useState<LatLng>(DEFAULT_CENTER);
   const [mapHeight, setMapHeight] = useState<number>(260);
   const [locLoading, setLocLoading] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
 
-  // ✅ 추천 카드 스냅/중앙감지
+  // 추천 카드 스냅/중앙감지
   const featuredContainerRef = useRef<HTMLDivElement | null>(null);
   const featuredItemRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [featuredActiveIdx, setFeaturedActiveIdx] = useState(0);
@@ -317,19 +320,21 @@ export default function ExplorePlacesPage() {
   return (
     <div className="relative flex size-full min-h-screen flex-col justify-between overflow-x-hidden bg-[var(--background-color)]">
       <div className="w-full max-w-md mx-auto bg-[var(--background-color)]">
-        {/* 헤더 */}
+        {/* 헤더 (뒤로가기 / 타이틀 / 오른쪽 빈칸) */}
         <header className="flex items-center p-4 pb-2 justify-between bg-[#FDFBF8] border-[#EAEAEA]">
-          <Link href="/profile">
-            <button className="text-[var(--text-primary)] cursor-pointer" aria-label="뒤로 가기">
-              <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="24">
-                <path d="m15 18-6-6 6-6"></path>
-              </svg>
-            </button>
-          </Link>
+          <button
+            onClick={() => router.back()}
+            className="text-[var(--text-primary)] cursor-pointer"
+            aria-label="뒤로 가기"
+          >
+            <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="24">
+              <path d="m15 18-6-6 6-6"></path>
+            </svg>
+          </button>
 
           <h1 className="text-lg font-bold text-[var(--text-primary)] flex-1 text-center">{headerLabel}</h1>
 
-          {/* 우측 아이콘/문양 제거 -> 균형 맞춤용 빈 박스 */}
+          {/* 오른쪽 아이콘 제거 → 균형용 빈 박스 */}
           <div className="w-8" />
         </header>
 
@@ -338,7 +343,10 @@ export default function ExplorePlacesPage() {
 
           {/* 추천 - 스냅 & 중앙 활성화 */}
           <section className="mb-6">
-            <h2 className="text-base font-bold text-[var(--text-primary)] mb-3">추천 장소</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold text-[var(--text-primary)]">추천 장소</h2>
+              <Link href="/bookingdate2" className="text-xs text-[var(--text-secondary)] underline">더 보기</Link>
+            </div>
 
             <div
               ref={featuredContainerRef}
@@ -350,10 +358,8 @@ export default function ExplorePlacesPage() {
                 return (
                   <div
                     key={p.id}
-                    ref={(el) => (featuredItemRefs.current[idx] = el)}
-                    className={`snap-center flex-shrink-0 w-[75%] sm:w-[60%] max-w-[360px] transition-all duration-300 ${
-                      isActive ? "opacity-100 scale-100" : "opacity-50 scale-[0.98]"
-                    }`}
+                    ref={(el) => { featuredItemRefs.current[idx] = el; }}
+                    className={`snap-center flex-shrink-0 w-[75%] sm:w-[60%] max-w-[360px] transition-all duration-300 ${isActive ? "opacity-100 scale-100" : "opacity-50 scale-[0.98]"}`}
                   >
                     <Link
                       href={{ pathname: "/bookingdate", query: { place: p.id } }}
@@ -378,12 +384,12 @@ export default function ExplorePlacesPage() {
           {/* 카테고리 */}
           <section className="mb-3">
             <div className="flex gap-2 overflow-x-auto no-scrollbar">
-              {categories.map((c) => {
+              {["전체", "갤러리", "카페", "복합문화공간"].map((c) => {
                 const active = c === activeCategory;
                 return (
                   <button
                     key={c}
-                    onClick={() => setActiveCategory(c)}
+                    onClick={() => setActiveCategory(c as any)}
                     className={`px-3 py-2 rounded-full text-sm border transition ${
                       active ? "bg-[var(--accent-color)] border-[var(--primary-color)] text-[var(--primary-color)] font-semibold" : "bg-white border-[#EAEAEA] text-[var(--text-secondary)]"
                     }`}
