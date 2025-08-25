@@ -31,6 +31,8 @@ export default function AddArtworkPage() {
             --text-primary: #3d2c1d;
             --text-secondary: #8c7853;
             --accent-color: #f0ead6;
+            /* BottomNav 기본 높이(게이트에서 덮어씀) */
+            --bottom-nav-h: 64px;
           }
           html, body { min-height: max(884px, 100dvh); }
           body {
@@ -98,7 +100,13 @@ export default function AddArtworkPage() {
         </header>
 
         {/* 본문 */}
-        <main className="flex-1 p-4 space-y-6">
+        <main
+          className="flex-1 p-4 space-y-6"
+          style={{
+            // BottomNav + iOS 하단 안전영역만큼 여백
+            paddingBottom: 'calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + 16px)',
+          }}
+        >
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* 작품명 */}
             <div>
