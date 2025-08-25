@@ -342,7 +342,7 @@ export default function ExplorePlacesPage() {
                 return (
                   <div
                     key={p.id}
-                    ref={(el) => { featuredItemRefs.current[idx] = el; }} {/* ✅ 반환값 없는 콜백(ref 타입 오류 해결) */}
+                    ref={(el) => { featuredItemRefs.current[idx] = el; }} 
                     className={`snap-center flex-shrink-0 w-[75%] sm:w-[60%] max-w-[360px] transition-all duration-300 ${
                       isActive ? "opacity-100 scale-100" : "opacity-50 scale-[0.98]"
                     }`}
