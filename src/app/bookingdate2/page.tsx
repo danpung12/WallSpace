@@ -1,10 +1,14 @@
 // src/app/explore-places/page.tsx
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 
+/* =========================
+ * 타입/유틸
+ * ========================= */
 type Place = {
   id: string;
   name: string;
@@ -16,7 +20,30 @@ type Place = {
   img?: string | null;
   featured?: boolean;
 };
+type LatLng = { lat: number; lng: number };
 
+/* Kakao 최소 타입(빌드용) */
+type KakaoLatLng = unknown;
+type KakaoMap = { setCenter: (latlng: KakaoLatLng) => void };
+type KakaoNS = {
+  maps: {
+    load(cb: () => void): void;
+    Map: new (
+      el: HTMLElement,
+      opts: { center: KakaoLatLng; level: number }
+    ) => KakaoMap;
+    LatLng: new (lat: number, lng: number) => KakaoLatLng;
+    Marker: new (opts: { map: KakaoMap; position: KakaoLatLng }) => unknown;
+  };
+};
+
+declare global {
+  interface Window {
+    kakao?: KakaoNS;
+  }
+}
+
+/* 데이터 */
 const PLACES: Place[] = [
   { id: "p1", name: "스티치 갤러리", category: "갤러리", address: "서울 중구 세종대로 110", distanceKm: 0.6, lat: 37.5663, lng: 126.9779, img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDJTt5ZFwI1-bnOPgYP1YprPp1i6waeofBVh7iPRnhZ4KTqmyNVWkPIvYrCDOMoi_8Nr8cruvBiNxcYfUJni-eOuBsZOOqr5BcdrIbrx9ioWmwaYZTuAhopV87HCWOEZ1E6I2AoZWcuxOjTKumLOlLzOOGMMqTZDSow233a3oFQmCWJrP85PVfMY3XRy4Ca1flYD9NHIgYr3rxbLaY9hXw4iuLYUSCGLNVD-Bo_EBeBCgtmqepGsbAPmYNZM-46-kfw_hN01JX0B8Uh", featured: true },
   { id: "p2", name: "브릭 로스터스", category: "카페", address: "서울 종로구 종로 1", distanceKm: 0.9, lat: 37.57, lng: 126.982, img: "https://images.unsplash.com/photo-1447933601403-0c6688de566e?q=80&w=800&auto=format&fit=crop", featured: true },
@@ -26,13 +53,25 @@ const PLACES: Place[] = [
   { id: "p6", name: "레이지 빔 카페", category: "카페", address: "서울 중구 남대문로", distanceKm: 1.0, lat: 37.5669, lng: 126.9822, img: "https://images.unsplash.com/photo-1453614512568-c4024d13c247?q=80&w=800&auto=format&fit=crop" },
 ];
 
-const DEFAULT_CENTER = { lat: 37.5663, lng: 126.9779 };
+const DEFAULT_CENTER: LatLng = { lat: 37.5663, lng: 126.9779 };
 
-function mapSrc(center: { lat: number; lng: number }, query?: string) {
-  const q = query ? encodeURIComponent(query) : `${center.lat},${center.lng}`;
-  return `https://www.google.com/maps?q=${q}&ll=${center.lat},${center.lng}&z=15&output=embed`;
+/* 공통: 스크립트 로더 */
+function loadScriptOnce(src: string, id: string) {
+  return new Promise<void>((resolve, reject) => {
+    if (document.getElementById(id)) return resolve();
+    const s = document.createElement("script");
+    s.id = id;
+    s.src = src;
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Fail to load: ${src}`));
+    document.head.appendChild(s);
+  });
 }
 
+/* =========================
+ *  포털
+ * ========================= */
 function BottomSheetPortal({ children }: { children: React.ReactNode }) {
   const [mountNode, setMountNode] = useState<HTMLElement | null>(null);
   useEffect(() => {
@@ -48,10 +87,223 @@ function BottomSheetPortal({ children }: { children: React.ReactNode }) {
   return createPortal(children, mountNode);
 }
 
+/* =========================
+ *  Kakao Map 뷰 (고정)
+ * ========================= */
+function KakaoMapView({ center }: { center: LatLng }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<KakaoMap | null>(null);
+
+  useEffect(() => {
+    let canceled = false;
+    (async () => {
+      const appKey = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
+      if (!appKey) return; // 키 없으면 조용히 패스
+
+      await loadScriptOnce(
+        `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&autoload=false`,
+        "kakao-map-sdk"
+      );
+      if (canceled) return;
+      window.kakao?.maps.load(() => {
+        if (!containerRef.current || canceled) return;
+        const kakaoLatLng = new window.kakao!.maps.LatLng(center.lat, center.lng);
+        const map = new window.kakao!.maps.Map(containerRef.current, {
+          center: kakaoLatLng,
+          level: 5,
+        });
+        new window.kakao!.maps.Marker({ map, position: kakaoLatLng });
+        mapRef.current = map;
+      });
+    })();
+    return () => {
+      canceled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const m = mapRef.current;
+    if (!m || !window.kakao) return;
+    const latlng = new window.kakao.maps.LatLng(center.lat, center.lng);
+    m.setCenter(latlng);
+    new window.kakao.maps.Marker({ map: m, position: latlng });
+  }, [center.lat, center.lng]);
+
+  return <div ref={containerRef} className="absolute inset-0" />;
+}
+
+/* =========================
+ *  드래그로 높이 조절되는 바텀시트 지도
+ * ========================= */
+function DraggableMapSheet({
+  center,
+  bottomOffsetPx = 64,
+  minHeight = 200,
+  maxHeight = 520,
+  initialHeightPx = 260,
+  onHeightChange,
+}: {
+  center: LatLng;
+  bottomOffsetPx?: number;
+  minHeight?: number;
+  maxHeight?: number;
+  initialHeightPx?: number;
+  onHeightChange?: (h: number) => void;
+}) {
+  const [height, setHeight] = useState<number>(initialHeightPx);
+
+  useEffect(() => {
+    const v = Math.min(Math.max(initialHeightPx, minHeight), maxHeight);
+    setHeight(v);
+    onHeightChange?.(v);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const dragRef = useRef<{ startY: number; startH: number; dragging: boolean }>(
+    { startY: 0, startH: 0, dragging: false }
+  );
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragRef.current = { startY: e.clientY, startH: height, dragging: true };
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+  };
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current.dragging) return;
+    const dy = dragRef.current.startY - e.clientY;
+    const next = Math.min(Math.max(dragRef.current.startH + dy, minHeight), maxHeight);
+    setHeight(next);
+    onHeightChange?.(next);
+  };
+  const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragRef.current.dragging = false;
+    (e.currentTarget as HTMLDivElement).releasePointerCapture?.(e.pointerId);
+  };
+
+  return (
+    <section
+      role="region"
+      aria-label="지도에서 보기"
+      className="fixed left-0 right-0 z-[10000]"
+      style={{ bottom: `calc(${bottomOffsetPx}px + env(safe-area-inset-bottom))` }}
+    >
+      <div className="w-full">
+        <div
+          className="overflow-hidden rounded-t-2xl shadow-[0_-12px_28px_rgba(0,0,0,0.12)] border bg-white/60 backdrop-blur-[2px]"
+          style={{ borderColor: "var(--accent-color)" }}
+        >
+          <div className="relative" style={{ height }}>
+            {/* 지도 (Kakao 고정) */}
+            <KakaoMapView center={center} />
+
+            {/* 지도 위 전체 드래그 오버레이 */}
+            <div
+              className="absolute inset-0"
+              style={{
+                touchAction: "none",
+                cursor: "ns-resize",
+                background: "transparent",
+                userSelect: "none",
+                zIndex: 5,
+              }}
+              aria-label="드래그하여 지도 높이 조절"
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+            />
+
+            {/* 시각 보정 */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-[var(--background-color)]/95 via-[var(--background-color)]/55 to-transparent" />
+            <div className="pointer-events-none absolute inset-0" style={{ backgroundColor: "var(--accent-color)", mixBlendMode: "multiply", opacity: 0.06 }} />
+            <div className="pointer-events-none absolute -top-px left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, var(--accent-color), transparent)", opacity: 0.85 }} />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* =========================
+ *  페이지
+ * ========================= */
 export default function ExplorePlacesPage() {
   const [activeCategory, setActiveCategory] = useState<Place["category"] | "전체">("전체");
-  const [center] = useState(DEFAULT_CENTER);
+  const [center, setCenter] = useState<LatLng>(DEFAULT_CENTER);
+  const [mapHeight, setMapHeight] = useState<number>(260);
+  const [locLoading, setLocLoading] = useState(false);
+  const [locError, setLocError] = useState<string | null>(null);
 
+  // ✅ 추천 카드 스냅/중앙감지
+  const featuredContainerRef = useRef<HTMLDivElement | null>(null);
+  const featuredItemRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const [featuredActiveIdx, setFeaturedActiveIdx] = useState(0);
+  const tickingRef = useRef(false);
+
+  const calcFeaturedActive = () => {
+    const c = featuredContainerRef.current;
+    if (!c) return;
+    const centerX = c.scrollLeft + c.clientWidth / 2;
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    featuredItemRefs.current.forEach((el, idx) => {
+      if (!el) return;
+      const cardCenter = el.offsetLeft + el.clientWidth / 2;
+      const dist = Math.abs(cardCenter - centerX);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = idx;
+      }
+    });
+    setFeaturedActiveIdx(bestIdx);
+  };
+
+  const onFeaturedScroll = () => {
+    if (tickingRef.current) return;
+    tickingRef.current = true;
+    requestAnimationFrame(() => {
+      calcFeaturedActive();
+      tickingRef.current = false;
+    });
+  };
+
+  useEffect(() => {
+    const c = featuredContainerRef.current;
+    if (!c) return;
+    calcFeaturedActive();
+    c.addEventListener("scroll", onFeaturedScroll, { passive: true });
+    window.addEventListener("resize", calcFeaturedActive);
+    return () => {
+      c.removeEventListener("scroll", onFeaturedScroll);
+      window.removeEventListener("resize", calcFeaturedActive);
+    };
+  }, []);
+
+  const requestLocation = () => {
+    if (!("geolocation" in navigator)) {
+      setLocError("이 브라우저는 위치 서비스를 지원하지 않습니다.");
+      return;
+    }
+    setLocLoading(true);
+    setLocError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocLoading(false);
+      },
+      (err) => {
+        setLocLoading(false);
+        setLocError(err.message || "위치 정보를 가져오지 못했습니다.");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
+  useEffect(() => {
+    requestLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const categories: (Place["category"] | "전체")[] = ["전체", "갤러리", "카페", "복합문화공간"];
   const featured = useMemo(() => PLACES.filter((p) => p.featured), []);
   const filtered = useMemo(() => {
     const base = activeCategory === "전체" ? PLACES : PLACES.filter((p) => p.category === activeCategory);
@@ -59,53 +311,8 @@ export default function ExplorePlacesPage() {
   }, [activeCategory]);
 
   const headerLabel = "공간 찾기";
-
-  // 바텀시트 높이 드래그
-  const MIN_PX = 220;
-  const MAX_VH = 0.7;
-  const DEFAULT_VH = 0.36;
-
-  const [sheetPx, setSheetPx] = useState<number>(320);
-  const [dragging, setDragging] = useState(false);
-  const startYRef = useRef(0);
-  const startHRef = useRef(320);
-  const maxPxRef = useRef(520);
-
   const BOTTOM_NAV_PX = 64;
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const initial = Math.max(MIN_PX, Math.min(window.innerHeight * DEFAULT_VH, 380));
-    setSheetPx(Math.round(initial));
-  }, []);
-
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (typeof window !== "undefined") {
-      maxPxRef.current = Math.max(MIN_PX, window.innerHeight * MAX_VH);
-    }
-    setDragging(true);
-    startYRef.current = e.clientY;
-    startHRef.current = sheetPx;
-    document.body.style.overflow = "hidden";
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragging) return;
-    const dy = startYRef.current - e.clientY; // 위로 끌면 +
-    const next = Math.max(MIN_PX, Math.min(startHRef.current + dy, maxPxRef.current));
-    setSheetPx(Math.round(next));
-    e.preventDefault();
-  };
-
-  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragging) return;
-    setDragging(false);
-    document.body.style.overflow = "";
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {}
-  };
+  const bottomPaddingCalc = `calc(${mapHeight}px + ${BOTTOM_NAV_PX}px + 24px + env(safe-area-inset-bottom))`;
 
   return (
     <div className="relative flex size-full min-h-screen flex-col justify-between overflow-x-hidden bg-[var(--background-color)]">
@@ -119,49 +326,64 @@ export default function ExplorePlacesPage() {
               </svg>
             </button>
           </Link>
+
           <h1 className="text-lg font-bold text-[var(--text-primary)] flex-1 text-center">{headerLabel}</h1>
+
+          {/* 우측 아이콘/문양 제거 -> 균형 맞춤용 빈 박스 */}
           <div className="w-8" />
         </header>
 
-        <main
-          className="p-4 pb-6"
-          style={{
-            paddingBottom: `calc(${sheetPx}px + ${BOTTOM_NAV_PX}px + 24px + env(safe-area-inset-bottom))`,
-          }}
-        >
-          {/* 추천 */}
+        <main className="p-4 pb-6" style={{ paddingBottom: bottomPaddingCalc }}>
+          {locError ? <p className="mb-3 text-xs text-red-500">{locError}</p> : null}
+
+          {/* 추천 - 스냅 & 중앙 활성화 */}
           <section className="mb-6">
             <h2 className="text-base font-bold text-[var(--text-primary)] mb-3">추천 장소</h2>
-            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-              {featured.map((p) => (
-                <Link
-                  key={p.id}
-                  href={{ pathname: "/bookingdate", query: { place: p.id } }}
-                  className="min-w-[260px] max-w-[260px] text-left bg-white rounded-2xl p-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)] border-2 border-transparent transition hover:border-[var(--primary-color)] hover:shadow-[0_6px_14px_rgba(197,127,57,0.25)]"
-                >
-                  <div className="w-full h-32 rounded-xl overflow-hidden bg-[var(--accent-color)]">
-                    {p.img ? <img src={p.img} alt={p.name} className="w-full h-full object-cover" /> : null}
+
+            <div
+              ref={featuredContainerRef}
+              className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-4 pb-2 px-1 no-scrollbar"
+              style={{ WebkitOverflowScrolling: "touch" }}
+            >
+              {featured.map((p, idx) => {
+                const isActive = idx === featuredActiveIdx;
+                return (
+                  <div
+                    key={p.id}
+                    ref={(el) => (featuredItemRefs.current[idx] = el)}
+                    className={`snap-center flex-shrink-0 w-[75%] sm:w-[60%] max-w-[360px] transition-all duration-300 ${
+                      isActive ? "opacity-100 scale-100" : "opacity-50 scale-[0.98]"
+                    }`}
+                  >
+                    <Link
+                      href={{ pathname: "/bookingdate", query: { place: p.id } }}
+                      className="block text-left bg-white rounded-2xl p-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)] border-2 border-transparent hover:border-[var(--primary-color)] hover:shadow-[0_6px_14px_rgba(197,127,57,0.25)] transition"
+                    >
+                      <div className={`w-full h-32 rounded-xl overflow-hidden bg-[var(--accent-color)] ${isActive ? "" : "blur-[1px]"}`}>
+                        {p.img ? <img src={p.img} alt={p.name} className="w-full h-full object-cover" /> : null}
+                      </div>
+                      <div className="mt-2">
+                        <p className="text-sm text-[var(--text-secondary)]">{p.category}</p>
+                        <h3 className="text-base font-bold text-[var(--text-primary)]">{p.name}</h3>
+                        <p className="text-xs text-[var(--text-secondary)] mt-1">{p.address}</p>
+                        <p className="text-xs text-[var(--text-secondary)] mt-1">약 {p.distanceKm.toFixed(1)}km</p>
+                      </div>
+                    </Link>
                   </div>
-                  <div className="mt-2">
-                    <p className="text-sm text-[var(--text-secondary)]">{p.category}</p>
-                    <h3 className="text-base font-bold text-[var(--text-primary)]">{p.name}</h3>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1">{p.address}</p>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1">약 {p.distanceKm.toFixed(1)}km</p>
-                  </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           </section>
 
           {/* 카테고리 */}
           <section className="mb-3">
             <div className="flex gap-2 overflow-x-auto no-scrollbar">
-              {["전체", "갤러리", "카페", "복합문화공간"].map((c) => {
+              {categories.map((c) => {
                 const active = c === activeCategory;
                 return (
                   <button
                     key={c}
-                    onClick={() => setActiveCategory(c as Place["category"] | "전체")}
+                    onClick={() => setActiveCategory(c)}
                     className={`px-3 py-2 rounded-full text-sm border transition ${
                       active ? "bg-[var(--accent-color)] border-[var(--primary-color)] text-[var(--primary-color)] font-semibold" : "bg-white border-[#EAEAEA] text-[var(--text-secondary)]"
                     }`}
@@ -204,50 +426,16 @@ export default function ExplorePlacesPage() {
         </main>
       </div>
 
-      {/* 하단 고정 지도 (지도 내부 상단 8px이 드래그 영역) */}
+      {/* 하단 고정 지도 (카카오 고정) */}
       <BottomSheetPortal>
-        <section
-          role="region"
-          aria-label="지도에서 보기"
-          className="fixed left-0 right-0 z-[10000]"
-          style={{ bottom: `calc(${BOTTOM_NAV_PX}px + env(safe-area-inset-bottom))` }}
-        >
-          <div className="w-full">
-            <div
-              className={`overflow-hidden rounded-t-2xl shadow-[0_-12px_28px_rgba(0,0,0,0.12)] border bg-white/60 backdrop-blur-[2px] ${dragging ? "select-none" : ""}`}
-              style={{ borderColor: "var(--accent-color)" }}
-            >
-              {/* 지도 컨테이너 */}
-              <div className="relative" style={{ height: sheetPx, minHeight: MIN_PX }}>
-                {/* 🔸 드래그 오버레이: 지도 안의 맨 위 8px */}
-                <div
-                  aria-label="지도의 높이 조절"
-                  onPointerDown={onPointerDown}
-                  onPointerMove={onPointerMove}
-                  onPointerUp={onPointerUp}
-                  className="absolute inset-x-0 top-0 h-2 cursor-ns-resize z-[30]"
-                  style={{ touchAction: "none", WebkitTapHighlightColor: "transparent", background: "transparent" }}
-                />
-                {/* 지도 iframe (드래그 중엔 패닝 방지) */}
-                <iframe
-                  key={`${center.lat}-${center.lng}-${activeCategory}`}
-                  title="nearby-map"
-                  className="absolute inset-0 w-full h-full border-0 z-[10]"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={mapSrc(center, activeCategory === "전체" ? undefined : `${activeCategory} near ${center.lat},${center.lng}`)}
-                  style={{ pointerEvents: dragging ? "none" as const : "auto" as const }}
-                />
-                {/* 상단 페이드(작게) */}
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-2 z-[20] bg-gradient-to-b from-[var(--background-color)]/90 via-[var(--background-color)]/45 to-transparent" />
-                {/* 아주 옅은 브랜드 틴트 */}
-                <div className="pointer-events-none absolute inset-0 z-[15]" style={{ backgroundColor: "var(--accent-color)", mixBlendMode: "multiply", opacity: 0.06 }} />
-                {/* 헤어라인 */}
-                <div className="pointer-events-none absolute -top-px left-0 right-0 h-px z-[25]" style={{ background: "linear-gradient(90deg, transparent, var(--accent-color), transparent)", opacity: 0.85 }} />
-              </div>
-            </div>
-          </div>
-        </section>
+        <DraggableMapSheet
+          center={center}
+          bottomOffsetPx={BOTTOM_NAV_PX}
+          minHeight={200}
+          maxHeight={520}
+          initialHeightPx={260}
+          onHeightChange={setMapHeight}
+        />
       </BottomSheetPortal>
 
       {/* 글로벌 스타일 */}

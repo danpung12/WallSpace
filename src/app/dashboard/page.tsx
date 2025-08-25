@@ -1,8 +1,9 @@
+// src/app/dashboard/page.tsx
 'use client';
 
 import Head from 'next/head';
 import Link from 'next/link';
-import BottomNav from '@/app/components/BottomNav';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 type Artwork = {
@@ -37,6 +38,8 @@ const ARTWORKS: Artwork[] = [
 ];
 
 export default function Dashboard() {
+  const router = useRouter();
+
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
@@ -91,30 +94,47 @@ export default function Dashboard() {
       {/* 전역 스타일(스크롤바 숨김만 유지) */}
       <style jsx global>{`
         .no-scrollbar {
-          -ms-overflow-style: none; /* IE/Edge */
-          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
         .no-scrollbar::-webkit-scrollbar {
-          display: none; /* Chrome/Safari */
+          display: none;
         }
       `}</style>
 
       <div className="relative min-h-screen font-[Pretendard] bg-[#FDFBF8] text-[#3D2C1D] antialiased overflow-x-hidden">
-        {/* 헤더 (로컬 진입 애니메이션 제거) */}
+        {/* 헤더: 햄버거 제거, 뒤로가기 추가 */}
         <header className="sticky top-0 z-10 bg-[#FDFBF8]/80 backdrop-blur-sm">
-          <div className="flex items-center justify-between p-4">
-            <button className="text-[#3D2C1D] active:scale-95 transition-transform" type="button">
-              <svg fill="currentColor" height="28" width="28" viewBox="0 0 256 256">
-                <path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z" />
+          <div className="flex items-center p-4">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              aria-label="뒤로 가기"
+              className="text-[#3D2C1D] active:scale-95 transition-transform"
+            >
+              <svg
+                fill="none"
+                height="24"
+                width="24"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m15 18-6-6 6-6" />
               </svg>
             </button>
-            <h1 className="text-xl font-bold text-[#3D2C1D]">대시보드</h1>
+
+            <h1 className="flex-1 text-center text-xl font-bold text-[#3D2C1D]">대시보드</h1>
+
+            {/* 오른쪽 대칭 여백 */}
             <div className="w-7" />
           </div>
         </header>
 
         <main className="p-4 space-y-8 pb-24">
-          {/* My Artworks (로컬 진입 애니메이션 제거) */}
+          {/* 내 작품 */}
           <section>
             <div className="flex items-center justify-between mb-4 px-1">
               <h2 className="text-2xl font-bold text-[#3D2C1D]">내 작품</h2>
@@ -154,7 +174,6 @@ export default function Dashboard() {
                             <h3 className="font-bold text-lg text-[#3D2C1D]">{art.title}</h3>
                             <p className="text-sm text-[#8C7853] mt-1">크기: {art.size}</p>
                           </div>
-                          {/* My Artworks 카드 개별 Edit */}
                           <Link
                             href={`/artworks/${art.slug}/edit`}
                             className="text-sm font-semibold text-[#8C7853] hover:text-[#3D2C1D] transition-colors"
@@ -170,7 +189,7 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* 전시중 (로컬 진입 애니메이션 제거) */}
+          {/* 전시 중 */}
           <section>
             <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">전시 중</h2>
             <div className="bg-white rounded-xl shadow-sm p-4">
@@ -178,7 +197,7 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* 예정된 예약 (로컬 진입 애니메이션 제거) */}
+          {/* 예정된 예약 */}
           <section>
             <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">예정된 예약</h2>
             <div className="space-y-4">
@@ -224,7 +243,7 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* 지난 예약 (로컬 진입 애니메이션 제거) */}
+          {/* 지난 예약 */}
           <section>
             <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">지난 예약</h2>
 
@@ -249,8 +268,6 @@ export default function Dashboard() {
             </Link>
           </section>
         </main>
-
-
       </div>
     </>
   );
