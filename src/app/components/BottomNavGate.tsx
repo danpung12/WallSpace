@@ -6,17 +6,23 @@ import { useEffect } from 'react';
 import BottomNav from './BottomNav';
 
 const DEFAULT_NAV_H = '64px';
+const HIDE_ON = new Set<string>(['/', '/select-type', '/select-type/guest', '/select-type/host']);
 
 export default function BottomNavGate() {
   const pathname = usePathname();
-  const showNav = pathname !== '/';
 
-  // 루트(/)에선 아래 여백 변수 0으로, 그 외는 기본값
+  // optional: /foo/ -> /foo 로 정규화 (루트 / 는 유지)
+  const normalized =
+    pathname && pathname !== '/' && pathname.endsWith('/')
+      ? pathname.slice(0, -1)
+      : pathname || '/';
+
+  const showNav = !HIDE_ON.has(normalized);
+
   useEffect(() => {
     const el = document.documentElement;
     el.style.setProperty('--bottom-nav-h', showNav ? DEFAULT_NAV_H : '0px');
     return () => {
-      // 언마운트 시 기본값 복원 (필요 시)
       el.style.setProperty('--bottom-nav-h', DEFAULT_NAV_H);
     };
   }, [showNav]);
