@@ -9,17 +9,20 @@ import Head from "next/head";
  * - Tailwind CDN은 사용하지 않으며, 프로젝트 Tailwind 설정을 사용합니다.
  */
 export default function GuestSignUpPage() {
+  type DateInputWithPicker = HTMLInputElement & { showPicker?: () => void };
+
   const dobRef = useRef<HTMLInputElement>(null);
-  const openDatePicker = () => {
-    const el = dobRef.current as any;
-    if (!el) return;
-    if (typeof el.showPicker === 'function') {
-      el.showPicker();
-    } else {
-      el.focus();
-      el.click?.();
-    }
-  };
+const openDatePicker = () => {
+  const el = dobRef.current as DateInputWithPicker | null;
+  if (!el) return;
+
+  if (typeof el.showPicker === "function") {
+    el.showPicker();
+  } else {
+    el.focus();
+    el.click?.();
+  }
+};
   // 페이지 전용 CSS 변수 (브랜드 색 등)
   const cssVars = {
     "--primary-color": "#c5a987",
