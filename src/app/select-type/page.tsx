@@ -40,7 +40,7 @@ export default function SelectUserType() {
         }
       `}</style>
 
-      <div className="bg-[var(--brand-cream)] min-h-screen">
+      <div className="bg-[var(--brand-cream)] min-h-screen h-[100vh]">
         <div className="flex flex-col h-screen p-4">
           <header className="relative flex-shrink-0 text-center py-8">
             <div className="absolute left-0 top-1/2 -translate-y-1/2">
