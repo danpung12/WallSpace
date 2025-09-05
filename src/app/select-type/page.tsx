@@ -1,53 +1,42 @@
 'use client';
 
-import Head from "next/head";
-import Link from "next/link";
+// Note: Removed 'next/head' and 'next/link' imports as they are specific to a Next.js environment
+// and were causing compilation errors. Standard HTML elements will be used instead.
 
 export default function SelectUserType() {
   return (
     <>
-      <Head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Select User Type</title>
-        {/* Fonts */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
-          rel="stylesheet"
-        />
-      </Head>
-
-      {/* Local page styles (kept from original) */}
-      <style jsx global>{`
+      {/* The <head> section is typically managed outside of a single React component.
+        For this component to be portable, meta and font links should be in the main HTML file.
+        I'm keeping the global styles here for component encapsulation.
+      */}
+      <style>{`
         :root {
           --brand-brown: #A89587;
           --brand-cream: #F5F3F0;
           --brand-dark-brown: #3E352F;
         }
+        /* It's good practice to ensure the font is loaded in the main HTML file */
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+        
         body {
           font-family: 'Pretendard', sans-serif;
           background-color: var(--brand-cream);
-          min-height: max(884px, 100dvh);
         }
         .material-symbols-outlined {
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
         }
       `}</style>
 
-      <div className="bg-[var(--brand-cream)] min-h-screen h-[100vh]">
-        <div className="flex flex-col h-screen p-4">
+      <div className="bg-[var(--brand-cream)] min-h-screen flex flex-col">
+        <div className="w-full max-w-md mx-auto flex flex-col flex-grow p-4">
           <header className="relative flex-shrink-0 text-center py-8">
             <div className="absolute left-0 top-1/2 -translate-y-1/2">
               <button
                 type="button"
                 aria-label="Go back"
-                className="text-[var(--brand-dark-brown)]"
+                className="text-[var(--brand-dark-brown)] p-2 rounded-full hover:bg-black/5 transition-colors"
               >
                 <svg
                   className="h-6 w-6"
@@ -65,40 +54,45 @@ export default function SelectUserType() {
                 </svg>
               </button>
             </div>
-            <h2 className="text-xl font-bold text-[var(--brand-dark-brown)] tracking-wider">
+            <h1 className="text-xl font-bold text-[var(--brand-dark-brown)] tracking-tight">
               가입 유형 선택
-            </h2>
+            </h1>
           </header>
 
-          <div className="flex flex-col flex-grow justify-center space-y-6">
-            <Link
-              href="/select-type/guest"
-              className="flex-grow flex flex-col items-center justify-center p-6 bg-[var(--brand-brown)] text-white rounded-3xl shadow-lg shadow-black/10 hover:shadow-xl hover:brightness-105 hover:scale-[1.02] transition-all duration-300 ease-in-out"
-              style={{ maxHeight: "40vh" }}
+          <main className="flex flex-col flex-grow justify-center gap-6">
+            {/* Artist/Owner Card - Replaced Next's <Link> with a standard <a> tag */}
+            <a
+              href="/select-type/artist"
+              className="group flex flex-grow flex-col items-center justify-center p-8 bg-gradient-to-br from-[var(--brand-brown)] to-[#9a8679] text-white rounded-3xl shadow-lg shadow-black/15 border border-white/20 transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 ease-in-out no-underline"
             >
               <div className="text-center">
-                <span className="material-symbols-outlined leading-none !text-[clamp(64px,12vw,112px)] mb-4">palette</span>
-                <h1 className="text-2xl font-bold">예술가 / 사장님</h1>
-                <p className="text-base opacity-80 mt-1">공간을 예약하거나 관리하세요.</p>
+                <div className="mb-5 inline-block bg-white/20 rounded-full p-4 transform group-hover:scale-110 transition-transform duration-300 ease-in-out">
+                  <span className="material-symbols-outlined leading-none !text-6xl">palette</span>
+                </div>
+                <h2 className="text-2xl font-bold">예술가 / 사장님</h2>
+                <p className="text-base opacity-80 mt-1">공간을 등록하고 작품을 알려보세요.</p>
               </div>
-            </Link>
+            </a>
 
-            <Link
+            {/* Guest Card - Replaced Next's <Link> with a standard <a> tag */}
+            <a
               href="/select-type/guest"
-              className="flex-grow flex flex-col items-center justify-center p-6 bg-white text-[var(--brand-dark-brown)] rounded-3xl shadow-lg shadow-black/10 hover:shadow-xl hover:brightness-105 hover:scale-[1.02] transition-all duration-300 ease-in-out"
-              style={{ maxHeight: "40vh" }}
+              className="group flex flex-grow flex-col items-center justify-center p-8 bg-white/90 backdrop-blur-sm text-[var(--brand-dark-brown)] rounded-3xl shadow-lg shadow-black/15 border border-[var(--brand-brown)]/20 transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 ease-in-out no-underline"
             >
               <div className="text-center">
-                <span className="material-symbols-outlined leading-none !text-[clamp(64px,12vw,112px)] mb-4">person</span>
-                <h1 className="text-2xl font-bold">손님</h1>
-                <p className="text-base opacity-80 mt-1">
+                <div className="mb-5 inline-block bg-[var(--brand-cream)] rounded-full p-4 transform group-hover:scale-110 transition-transform duration-300 ease-in-out">
+                    <span className="material-symbols-outlined leading-none !text-6xl">person</span>
+                </div>
+                <h2 className="text-2xl font-bold">손님</h2>
+                <p className="text-base opacity-70 mt-1">
                   예술 작품을 둘러보고 카페를 즐겨보세요.
                 </p>
               </div>
-            </Link>
-          </div>
+            </a>
+          </main>
         </div>
       </div>
     </>
   );
 }
+

@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import BottomNav from './BottomNav';
 
 const DEFAULT_NAV_H = '64px';
-const HIDE_ON = new Set<string>(['/', '/select-type', '/select-type/guest', '/select-type/host']);
+const HIDE_ON = new Set<string>(['/', '/select-type', '/select-type/guest', '/select-type/artist']);
 
 export default function BottomNavGate() {
   const pathname = usePathname();
