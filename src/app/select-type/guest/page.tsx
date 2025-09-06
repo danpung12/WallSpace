@@ -1,8 +1,11 @@
 'use client';
 import React, { useRef } from "react";
 import Head from "next/head";
+import { useRouter } from "next/navigation"; // ✅ 추가
 
 export default function GuestSignUpPage() {
+  const router = useRouter(); // ✅ 추가
+
   type DateInputWithPicker = HTMLInputElement & { showPicker?: () => void };
 
   const dobRef = useRef<HTMLInputElement>(null);
@@ -11,6 +14,15 @@ export default function GuestSignUpPage() {
     if (!el) return;
     if (typeof el.showPicker === "function") el.showPicker();
     else { el.focus(); el.click?.(); }
+  };
+
+  // ✅ 뒤로가기 핸들러 (히스토리 없으면 홈으로 폴백)
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/');
+    }
   };
 
   const cssVars = {
@@ -72,7 +84,12 @@ export default function GuestSignUpPage() {
         <div className="relative flex min-h-screen flex-col justify-between" style={bgPattern}>
           <main className="flex-grow">
             <header className="flex items-center p-6">
-              <button type="button" aria-label="Go back" className="text-[var(--text-primary)]">
+              <button
+                type="button"
+                aria-label="Go back"
+                className="text-[var(--text-primary)]"
+                onClick={handleBack}           
+              >
                 <svg fill="currentColor" height="24" viewBox="0 0 256 256" width="24" xmlns="http://www.w3.org/2000/svg">
                   <path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path>
                 </svg>
@@ -148,28 +165,24 @@ export default function GuestSignUpPage() {
               </div>
 
               {/* Gender */}
-{/* Gender */}
-<div>
-  <p className="text-base font-medium pb-3 text-[var(--text-primary)]">
-    성별
-  </p>
-  <div className="flex flex-wrap gap-3">
-    {/* Male */}
-    <label className="flex items-center justify-center rounded-xl border border-[var(--button-border-color)] bg-[var(--button-bg-color)] px-4 h-14 text-[var(--text-primary)] has-[:checked]:border-2 has-[:checked]:border-[var(--primary-color)] has-[:checked]:bg-[#fdf5ed] has-[:checked]:text-[var(--primary-color)] cursor-pointer flex-1 text-sm font-medium transition-all duration-200 has-[:checked]:soft-shadow">
-      <input defaultChecked className="sr-only" name="gender" type="radio" value="male" />
-      <span className="ms-guest-signup mr-2">male</span>
-      <span>남성</span>
-    </label>
+              <div>
+                <p className="text-base font-medium pb-3 text-[var(--text-primary)]">성별</p>
+                <div className="flex flex-wrap gap-3">
+                  {/* Male */}
+                  <label className="flex items-center justify-center rounded-xl border border-[var(--button-border-color)] bg-[var(--button-bg-color)] px-4 h-14 text-[var(--text-primary)] has-[:checked]:border-2 has-[:checked]:border-[var(--primary-color)] has-[:checked]:bg-[#fdf5ed] has-[:checked]:text-[var(--primary-color)] cursor-pointer flex-1 text-sm font-medium transition-all duration-200 has-[:checked]:soft-shadow">
+                    <input defaultChecked className="sr-only" name="gender" type="radio" value="male" />
+                    <span className="ms-guest-signup mr-2">male</span>
+                    <span>남성</span>
+                  </label>
 
-    {/* Female */}
-    <label className="flex items-center justify-center rounded-xl border border-[var(--button-border-color)] bg-[var(--button-bg-color)] px-4 h-14 text-[var(--text-primary)] has-[:checked]:border-2 has-[:checked]:border-[var(--primary-color)] has-[:checked]:bg-[#fdf5ed] has-[:checked]:text-[var(--primary-color)] cursor-pointer flex-1 text-sm font-medium transition-all duration-200 has-[:checked]:soft-shadow">
-      <input className="sr-only" name="gender" type="radio" value="female" />
-      <span className="ms-guest-signup mr-2">female</span>
-      <span>여성</span>
-    </label>
-  </div>
-</div>
-
+                  {/* Female */}
+                  <label className="flex items-center justify-center rounded-xl border border-[var(--button-border-color)] bg-[var(--button-bg-color)] px-4 h-14 text-[var(--text-primary)] has-[:checked]:border-2 has-[:checked]:border-[var(--primary-color)] has-[:checked]:bg-[#fdf5ed] has-[:checked]:text-[var(--primary-color)] cursor-pointer flex-1 text-sm font-medium transition-all duration-200 has-[:checked]:soft-shadow">
+                    <input className="sr-only" name="gender" type="radio" value="female" />
+                    <span className="ms-guest-signup mr-2">female</span>
+                    <span>여성</span>
+                  </label>
+                </div>
+              </div>
             </div>
           </main>
 

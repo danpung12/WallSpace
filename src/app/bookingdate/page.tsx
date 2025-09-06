@@ -138,7 +138,7 @@ export default function DateBookingPage() {
   const selectedSpace = spaces.find((s) => s.id === selectedSpaceId);
 
   return (
-    <div className="relative flex size-full min-h-screen flex-col justify-between overflow-x-hidden bg-[var(--background-color)]">
+    <div className="relative flex min-h-[100dvh] flex-col bg-[#FDFBF8] text-[#3D2C1D] font-pretendard">
       <div className="w-full max-w-md mx-auto bg-[var(--background-color)]">
         <header className="flex items-center p-4 pb-2 justify-between bg-[#FDFBF8] border-[#EAEAEA]">
           <Link href="/profile" passHref>

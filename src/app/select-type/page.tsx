@@ -4,6 +4,22 @@
 // and were causing compilation errors. Standard HTML elements will be used instead.
 
 export default function SelectUserType() {
+  const handleBack = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        // If there's a previous entry, go back; otherwise, fall back to home
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.href = '/';
+        }
+      }
+    } catch (e) {
+      // As a final fallback, hard navigate to home
+      if (typeof window !== 'undefined') window.location.href = '/';
+    }
+  };
+
   return (
     <>
       {/* The <head> section is typically managed outside of a single React component.
@@ -27,6 +43,8 @@ export default function SelectUserType() {
         .material-symbols-outlined {
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
         }
+        /* Focus visibility for keyboards */
+        .focus-ring:focus { outline: 2px solid var(--brand-brown); outline-offset: 2px; }
       `}</style>
 
       <div className="bg-[var(--brand-cream)] min-h-screen flex flex-col">
@@ -35,8 +53,10 @@ export default function SelectUserType() {
             <div className="absolute left-0 top-1/2 -translate-y-1/2">
               <button
                 type="button"
+                onClick={handleBack}
                 aria-label="Go back"
-                className="text-[var(--brand-dark-brown)] p-2 rounded-full hover:bg-black/5 transition-colors"
+                title="뒤로 가기"
+                className="focus-ring text-[var(--brand-dark-brown)] p-2 rounded-full hover:bg-black/5 transition-colors"
               >
                 <svg
                   className="h-6 w-6"
@@ -44,6 +64,7 @@ export default function SelectUserType() {
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                   xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
                 >
                   <path
                     d="M15 19l-7-7 7-7"
@@ -52,6 +73,7 @@ export default function SelectUserType() {
                     strokeWidth="2"
                   ></path>
                 </svg>
+                <span className="sr-only">뒤로 가기</span>
               </button>
             </div>
             <h1 className="text-xl font-bold text-[var(--brand-dark-brown)] tracking-tight">
@@ -95,4 +117,3 @@ export default function SelectUserType() {
     </>
   );
 }
-

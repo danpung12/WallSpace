@@ -1,13 +1,9 @@
 'use client';
 import React, { useRef, useState } from "react";
+import { useRouter } from 'next/navigation';
 
-/**
- * Artist/Owner Sign Up (Self-contained Next.js TSX)
- * - 모든 스타일/폰트 링크를 이 파일 내부에 포함
- * - 아이콘은 페이지 전용 클래스 `.ms-artist-signup` 사용 (다른 페이지와 충돌 없음)
- * - Tailwind CDN은 사용하지 않으며, 프로젝트 Tailwind 설정을 사용합니다.
- */
 export default function ArtistOwnerSignUpPage() {
+  const router = useRouter();
   const [snsLink, setSnsLink] = useState('');
   type DateInputWithPicker = HTMLInputElement & { showPicker?: () => void };
 
@@ -15,33 +11,29 @@ export default function ArtistOwnerSignUpPage() {
   const openDatePicker = () => {
     const el = dobRef.current as DateInputWithPicker | null;
     if (!el) return;
+    if (typeof el.showPicker === "function") el.showPicker();
+    else { el.focus(); el.click?.(); }
+  };
 
-    if (typeof el.showPicker === "function") {
-      el.showPicker();
+  // 뒤로가기 (히스토리 없으면 홈으로)
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
     } else {
-      el.focus();
-      el.click?.();
+      router.push('/');
     }
   };
 
-  // SNS 링크에 따라 아이콘 이름을 반환하는 함수
+  // SNS 링크에 따라 아이콘 이름 반환
   const getSnsIconName = (url: string) => {
-    if (url.includes('instagram.com')) {
-      return 'photo_camera'; // 인스타그램
-    }
-    if (url.includes('facebook.com')) {
-      return 'groups'; // 페이스북
-    }
-    if (url.includes('twitter.com') || url.includes('x.com')) {
-      return 'tag'; // X (트위터)
-    }
-    if (url.includes('tiktok.com')) {
-      return 'videocam'; // 틱톡
-    }
-    return 'link'; // 기본 링크 아이콘
+    if (url.includes('instagram.com')) return 'photo_camera';
+    if (url.includes('facebook.com')) return 'groups';
+    if (url.includes('twitter.com') || url.includes('x.com')) return 'tag';
+    if (url.includes('tiktok.com')) return 'videocam';
+    return 'link';
   };
 
-  // 페이지 전용 CSS 변수 (브랜드 색 등)
+  // 1번(Guest)과 동일 팔레트/변수
   const cssVars = {
     "--primary-color": "#c5a987",
     "--secondary-color": "#f9f6f3",
@@ -63,19 +55,13 @@ export default function ArtistOwnerSignUpPage() {
 
   return (
     <>
-      {/* Pretendard & Material Symbols (page-local) */}
+      {/* 폰트 */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700&display=swap"
-        rel="stylesheet"
-      />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-        rel="stylesheet"
-      />
+      <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 
-      {/* 페이지 전용 스타일 (style-jsx로 컴포넌트 범위에만 적용) */}
+      {/* 페이지 전용 스타일 (아이콘 + 인풋 글로우) */}
       <style>{`
         .ms-artist-signup {
           font-family: "Material Symbols Outlined";
@@ -84,78 +70,56 @@ export default function ArtistOwnerSignUpPage() {
           font-size: 24px;
           line-height: 1;
           display: inline-block;
-          text-transform: none;
           letter-spacing: normal;
           white-space: nowrap;
           direction: ltr;
+          font-feature-settings: "liga";
           -webkit-font-feature-settings: "liga";
           -webkit-font-smoothing: antialiased;
           font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24;
-          transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out, color 0.3s ease-in-out;
+          transition: opacity .3s, transform .3s, color .3s;
         }
-        .soft-shadow {
-          box-shadow: 0 2px 6px 0 rgba(197, 169, 135, 0.1);
+        .soft-shadow { box-shadow: 0 2px 6px 0 rgba(197,169,135,0.1); }
+        .input-container { transition: all .3s ease; }
+        .input-container:focus-within {
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 3px rgba(197,169,135,0.25);
+          background: #fff;
         }
       `}</style>
 
-      <div
-        style={cssVars}
-        className="bg-[var(--background-color)] min-h-screen"
-      >
-        <div
-          className="relative flex min-h-screen flex-col justify-between"
-          style={bgPattern}
-        >
-          {/* Main */}
-          <main className="flex-grow">
-            {/* Header */}
-            <header className="flex items-center p-6">
-              <button
-                type="button"
-                aria-label="Go back"
-                className="text-[var(--text-primary)]"
-              >
-                <svg
-                  fill="currentColor"
-                  height="24"
-                  viewBox="0 0 256 256"
-                  width="24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path>
-                </svg>
-              </button>
-              <h1 className="flex-1 text-center text-xl font-bold pr-6">
-                예술가/사장님 회원가입
-              </h1>
-            </header>
+      <div style={cssVars} className="bg-[var(--background-color)] min-h-screen">
+        <div className="relative flex min-h-screen flex-col justify-between" style={bgPattern}>
+          {/* Header */}
+          <header className="flex items-center p-6">
+            <button
+              type="button"
+              aria-label="Go back"
+              className="text-[var(--text-primary)]"
+              onClick={handleBack}
+            >
+              <svg fill="currentColor" height="24" viewBox="0 0 256 256" width="24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path>
+              </svg>
+            </button>
+            <h1 className="flex-1 text-center text-xl font-bold pr-6">예술가/사장님 회원가입</h1>
+          </header>
 
-            {/* Form */}
-            <div className="px-6 py-4 space-y-6">
+          {/* Form (1번 디자인 적용: p-6/space-y-6/고정버튼 대비 pb) */}
+          <main className="flex-grow">
+            <div className="p-6 space-y-6 pb-[calc(96px+env(safe-area-inset-bottom))]">
               {/* User ID */}
               <div>
-                <label
-                  htmlFor="user-id"
-                  className="block text-base font-medium pb-2 text-[var(--text-primary)]"
-                >
-                  아이디
-                </label>
+                <label htmlFor="user-id" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">아이디</label>
                 <div className="flex items-center gap-3">
-                  <div className="relative flex-1">
-                    <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">
-                      person
-                    </span>
+                  <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
+                    <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">person</span>
                     <input
-                      id="user-id"
-                      type="text"
-                      placeholder="아이디를 입력하세요."
-                      className="w-full resize-none rounded-xl border border-transparent bg-[var(--input-bg-color)] h-14 pl-14 pr-4 text-base placeholder:text-[var(--text-secondary)] focus:ring-2 focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] soft-shadow"
+                      id="user-id" type="text" placeholder="아이디를 입력하세요."
+                      className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                     />
                   </div>
-                  <button
-                    type="button"
-                    className="flex-shrink-0 rounded-xl h-14 px-5 bg-[var(--accent-color)] text-white text-sm font-bold hover:bg-opacity-90 transition-colors soft-shadow"
-                  >
+                  <button type="button" className="flex-shrink-0 rounded-xl h-14 px-5 bg-[var(--accent-color)] text-white text-sm font-bold hover:bg-opacity-90 transition-colors soft-shadow">
                     중복확인
                   </button>
                 </div>
@@ -163,80 +127,50 @@ export default function ArtistOwnerSignUpPage() {
 
               {/* Password */}
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-base font-medium pb-2 text-[var(--text-primary)]"
-                >
-                  비밀번호
-                </label>
-                <div className="relative">
-                  <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">
-                    lock
-                  </span>
+                <label htmlFor="password" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">비밀번호</label>
+                <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
+                  <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">lock</span>
                   <input
-                    id="password"
-                    type="password"
-                    placeholder="비밀번호를 입력하세요."
-                    className="w-full resize-none rounded-xl border border-transparent bg-[var(--input-bg-color)] h-14 pl-14 pr-4 text-base placeholder:text-[var(--text-secondary)] focus:ring-2 focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] soft-shadow"
+                    id="password" type="password" placeholder="비밀번호를 입력하세요."
+                    className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Confirm Password */}
               <div>
-                <label
-                  htmlFor="confirm-password"
-                  className="block text-base font-medium pb-2 text-[var(--text-primary)]"
-                >
-                  비밀번호 확인
-                </label>
-                <div className="relative">
-                  <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">
-                    lock
-                  </span>
+                <label htmlFor="confirm-password" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">비밀번호 확인</label>
+                <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
+                  <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">lock</span>
                   <input
-                    id="confirm-password"
-                    type="password"
-                    placeholder="비밀번호를 다시 입력하세요."
-                    className="w-full resize-none rounded-xl border border-transparent bg-[var(--input-bg-color)] h-14 pl-14 pr-4 text-base placeholder:text-[var(--text-secondary)] focus:ring-2 focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] soft-shadow"
+                    id="confirm-password" type="password" placeholder="비밀번호를 다시 입력하세요."
+                    className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Date of Birth */}
               <div>
-                <label
-                  htmlFor="dob"
-                  className="block text-base font-medium pb-2 text-[var(--text-primary)]"
-                >
-                  생년월일
-                </label>
-                <div className="relative">
+                <label htmlFor="dob" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">생년월일</label>
+                <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
                   <span onClick={openDatePicker} className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] cursor-pointer">calendar_month</span>
                   <input
-                    ref={dobRef}
-                    id="dob"
-                    type="date"
-                    placeholder="YYYY-MM-DD"
-                    className="w-full resize-none rounded-xl border border-transparent bg-[var(--input-bg-color)] h-14 pl-14 pr-4 text-base placeholder:text-[var(--text-secondary)] focus:ring-2 focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] soft-shadow"
+                    ref={dobRef} id="dob" type="date" placeholder="YYYY-MM-DD"
+                    className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                   />
                 </div>
               </div>
 
-              {/* Gender */}
+              {/* Gender (원래 구조 유지 + 높이만 1번과 동일 h-14) */}
               <div>
-                <p className="text-base font-medium pb-3 text-[var(--text-primary)]">
-                  성별
-                </p>
+                <p className="text-base font-medium pb-3 text-[var(--text-primary)]">성별</p>
                 <div className="flex flex-wrap gap-3">
-                  {/* Male */}
-                  <label className="flex items-center justify-center rounded-xl border border-[var(--button-border-color)] bg-[var(--button-bg-color)] px-4 h-12 text-[var(--text-primary)] has-[:checked]:border-2 has-[:checked]:border-[var(--primary-color)] has-[:checked]:bg-[#fdf5ed] has-[:checked]:text-[var(--primary-color)] cursor-pointer flex-1 text-sm font-medium transition-all duration-200 has-[:checked]:soft-shadow">
+                  <label className="flex items-center justify-center rounded-xl border border-[var(--button-border-color)] bg-[var(--button-bg-color)] px-4 h-14 text-[var(--text-primary)] has-[:checked]:border-2 has-[:checked]:border-[var(--primary-color)] has-[:checked]:bg-[#fdf5ed] has-[:checked]:text-[var(--primary-color)] cursor-pointer flex-1 text-sm font-medium transition-all duration-200 has-[:checked]:soft-shadow">
                     <input defaultChecked className="sr-only" name="gender" type="radio" value="male" />
                     <span className="ms-artist-signup mr-2">male</span>
                     <span>남성</span>
                   </label>
-                  {/* Female */}
-                  <label className="flex items-center justify-center rounded-xl border border-[var(--button-border-color)] bg-[var(--button-bg-color)] px-4 h-12 text-[var(--text-primary)] has-[:checked]:border-2 has-[:checked]:border-[var(--primary-color)] has-[:checked]:bg-[#fdf5ed] has-[:checked]:text-[var(--primary-color)] cursor-pointer flex-1 text-sm font-medium transition-all duration-200 has-[:checked]:soft-shadow">
+                  <label className="flex items-center justify-center rounded-xl border border-[var(--button-border-color)] bg-[var(--button-bg-color)] px-4 h-14 text-[var(--text-primary)] has-[:checked]:border-2 has-[:checked]:border-[var(--primary-color)] has-[:checked]:bg-[#fdf5ed] has-[:checked]:text-[var(--primary-color)] cursor-pointer flex-1 text-sm font-medium transition-all duration-200 has-[:checked]:soft-shadow">
                     <input className="sr-only" name="gender" type="radio" value="female" />
                     <span className="ms-artist-signup mr-2">female</span>
                     <span>여성</span>
@@ -246,42 +180,25 @@ export default function ArtistOwnerSignUpPage() {
 
               {/* Mobile Phone Verification */}
               <div>
-                <label
-                  htmlFor="phone"
-                  className="block text-base font-medium pb-2 text-[var(--text-primary)]"
-                >
-                  핸드폰 인증 (PASS)
-                </label>
+                <label htmlFor="phone" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">핸드폰 인증 (PASS)</label>
                 <div className="flex items-center gap-3">
-                  <div className="relative flex-1">
-                    <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">
-                      phone_android
-                    </span>
+                  <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
+                    <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">phone_android</span>
                     <input
-                      id="phone"
-                      type="tel"
-                      placeholder="휴대폰 번호를 입력하세요."
-                      className="w-full resize-none rounded-xl border border-transparent bg-[var(--input-bg-color)] h-14 pl-14 pr-4 text-base placeholder:text-[var(--text-secondary)] focus:ring-2 focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] soft-shadow"
+                      id="phone" type="tel" placeholder="휴대폰 번호를 입력하세요."
+                      className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                     />
                   </div>
-                  <button
-                    type="button"
-                    className="flex-shrink-0 rounded-xl h-14 px-5 bg-[var(--accent-color)] text-white text-sm font-bold hover:bg-opacity-90 transition-colors soft-shadow"
-                  >
+                  <button type="button" className="flex-shrink-0 rounded-xl h-14 px-5 bg-[var(--accent-color)] text-white text-sm font-bold hover:bg-opacity-90 transition-colors soft-shadow">
                     인증 요청
                   </button>
                 </div>
               </div>
 
-              {/* SNS Account Link */}
+              {/* SNS Account Link (아이콘 컬러 동적 유지) */}
               <div>
-                <label
-                  htmlFor="sns-link"
-                  className="block text-base font-medium pb-2 text-[var(--text-primary)]"
-                >
-                  SNS 계정 링크
-                </label>
-                <div className="relative">
+                <label htmlFor="sns-link" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">SNS 계정 링크</label>
+                <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
                   <span
                     key={getSnsIconName(snsLink)}
                     className={`ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none ${getSnsIconName(snsLink) === 'link' ? 'text-[var(--text-secondary)]' : 'text-[var(--primary-color)]'}`}
@@ -289,27 +206,26 @@ export default function ArtistOwnerSignUpPage() {
                     {getSnsIconName(snsLink)}
                   </span>
                   <input
-                    id="sns-link"
-                    type="text"
-                    value={snsLink}
-                    onChange={(e) => setSnsLink(e.target.value)}
+                    id="sns-link" type="text" value={snsLink} onChange={(e) => setSnsLink(e.target.value)}
                     placeholder="SNS 계정 링크를 입력하세요."
-                    className="w-full resize-none rounded-xl border border-transparent bg-[var(--input-bg-color)] h-14 pl-14 pr-4 text-base placeholder:text-[var(--text-secondary)] focus:ring-2 focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] soft-shadow"
+                    className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                   />
                 </div>
               </div>
-
             </div>
           </main>
 
-          {/* Footer */}
-          <footer className="px-6 pb-17">
-            <button
-              type="button"
-              className="w-full rounded-xl h-14 px-5 bg-[var(--primary-color)] text-white text-base font-bold hover:bg-opacity-90 transition-colors soft-shadow"
-            >
-              가입하기
-            </button>
+          {/* Footer: 1번 디자인과 동일한 고정 버튼 */}
+          <footer className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border-color)] bg-[var(--background-color)]/85 backdrop-blur">
+            <div className="max-w-md mx-auto px-6 py-3">
+              <button
+                type="button"
+                className="w-full rounded-xl h-14 px-5 bg-[var(--primary-color)] text-white text-base font-bold hover:bg-opacity-90 transition-colors soft-shadow"
+              >
+                가입하기
+              </button>
+              <div className="h-[env(safe-area-inset-bottom)]" />
+            </div>
           </footer>
         </div>
       </div>

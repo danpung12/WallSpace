@@ -102,7 +102,7 @@ export default function Dashboard() {
         }
       `}</style>
 
-      <div className="relative min-h-screen font-[Pretendard] bg-[#FDFBF8] text-[#3D2C1D] antialiased overflow-x-hidden">
+      <div className="relative flex min-h-[100dvh] flex-col bg-[#FDFBF8] text-[#3D2C1D] font-pretendard">
         {/* 헤더: 햄버거 제거, 뒤로가기 추가 */}
         <header className="sticky top-0 z-10 bg-[#FDFBF8]/80 backdrop-blur-sm">
           <div className="flex items-center p-4">
