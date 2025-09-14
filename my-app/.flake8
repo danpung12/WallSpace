@@ -1,0 +1,18 @@
+[flake8]
+max-line-length = 99
+extend-ignore = E203, I100, I201
+exclude = 
+    .git,
+    __pycache__,
+    */migrations/*,
+    */static/*,
+    */venv/*,
+    .venv,
+    */migrations/*,
+    *migrations*
+max-complexity = 18
+per-file-ignores =
+    # Ignore line length in migrations
+    */migrations/*.py: E501
+    # Ignore line length in settings
+    */settings/*.py: E501
