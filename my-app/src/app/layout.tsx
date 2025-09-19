@@ -15,19 +15,12 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        {/* Fonts */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700&display=swap"
-          rel="stylesheet"
-        />
+        {/* ✅ Material Symbols 아이콘 폰트만 남겨둡니다. */}
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
           rel="stylesheet"
         />
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-
+        
         {/* Global page-scoped CSS variables & base rules */}
         <style>{`
           :root {
@@ -41,14 +34,9 @@ export default function RootLayout({
         `}</style>
       </head>
 
-      <body
-        className="bg-[var(--brand-cream)]"
-        style={{ fontFamily: "Pretendard, sans-serif" }}
-      >
-        {/* 전역 페이지 전환 + 컨텐츠 영역 레이아웃 */}
+      {/* ✅ js-loading 클래스와 배경색 클래스만 남깁니다. (인라인 style 제거) */}
+      <body className="js-loading bg-[var(--brand-cream)]">
         <TransitionProvider>{children}</TransitionProvider>
-
-        {/* ✅ transform 영향 밖(형제)에 둠: 진짜 뷰포트 고정 */}
         <BottomNavGate />
       </body>
     </html>
