@@ -1,22 +1,46 @@
 'use client';
 
-import Image from 'next/image';
+// ✅ 사용하지 않는 'Image'와 'Link' 임포트 제거
 import React, { useRef, useState, useMemo } from 'react';
 import Script from 'next/script';
-import Link from 'next/link';
 
-// --- 타입 선언 ---
+// --- ✅ any 에러 해결을 위한 상세 타입 선언 ---
+type KakaoLatLng = {
+  getLat: () => number;
+  getLng: () => number;
+};
+type KakaoMap = {
+  setCenter: (latlng: KakaoLatLng) => void;
+};
+type KakaoMarker = {
+  setMap: (map: KakaoMap | null) => void;
+};
+type KakaoGeocoderResult = {
+  address: {
+    region_1depth_name: string;
+    region_2depth_name: string;
+  };
+}[];
+type KakaoGeocoderStatus = 'OK' | 'ZERO_RESULT' | 'ERROR';
+
 declare global {
   interface Window {
     kakao: {
       maps: {
         load(callback: () => void): void;
-        Map: new (container: HTMLElement, options: any) => any;
-        LatLng: new (lat: number, lng: number) => any;
-        Marker: new (options: any) => any;
+        Map: new (
+          container: HTMLElement,
+          options: { center: KakaoLatLng; level: number }
+        ) => KakaoMap;
+        LatLng: new (lat: number, lng: number) => KakaoLatLng;
+        Marker: new (options: { map?: KakaoMap | null, position: KakaoLatLng }) => KakaoMarker;
         services: {
           Geocoder: new () => {
-            coord2Address(lng: number, lat: number, callback: (result: any, status: any) => void): void;
+            coord2Address: (
+              lng: number,
+              lat: number,
+              callback: (result: KakaoGeocoderResult, status: KakaoGeocoderStatus) => void
+            ) => void;
           };
           Status: {
             OK: string;
@@ -28,6 +52,8 @@ declare global {
 }
 
 // --- 데이터 ---
+// ✅ 사용하지 않는 'artworks' 변수 제거 (주석 처리)
+/*
 interface Artwork {
   id: number;
   title: string;
@@ -42,7 +68,7 @@ const artworks: Artwork[] = [
     { id: 3, title: 'Urban Geometry', artist: 'Mark Chen', dimensions: '100cm x 100cm', price: 20, imageUrl: '/images/artwork3.jpg' },
     { id: 4, title: 'Misty Mountains', artist: 'Elena Petrova', dimensions: '150cm x 60cm', price: 18, imageUrl: '/images/artwork4.jpg' },
 ];
-
+*/
 const disabledDays = [28];
 
 // --- 날짜 유틸 함수 ---
@@ -67,7 +93,7 @@ const getCalendarCells = (viewDate: Date) => {
 export default function ArtspaceMapViewSingleFile() {
   const filterButtons = ['카페', '갤러리', '문화회관', '날짜 선택' ];
   const mapContainer = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<any>(null);
+  const mapInstance = useRef<KakaoMap | null>(null);
   const [locationInfo, setLocationInfo] = useState({ city: '위치 찾는 중...' });
   
   const [isDatePickerOpen, setDatePickerOpen] = useState(false);
@@ -82,7 +108,6 @@ export default function ArtspaceMapViewSingleFile() {
   const hasRange = !!(startDate && endDate);
 
   const initializeMap = () => {
-    // ✅ 에러 해결을 위해 지역 변수에 할당 후 사용
     const { kakao } = window;
     if (!kakao) return;
 
@@ -110,7 +135,7 @@ export default function ArtspaceMapViewSingleFile() {
     const mapOption = { center: new kakao.maps.LatLng(lat, lng), level: 5 };
     mapInstance.current = new kakao.maps.Map(mapContainer.current, mapOption);
     const geocoder = new kakao.maps.services.Geocoder();
-    geocoder.coord2Address(lng, lat, (result: any, status: any) => {
+    geocoder.coord2Address(lng, lat, (result, status) => {
       if (status === kakao.maps.services.Status.OK) {
         const city = result[0].address.region_2depth_name || result[0].address.region_1depth_name;
         setLocationInfo({ city });

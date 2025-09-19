@@ -22,21 +22,7 @@ type Place = {
 };
 type LatLng = { lat: number; lng: number };
 
-/* Kakao 최소 타입(빌드용) */
-type KakaoLatLng = unknown;
-type KakaoMap = { setCenter: (latlng: KakaoLatLng) => void };
-type KakaoNS = {
-  maps: {
-    services: any;
-    load(cb: () => void): void;
-    Map: new (
-      el: HTMLElement,
-      opts: { center: KakaoLatLng; level: number }
-    ) => KakaoMap;
-    LatLng: new (lat: number, lng: number) => KakaoLatLng;
-    Marker: new (opts: { map: KakaoMap; position: KakaoLatLng }) => unknown;
-  };
-};
+
 
 
 /* 데이터 */
