@@ -27,6 +27,7 @@ type KakaoLatLng = unknown;
 type KakaoMap = { setCenter: (latlng: KakaoLatLng) => void };
 type KakaoNS = {
   maps: {
+    services: any;
     load(cb: () => void): void;
     Map: new (
       el: HTMLElement,
@@ -37,11 +38,6 @@ type KakaoNS = {
   };
 };
 
-declare global {
-  interface Window {
-    kakao?: KakaoNS;
-  }
-}
 
 /* 데이터 */
 const PLACES: Place[] = [
