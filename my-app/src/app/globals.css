@@ -38,7 +38,3 @@ html, body {
   
 }
 
-/* ✅ 깜빡임 방지용 CSS 추가 */
-body.js-loading [data-is-present] {
-  opacity: 0;
-}
