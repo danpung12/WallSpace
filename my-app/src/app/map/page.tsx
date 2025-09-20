@@ -1,10 +1,10 @@
 'use client';
 
-// ✅ 사용하지 않는 'Image'와 'Link' 임포트 제거
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import Script from 'next/script';
+import { locations } from '../../data/locations';
 
-// --- ✅ any 에러 해결을 위한 상세 타입 선언 ---
+// --- 타입 선언 (기존 + 추가) ---
 type KakaoLatLng = {
   getLat: () => number;
   getLng: () => number;
@@ -22,6 +22,17 @@ type KakaoGeocoderResult = {
   };
 }[];
 type KakaoGeocoderStatus = 'OK' | 'ZERO_RESULT' | 'ERROR';
+
+// --- [새로 추가] 장소 검색 결과 타입 ---
+type KakaoPlace = {
+  id: string;
+  place_name: string;
+  address_name: string;
+  road_address_name: string;
+  x: string; // 경도 (longitude)
+  y: string; // 위도 (latitude)
+};
+
 
 declare global {
   interface Window {
@@ -43,7 +54,24 @@ declare global {
             ) => void;
           };
           Status: {
-            OK: string;
+            OK: 'OK'; // [수정] 정확한 타입 추론을 위해 string 대신 'OK' 리터럴 타입 사용
+            ZERO_RESULT: 'ZERO_RESULT';
+            ERROR: 'ERROR';
+          };
+          Places: new () => {
+            keywordSearch: (
+              keyword: string,
+              // [수정] data 타입을 KakaoPlace[]로 명시
+              callback: (data: KakaoPlace[], status: 'OK' | 'ZERO_RESULT' | 'ERROR') => void
+            ) => void;
+          };
+          CustomOverlay: new (options: {
+            map?: KakaoMap | null;
+            position: KakaoLatLng;
+            content: string;
+            yAnchor?: number;
+          }) => {
+            setMap: (map: KakaoMap | null) => void;
           };
         };
       };
@@ -51,9 +79,7 @@ declare global {
   }
 }
 
-// --- 데이터 ---
-// ✅ 사용하지 않는 'artworks' 변수 제거 (주석 처리)
-/*
+// --- 데이터 (기존과 동일) ---
 interface Artwork {
   id: number;
   title: string;
@@ -63,15 +89,14 @@ interface Artwork {
   imageUrl: string;
 }
 const artworks: Artwork[] = [
-    { id: 1, title: 'Chromatic Dreams', artist: 'Alexia Ray', dimensions: '120cm x 80cm', price: 15, imageUrl: '/images/artwork1.jpg' },
-    { id: 2, title: 'Spring\'s Whisper', artist: 'Clara Monet', dimensions: '50cm x 70cm', price: 10, imageUrl: '/images/artwork2.jpg' },
-    { id: 3, title: 'Urban Geometry', artist: 'Mark Chen', dimensions: '100cm x 100cm', price: 20, imageUrl: '/images/artwork3.jpg' },
-    { id: 4, title: 'Misty Mountains', artist: 'Elena Petrova', dimensions: '150cm x 60cm', price: 18, imageUrl: '/images/artwork4.jpg' },
+    { id: 1, title: 'Vibrance', artist: 'Alexia Ray', dimensions: '120cm x 80cm', price: 15, imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDxvrJdLTluq6KnrnvL6a6yRXop1VdnL_iOQMQIPUCd5bxyU_BSp86oGpu4R7zkqu_C5QCB0JN_6FS42bFZnBwteEvONC0kZ_wFgCY0N5grPXL7k2dC8L0t8pQO1ab6EIzSRfh4J8jv_gZZmdNomOuVW27zIwz3vdcvas87iuMrjzG2JcPxd7wDKKStGeffdLzNrikHOXY1xASF1GrGmqqxOK3Lc7DE7QeCyH3SOV6JZ0lo4yxVt19usMsxw3r-mTgVG65nx_2QOcD3' },
+    { id: 2, title: 'Solitude', artist: 'Clara Monet', dimensions: '50cm x 70cm', price: 10, imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB3WMZ4mU8TvOqSDyAY4OKw8mCp7BY-naBunk1M9Ke6U-k_2jYKzuqbD1-uUMiHy_6rFWRt88JmfCIvXXayXNlVb7CApOuNh-rZ2OIocAWVKYIGDmoVyPCDvYxXjnwF9bggr2J9GWoWBiX_dRFnTgb1OT7AYRT9OEMhaLyUT_K00NqG6YMyaR0XvuZD8nridKQW9k3BI5rVgdH4RqlU8V1-HQ5unWDwPKklfd2Wiizv4nISA2NZtWYyRxdTjkmqaXXlPCNonNzxmt_' },
+    { id: 3, title: 'The Vase', artist: 'Mark Chen', dimensions: '100cm x 100cm', price: 20, imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA4jRII7IaS_eTaex1R71JDs0D-bQBs1cqTQ-AiutCCcCtNpq7CBbBb-kSnUhLrWwB1p0Uw270LofRssoBPWJTK9aoTOd_nWCfgWlPMKFSKc0sTAtQZxarJjB9Ma-739Qw6azmCNrFAMynCGhyJ7J8Mq4tt4WFbOpCTSPU0UF_ODiLjTbs6RyPBo8z2kfRNrbP3XwFEmdbDE5Ht8TigXiUs4va03hE4YMew3LpGvWcYU82cb8NryVI7_TRJ7W5NfJczJpkhkRV5OjMH' },
 ];
-*/
+
 const disabledDays = [28];
 
-// --- 날짜 유틸 함수 ---
+// --- 날짜 유틸 함수 (기존과 동일) ---
 const toYMD = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const isSameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 const fmtKoreanDate = (d: Date) => `${d.getMonth() + 1}월 ${d.getDate()}일`;
@@ -89,18 +114,175 @@ const getCalendarCells = (viewDate: Date) => {
     return cells;
 };
 
+// --- 작품 선택 컴포넌트 (기존과 동일) ---
+function ArtworkSelector({ artworks, selectedArtwork, onSelectArtwork, onAddNew, isVisible }: {
+  artworks: Artwork[];
+  selectedArtwork: Artwork | null;
+  onSelectArtwork: (artwork: Artwork) => void;
+  onAddNew: () => void;
+  isVisible: boolean;
+}) {
+  return (
+    <div className={`absolute top-48 left-0 right-0 px-4 z-10 transition-all duration-300 ease-in-out ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
+      }`}>
+      <div className="bg-theme-brown-light/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-theme-brown-medium">
+        <h2 className="text-lg font-bold text-theme-brown-darkest mb-3">Choose your artwork</h2>
+        <div className="flex items-center space-x-3 overflow-x-auto pb-2 no-scrollbar">
+          <div className="flex-shrink-0 text-center cursor-pointer" onClick={onAddNew}>
+            <div className="w-20 h-20 bg-theme-brown-medium rounded-lg flex items-center justify-center border-2 border-dashed border-theme-brown-dark">
+              <span className="material-symbols-outlined text-theme-brown-darkest">add</span>
+            </div>
+            <p className="text-xs mt-1 text-theme-brown-darkest">Add new</p>
+          </div>
+          {artworks.map((artwork) => (
+            <div
+              key={artwork.id}
+              className={`flex-shrink-0 text-center cursor-pointer ${selectedArtwork?.id === artwork.id ? 'ring-2 ring-theme-brown-darkest rounded-lg p-0.5' : ''}`}
+              onClick={() => onSelectArtwork(artwork)}
+            >
+              <img alt={artwork.title} className="w-20 h-20 rounded-md object-cover" src={artwork.imageUrl}/>
+              <p className="text-xs mt-1 text-theme-brown-darkest">"{artwork.title}"</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- 작품 추가 모달 컴포넌트 (기존과 동일) ---
+function AddArtworkModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void; }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="date-picker-modal-overlay" onClick={onClose}>
+      <div className="date-picker-modal-content" onClick={(e) => e.stopPropagation()}>
+        <header className="date-picker-modal-header">
+          작품 추가
+          <button className="close-btn" onClick={onClose}>
+            <svg height="24" width="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </header>
+        <main className="date-picker-modal-body" style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <p className="text-theme-brown-dark">작품을 추가하는 폼이 여기에 표시됩니다.</p>
+        </main>
+        <footer className="date-picker-modal-footer">
+          <button className="button_primary" onClick={onClose}>
+            저장
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+// --- [새로 추가] 장소 검색 모달 컴포넌트 ---
+function SearchModal({ isOpen, onClose, onPlaceSelect }: {
+  isOpen: boolean;
+  onClose: () => void;
+  onPlaceSelect: (place: KakaoPlace) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<KakaoPlace[]>([]);
+  
+  useEffect(() => {
+    if (!isOpen) {
+      setQuery('');
+      setResults([]);
+    }
+  }, [isOpen]);
+
+  // 디바운싱을 적용한 검색 실행
+  useEffect(() => {
+    if (query.trim() === '') {
+      setResults([]);
+      return;
+    }
+
+    const handler = setTimeout(() => {
+      if (window.kakao && window.kakao.maps.services) {
+        const ps = new window.kakao.maps.services.Places();
+        ps.keywordSearch(query, (data, status) => {
+          if (status === window.kakao.maps.services.Status.OK) {
+            setResults(data);
+          } else {
+            setResults([]);
+          }
+        });
+      }
+    }, 300); // 300ms 디바운스
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [query]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="date-picker-modal-overlay" onClick={onClose}>
+      <div className="date-picker-modal-content" onClick={(e) => e.stopPropagation()}>
+        <header className="date-picker-modal-header">
+          장소 검색
+          <button className="close-btn" onClick={onClose}>
+            <svg height="24" width="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </header>
+        <main className="date-picker-modal-body">
+          <div className="p-2">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="장소, 주소, 지하철역 등으로 검색"
+              className="w-full p-3 border border-theme-brown-medium rounded-lg focus:ring-2 focus:ring-theme-brown-dark focus:outline-none"
+              autoFocus
+            />
+          </div>
+          <ul className="mt-2 h-80 overflow-y-auto">
+            {results.length > 0 ? (
+              results.map((place) => (
+                <li
+                  key={place.id}
+                  onClick={() => onPlaceSelect(place)}
+                  className="p-4 border-b border-theme-brown-light hover:bg-theme-brown-light cursor-pointer"
+                >
+                  <p className="font-bold text-theme-brown-darkest">{place.place_name}</p>
+                  <p className="text-sm text-theme-brown-dark">{place.road_address_name || place.address_name}</p>
+                </li>
+              ))
+            ) : (
+              query.trim() && <li className="p-4 text-center text-theme-brown-dark">검색 결과가 없습니다.</li>
+            )}
+          </ul>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
 // --- 메인 컴포넌트 ---
 export default function ArtspaceMapViewSingleFile() {
-  const filterButtons = ['카페', '갤러리', '문화회관', '날짜 선택' ];
+  const filterButtons = ['작품 선택', '카페', '갤러리', '문화회관' ];
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<KakaoMap | null>(null);
   const [locationInfo, setLocationInfo] = useState({ city: '위치 찾는 중...' });
-  
+
   const [isDatePickerOpen, setDatePickerOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [activeFilter, setActiveFilter] = useState('갤러리');
+
+  const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(artworks[0] || null);
+  const [isArtworkModalOpen, setArtworkModalOpen] = useState(false);
+  const [isArtworkSelectorVisible, setArtworkSelectorVisible] = useState(true);
+
+  // --- [새로 추가] 검색 모달 상태 ---
+  const [isSearchModalOpen, setSearchModalOpen] = useState(false);
+
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -110,7 +292,6 @@ export default function ArtspaceMapViewSingleFile() {
   const initializeMap = () => {
     const { kakao } = window;
     if (!kakao) return;
-
     kakao.maps.load(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -129,11 +310,14 @@ export default function ArtspaceMapViewSingleFile() {
     });
   };
 
-  const loadMapAndAddress = (lat: number, lng: number) => {
+   const loadMapAndAddress = (lat: number, lng: number) => {
     const { kakao } = window;
     if (!mapContainer.current || !kakao) return;
+
     const mapOption = { center: new kakao.maps.LatLng(lat, lng), level: 5 };
-    mapInstance.current = new kakao.maps.Map(mapContainer.current, mapOption);
+    const map = new kakao.maps.Map(mapContainer.current, mapOption);
+    mapInstance.current = map;
+
     const geocoder = new kakao.maps.services.Geocoder();
     geocoder.coord2Address(lng, lat, (result, status) => {
       if (status === kakao.maps.services.Status.OK) {
@@ -143,6 +327,49 @@ export default function ArtspaceMapViewSingleFile() {
         setLocationInfo({ city: "주소 정보 없음" });
       }
     });
+
+    const ps = new kakao.maps.services.Places();
+
+    locations.forEach((place) => {
+      ps.keywordSearch(place.keyword, (data, status) => {
+        if (status === kakao.maps.services.Status.OK) {
+          const placePosition = new kakao.maps.LatLng(Number(data[0].y), Number(data[0].x));
+
+          const marker = new kakao.maps.Marker({
+            map: map,
+            position: placePosition,
+          });
+
+          const content = `
+            <div style="padding:5px; background:white; border:1px solid #ccc; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size:12px; font-weight:bold; text-align:center;">
+              ${place.name}<br>
+              <span style="color:${place.statusColor};">${place.statusText}</span>
+            </div>
+          `;
+
+          const customOverlay = new kakao.maps.CustomOverlay({
+            map: map,
+            position: placePosition,
+            content: content,
+            yAnchor: 2.2
+          });
+        }
+      });
+    });
+  };
+
+  // --- [새로 추가] 장소 선택 시 지도 이동 함수 ---
+  const handlePlaceSelect = (place: KakaoPlace) => {
+    if (!mapInstance.current || !window.kakao) return;
+
+    const { kakao } = window;
+    const moveLatLon = new kakao.maps.LatLng(Number(place.y), Number(place.x));
+    mapInstance.current.setCenter(moveLatLon);
+
+    // 주소 정보도 업데이트
+    setLocationInfo({ city: place.place_name });
+    
+    setSearchModalOpen(false); // 모달 닫기
   };
 
   const gotoMonth = (offset: number) => setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
@@ -151,22 +378,20 @@ export default function ArtspaceMapViewSingleFile() {
   function onClickDay(cell: Date) {
     if (isDisabled(cell)) return;
     const c = toYMD(cell);
-
     if (!startDate || (startDate && endDate && !isSameDay(startDate, endDate))) {
       setStartDate(c);
       setEndDate(c);
       return;
     }
-
     if (startDate && endDate && isSameDay(startDate, endDate)) {
       if (isSameDay(c, startDate)) {
         setStartDate(null);
         setEndDate(null);
-      } 
+      }
       else if (c < startDate) {
         setEndDate(startDate);
         setStartDate(c);
-      } 
+      }
       else {
         setEndDate(c);
       }
@@ -175,7 +400,7 @@ export default function ArtspaceMapViewSingleFile() {
 
   function getDayClass(cell: Date, inMonth: boolean) {
     if (isDisabled(cell)) return "date-picker-day date-picker-day-disabled";
-    
+
     const isSelectedSingle = startDate && endDate && isSameDay(startDate, endDate) && isSameDay(cell, startDate);
     const isStart = startDate && isSameDay(cell, startDate) && !isSelectedSingle;
     const isEnd = endDate && isSameDay(cell, endDate) && !isSelectedSingle;
@@ -189,6 +414,15 @@ export default function ArtspaceMapViewSingleFile() {
     return "date-picker-day bg-white";
   }
 
+  const handleFilterClick = (label: string) => {
+    if (label === '작품 선택') {
+      setArtworkSelectorVisible(prev => !prev);
+    } else if (label !== '날짜 선택') {
+      setActiveFilter(label);
+      setArtworkSelectorVisible(false);
+    }
+  };
+
   const headerLabel = `${year}년 ${month + 1}월`;
 
   return (
@@ -200,7 +434,7 @@ export default function ArtspaceMapViewSingleFile() {
       />
 
       <style>{`
-        /* --- CSS 스타일 --- */
+        /* --- CSS 스타일 (기존과 동일) --- */
         :root {
           --theme-brown-lightest: #F5F3F0;
           --theme-brown-light: #E9E4DD;
@@ -268,10 +502,18 @@ export default function ArtspaceMapViewSingleFile() {
       
       <div className="page-container">
         <div ref={mapContainer} className="background-map"></div>
+        
         <div className="top-search-bar">
           <div className="top-search-bar-inner">
             <div style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1rem' }}>
-              <span className="material-symbols-outlined" style={{ color: 'var(--theme-brown-dark)', fontSize: '32px' }}>search</span>
+              {/* --- [수정] 검색 아이콘에 검색 모달을 여는 onClick 이벤트 추가 --- */}
+              <span 
+                className="material-symbols-outlined cursor-pointer" 
+                style={{ color: 'var(--theme-brown-dark)', fontSize: '32px' }}
+                onClick={() => setSearchModalOpen(true)}
+              >
+                search
+              </span>
               <div className="search-input-card" onClick={() => setDatePickerOpen(true)}>
                 <p className="main-text">{locationInfo.city}</p>
                 <p className="sub-text">
@@ -288,11 +530,13 @@ export default function ArtspaceMapViewSingleFile() {
             <hr style={{ borderTop: '1px solid var(--theme-brown-light)' }} />
             <div className="filter-buttons no-scrollbar">
               {filterButtons.map((label) => (
-                <button 
+                <button
                   key={label}
-                  className={`filter-button ${activeFilter === label ? 'active' : ''}`}
+                  className={`filter-button ${
+                    (label === '작품 선택' && isArtworkSelectorVisible) || activeFilter === label ? 'active' : ''
+                  }`}
                   style={label === '날짜 선택' ? { visibility: 'hidden' } : {}}
-                  onClick={() => setActiveFilter(label)}
+                  onClick={() => handleFilterClick(label)}
                 >
                   {label}
                 </button>
@@ -300,6 +544,15 @@ export default function ArtspaceMapViewSingleFile() {
             </div>
           </div>
         </div>
+        
+        <ArtworkSelector
+          artworks={artworks}
+          selectedArtwork={selectedArtwork}
+          onSelectArtwork={setSelectedArtwork}
+          onAddNew={() => setArtworkModalOpen(true)}
+          isVisible={isArtworkSelectorVisible} 
+        />
+
         <div className="map-controls">{/* ... */}</div>
         <div className="nearby-spaces-container">{/* ... */}</div>
 
@@ -359,6 +612,15 @@ export default function ArtspaceMapViewSingleFile() {
             </div>
           </div>
         )}
+
+        <AddArtworkModal isOpen={isArtworkModalOpen} onClose={() => setArtworkModalOpen(false)} />
+        
+        {/* --- [새로 추가] 검색 모달 렌더링 --- */}
+        <SearchModal 
+          isOpen={isSearchModalOpen}
+          onClose={() => setSearchModalOpen(false)}
+          onPlaceSelect={handlePlaceSelect}
+        />
       </div>
     </div>
   );
