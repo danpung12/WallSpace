@@ -1,11 +1,14 @@
-// 나중에 백엔드 API가 이와 유사한 형태의 데이터를 보내줄 것입니다.
 export const locations = [
   {
     id: 1,
     name: "은평커피 대조점",
-    keyword: "은평커피 대조점", // 카카오맵에서 검색할 키워드 또는 주소
+    // keyword를 더 정확한 주소로 변경
+    keyword: "서울 은평구 통일로73길 22-1", 
     statusText: "예약 가능",
     statusColor: "blue",
+    // 새 주소에 맞는 정확한 좌표로 수정
+    lat: 37.6146,
+    lng: 126.9234,
   },
   {
     id: 2,
@@ -13,6 +16,8 @@ export const locations = [
     keyword: "서울 은평구 갈현로 129",
     statusText: "예약 마감",
     statusColor: "red",
+    lat: 37.6201,
+    lng: 126.9149,
   },
   {
     id: 3,
@@ -20,5 +25,7 @@ export const locations = [
     keyword: "서울 종로구 인사동길 43",
     statusText: "예약 가능",
     statusColor: "blue",
+    lat: 37.5735,
+    lng: 126.9856,
   },
 ];

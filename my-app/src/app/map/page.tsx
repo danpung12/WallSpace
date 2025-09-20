@@ -2,7 +2,8 @@
 
 import React, { useRef, useState, useMemo, useEffect } from 'react';
 import Script from 'next/script';
-import { locations } from '../../data/locations';
+// ✨ 데이터 파일에서 위도/경도가 포함된 locations를 가져옵니다.
+import { locations } from '../../data/locations'; 
 
 // --- 타입 선언 (기존 + 추가) ---
 type KakaoLatLng = {
@@ -22,8 +23,6 @@ type KakaoGeocoderResult = {
   };
 }[];
 type KakaoGeocoderStatus = 'OK' | 'ZERO_RESULT' | 'ERROR';
-
-// --- [새로 추가] 장소 검색 결과 타입 ---
 type KakaoPlace = {
   id: string;
   place_name: string;
@@ -54,14 +53,13 @@ declare global {
             ) => void;
           };
           Status: {
-            OK: 'OK'; // [수정] 정확한 타입 추론을 위해 string 대신 'OK' 리터럴 타입 사용
+            OK: 'OK';
             ZERO_RESULT: 'ZERO_RESULT';
             ERROR: 'ERROR';
           };
           Places: new () => {
             keywordSearch: (
               keyword: string,
-              // [수정] data 타입을 KakaoPlace[]로 명시
               callback: (data: KakaoPlace[], status: 'OK' | 'ZERO_RESULT' | 'ERROR') => void
             ) => void;
           };
@@ -177,7 +175,7 @@ function AddArtworkModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   );
 }
 
-// --- [새로 추가] 장소 검색 모달 컴포넌트 ---
+// --- 장소 검색 모달 컴포넌트 (기존과 동일) ---
 function SearchModal({ isOpen, onClose, onPlaceSelect }: {
   isOpen: boolean;
   onClose: () => void;
@@ -193,7 +191,6 @@ function SearchModal({ isOpen, onClose, onPlaceSelect }: {
     }
   }, [isOpen]);
 
-  // 디바운싱을 적용한 검색 실행
   useEffect(() => {
     if (query.trim() === '') {
       setResults([]);
@@ -211,7 +208,7 @@ function SearchModal({ isOpen, onClose, onPlaceSelect }: {
           }
         });
       }
-    }, 300); // 300ms 디바운스
+    }, 300);
 
     return () => {
       clearTimeout(handler);
@@ -280,44 +277,25 @@ export default function ArtspaceMapViewSingleFile() {
   const [isArtworkModalOpen, setArtworkModalOpen] = useState(false);
   const [isArtworkSelectorVisible, setArtworkSelectorVisible] = useState(true);
 
-  // --- [새로 추가] 검색 모달 상태 ---
   const [isSearchModalOpen, setSearchModalOpen] = useState(false);
-
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const cells = useMemo(() => getCalendarCells(viewDate), [viewDate]);
   const hasRange = !!(startDate && endDate);
 
-  const initializeMap = () => {
-    const { kakao } = window;
-    if (!kakao) return;
-    kakao.maps.load(() => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => loadMapAndAddress(position.coords.latitude, position.coords.longitude),
-                (error) => {
-                    console.error("Geolocation 에러:", error);
-                    setLocationInfo({ city: '위치를 찾을 수 없어요' });
-                    loadMapAndAddress(37.2410, 127.1772);
-                }
-            );
-        } else {
-            console.error("브라우저가 Geolocation을 지원하지 않습니다.");
-            setLocationInfo({ city: '위치 사용 불가' });
-            loadMapAndAddress(37.2410, 127.1772);
-        }
-    });
-  };
+  // ✨ --- 지도 로딩 로직 최적화 --- ✨
 
-   const loadMapAndAddress = (lat: number, lng: number) => {
+  // 1. 지도 생성만 담당하는 함수
+  const loadMap = (lat: number, lng: number): KakaoMap | null => {
     const { kakao } = window;
-    if (!mapContainer.current || !kakao) return;
+    if (!mapContainer.current || !kakao) return null;
 
     const mapOption = { center: new kakao.maps.LatLng(lat, lng), level: 5 };
     const map = new kakao.maps.Map(mapContainer.current, mapOption);
-    mapInstance.current = map;
+    mapInstance.current = map; // map 인스턴스 저장
 
+    // 현재 위치 주소 정보 가져오기
     const geocoder = new kakao.maps.services.Geocoder();
     geocoder.coord2Address(lng, lat, (result, status) => {
       if (status === kakao.maps.services.Status.OK) {
@@ -328,48 +306,84 @@ export default function ArtspaceMapViewSingleFile() {
       }
     });
 
-    const ps = new kakao.maps.services.Places();
+    return map; // 생성된 map 객체 반환
+  };
+  
+  // 2. 마커와 오버레이만 지도에 표시하는 함수
+  const loadMarkers = (map: KakaoMap) => {
+    const { kakao } = window;
+    if (!kakao) return;
 
     locations.forEach((place) => {
-      ps.keywordSearch(place.keyword, (data, status) => {
-        if (status === kakao.maps.services.Status.OK) {
-          const placePosition = new kakao.maps.LatLng(Number(data[0].y), Number(data[0].x));
+      // 데이터에 저장된 좌표를 바로 사용 (API 호출 없음)
+      const placePosition = new kakao.maps.LatLng(place.lat, place.lng);
 
-          const marker = new kakao.maps.Marker({
-            map: map,
-            position: placePosition,
-          });
+      new kakao.maps.Marker({
+        map: map,
+        position: placePosition,
+      });
 
-          const content = `
-            <div style="padding:5px; background:white; border:1px solid #ccc; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size:12px; font-weight:bold; text-align:center;">
-              ${place.name}<br>
-              <span style="color:${place.statusColor};">${place.statusText}</span>
-            </div>
-          `;
+      const content = `
+        <div style="padding:5px; background:white; border:1px solid #ccc; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size:12px; font-weight:bold; text-align:center;">
+          ${place.name}<br>
+          <span style="color:${place.statusColor};">${place.statusText}</span>
+        </div>
+      `;
 
-          const customOverlay = new kakao.maps.CustomOverlay({
-            map: map,
-            position: placePosition,
-            content: content,
-            yAnchor: 2.2
-          });
-        }
+      new kakao.maps.CustomOverlay({
+        map: map,
+        position: placePosition,
+        content: content,
+        yAnchor: 2.2
       });
     });
   };
 
-  // --- [새로 추가] 장소 선택 시 지도 이동 함수 ---
+  // 3. 지도 초기화 전체 흐름
+  const initializeMap = () => {
+    const { kakao } = window;
+    if (!kakao) return;
+    
+    kakao.maps.load(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const map = loadMap(position.coords.latitude, position.coords.longitude);
+                    if (map) {
+                      loadMarkers(map); // 지도 생성 후 마커 표시
+                    }
+                },
+                (error) => {
+                    console.error("Geolocation 에러:", error);
+                    setLocationInfo({ city: '위치를 찾을 수 없어요' });
+                    const map = loadMap(37.5665, 126.9780); // 기본 위치: 서울시청
+                    if (map) {
+                      loadMarkers(map);
+                    }
+                }
+            );
+        } else {
+            console.error("브라우저가 Geolocation을 지원하지 않습니다.");
+            setLocationInfo({ city: '위치 사용 불가' });
+            const map = loadMap(37.5665, 126.9780); // 기본 위치: 서울시청
+            if (map) {
+              loadMarkers(map);
+            }
+        }
+    });
+  };
+
+  // --- ✨ 로직 최적화 끝 --- ✨
+
+
   const handlePlaceSelect = (place: KakaoPlace) => {
     if (!mapInstance.current || !window.kakao) return;
 
     const { kakao } = window;
     const moveLatLon = new kakao.maps.LatLng(Number(place.y), Number(place.x));
     mapInstance.current.setCenter(moveLatLon);
-
-    // 주소 정보도 업데이트
     setLocationInfo({ city: place.place_name });
-    
-    setSearchModalOpen(false); // 모달 닫기
+    setSearchModalOpen(false);
   };
 
   const gotoMonth = (offset: number) => setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
@@ -434,27 +448,13 @@ export default function ArtspaceMapViewSingleFile() {
       />
 
       <style>{`
-        /* --- CSS 스타일 (기존과 동일) --- */
         :root {
-          --theme-brown-lightest: #F5F3F0;
-          --theme-brown-light: #E9E4DD;
-          --theme-brown-medium: #D4C8B8;
-          --theme-brown-dark: #A18F79;
-          --theme-brown-darkest: #4D4337;
-          --white: #ffffff;
-          --shadow-color-light: rgba(0,0,0,0.05);
-          --shadow-color-medium: rgba(0,0,0,0.1);
-          --shadow-color-strong: rgba(0,0,0,0.25);
-          --unavailable-color: #F3F4F6;
+          --theme-brown-lightest: #F5F3F0; --theme-brown-light: #E9E4DD; --theme-brown-medium: #D4C8B8;
+          --theme-brown-dark: #A18F79; --theme-brown-darkest: #4D4337; --white: #ffffff;
+          --shadow-color-light: rgba(0,0,0,0.05); --shadow-color-medium: rgba(0,0,0,0.1);
+          --shadow-color-strong: rgba(0,0,0,0.25); --unavailable-color: #F3F4F6;
         }
-        body {
-          font-family: 'Pretendard', sans-serif;
-          background-color: var(--theme-brown-lightest);
-          color: var(--theme-brown-darkest);
-          overflow: hidden;
-          min-height: max(884px, 100dvh);
-          overscroll-behavior: none;
-        }
+        body { font-family: 'Pretendard', sans-serif; background-color: var(--theme-brown-lightest); color: var(--theme-brown-darkest); overflow: hidden; min-height: max(884px, 100dvh); overscroll-behavior: none; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-size: 28px; vertical-align: middle; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -462,7 +462,7 @@ export default function ArtspaceMapViewSingleFile() {
         .background-map { position: absolute; inset: 0; z-index: 0; }
         .top-search-bar { position: absolute; top: 0; left: 0; right: 0; padding: 1rem; background: transparent; z-index: 20; }
         .top-search-bar-inner { max-width: 24rem; margin: 0 auto; background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(4px); border-radius: 1rem; border: 1px solid var(--theme-brown-light); box-shadow: 0 4px 6px -1px var(--shadow-color-medium), 0 2px 4px -2px var(--shadow-color-medium); }
-        .search-input-card { flex-grow: 1; margin-left: 1.25rem; margin-right: 1.25rem; padding: 0.5rem 1rem; background-color: var(--white); border-radius: 9999px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 4px 8px -2px var(--shadow-color-medium), 0 2px 4px -2px var(--shadow-color-light); transition: all 0.3s ease; cursor: pointer; }
+        .search-input-card { flex-grow: 1; margin: 0 1.25rem; padding: 0.5rem 1rem; background-color: var(--white); border-radius: 9999px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 4px 8px -2px var(--shadow-color-medium), 0 2px 4px -2px var(--shadow-color-light); transition: all 0.3s ease; cursor: pointer; }
         .search-input-card:hover { transform: translateY(-2px); box-shadow: 0 8px 16px -4px var(--shadow-color-medium), 0 4px 8px -3px var(--shadow-color-light); }
         .search-input-card .main-text { font-weight: bold; font-size: 1.125rem; color: var(--theme-brown-darkest); }
         .search-input-card .sub-text { font-size: 0.875rem; color: var(--theme-brown-dark); }
@@ -470,17 +470,6 @@ export default function ArtspaceMapViewSingleFile() {
         .filter-button { padding: 0.375rem 0.75rem; font-size: 0.875rem; white-space: nowrap; border-radius: 9999px; border: 1px solid var(--theme-brown-medium); background-color: rgba(255,255,255,0.9); color: var(--theme-brown-darkest); box-shadow: 0 1px 2px 0 var(--shadow-color-light); transition: background-color 0.2s, color 0.2s, border-color 0.2s; cursor: pointer; }
         .filter-button:hover { background-color: var(--theme-brown-light); }
         .filter-button.active { background-color: var(--theme-brown-darkest); color: var(--white); border-color: var(--theme-brown-darkest); }
-        .map-controls { position: absolute; top: 50%; right: 1rem; transform: translateY(calc(-50% - 6rem)); display: flex; flex-direction: column; gap: 0.75rem; z-index: 10; }
-        .map-control-button { padding: 0.5rem; background-color: rgba(255,255,255,0.9); backdrop-filter: blur(4px); border-radius: 0.5rem; box-shadow: 0 4px 6px -1px var(--shadow-color-medium); border: 1px solid var(--theme-brown-medium); color: var(--theme-brown-darkest); cursor: pointer; transition: background-color 0.2s; }
-        .map-control-button:hover { background-color: var(--theme-brown-light); }
-        .zoom-controls { display: flex; flex-direction: column; }
-        .nearby-spaces-container { position: absolute; bottom: 0; left: 0; right: 0; }
-        .nearby-spaces-inner { background-color: var(--theme-brown-lightest); padding: 0.5rem; border-top-left-radius: 1.5rem; border-top-right-radius: 1.5rem; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); }
-        .pull-handle { width: 2.5rem; height: 0.375rem; background-color: var(--theme-brown-medium); border-radius: 9999px; margin: 0 auto; }
-        .text-content { padding: 1rem; text-align: center; }
-        .text-content h3 { font-weight: 700; font-size: 1.125rem; color: var(--theme-brown-darkest); }
-        .text-content p { font-size: 0.875rem; color: var(--theme-brown-dark); }
-        
         .date-picker-modal-overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.6); z-index: 50; display: flex; align-items: center; justify-content: center; }
         .date-picker-modal-content { background-color: var(--theme-brown-lightest); width: 100%; max-width: 28rem; max-height: 90vh; display: flex; flex-direction: column; border-radius: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin: 1rem; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
@@ -488,7 +477,6 @@ export default function ArtspaceMapViewSingleFile() {
         .date-picker-modal-header .close-btn { position: absolute; top: 50%; right: 1rem; transform: translateY(-50%); cursor: pointer; padding: 0.5rem; }
         .date-picker-modal-body { overflow-y: auto; padding: 1rem; }
         .date-picker-modal-footer { padding: 1rem; border-top: 1px solid var(--theme-brown-light); }
-
         .date-picker-day { display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1; border-radius: 9999px; transition: all 0.2s; cursor: pointer; }
         .date-picker-day-selected { background: var(--theme-brown-darkest); color: var(--white); }
         .date-picker-day-disabled { background: var(--unavailable-color); color: #bdbdbd; cursor: not-allowed; text-decoration: line-through; }
@@ -506,7 +494,6 @@ export default function ArtspaceMapViewSingleFile() {
         <div className="top-search-bar">
           <div className="top-search-bar-inner">
             <div style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1rem' }}>
-              {/* --- [수정] 검색 아이콘에 검색 모달을 여는 onClick 이벤트 추가 --- */}
               <span 
                 className="material-symbols-outlined cursor-pointer" 
                 style={{ color: 'var(--theme-brown-dark)', fontSize: '32px' }}
@@ -553,28 +540,24 @@ export default function ArtspaceMapViewSingleFile() {
           isVisible={isArtworkSelectorVisible} 
         />
 
-        <div className="map-controls">{/* ... */}</div>
-        <div className="nearby-spaces-container">{/* ... */}</div>
-
         {isDatePickerOpen && (
           <div className="date-picker-modal-overlay" onClick={() => setDatePickerOpen(false)}>
             <div className="date-picker-modal-content" onClick={(e) => e.stopPropagation()}>
               <header className="date-picker-modal-header">
                 날짜 선택
                 <button className="close-btn" onClick={() => setDatePickerOpen(false)}>
-                    <svg height="24" width="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  <svg height="24" width="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
               </header>
-
               <main className="date-picker-modal-body">
                 <div className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-4">
                   <div className="flex items-center justify-between mb-4">
                     <button className="p-2 rounded-full hover:bg-gray-100" onClick={() => gotoMonth(-1)}>
-                        <svg fill="none" height="20" stroke="currentColor" viewBox="0 0 24 24" width="20"><path d="m15 18-6-6 6-6"></path></svg>
+                      <svg fill="none" height="20" stroke="currentColor" viewBox="0 0 24 24" width="20"><path d="m15 18-6-6 6-6"></path></svg>
                     </button>
                     <h2 className="text-base font-bold">{headerLabel}</h2>
                     <button className="p-2 rounded-full hover:bg-gray-100" onClick={() => gotoMonth(1)}>
-                        <svg fill="none" height="20" stroke="currentColor" viewBox="0 0 24 24" width="20"><path d="m9 18 6-6-6-6"></path></svg>
+                      <svg fill="none" height="20" stroke="currentColor" viewBox="0 0 24 24" width="20"><path d="m9 18 6-6-6-6"></path></svg>
                     </button>
                   </div>
                   <div className="grid grid-cols-7 gap-y-1 text-center text-sm text-[var(--theme-brown-dark)] mb-2">
@@ -587,23 +570,8 @@ export default function ArtspaceMapViewSingleFile() {
                       </div>
                     ))}
                   </div>
-                  <div className="flex justify-center items-center space-x-6 mt-4 pt-4 border-t border-[var(--theme-brown-light)]">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 rounded-full bg-[var(--theme-brown-darkest)]" />
-                      <span className="text-xs text-[var(--theme-brown-dark)]">선택 날짜</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 bg-white border border-gray-300 rounded-full" />
-                      <span className="text-xs text-[var(--theme-brown-dark)]">예약 가능</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 rounded-full bg-[var(--unavailable-color)]" />
-                      <span className="text-xs text-[var(--theme-brown-dark)]">예약 마감</span>
-                    </div>
-                  </div>
                 </div>
               </main>
-
               <footer className="date-picker-modal-footer">
                 <button className="button_primary" onClick={() => setDatePickerOpen(false)}>
                   선택 완료
@@ -615,7 +583,6 @@ export default function ArtspaceMapViewSingleFile() {
 
         <AddArtworkModal isOpen={isArtworkModalOpen} onClose={() => setArtworkModalOpen(false)} />
         
-        {/* --- [새로 추가] 검색 모달 렌더링 --- */}
         <SearchModal 
           isOpen={isSearchModalOpen}
           onClose={() => setSearchModalOpen(false)}
