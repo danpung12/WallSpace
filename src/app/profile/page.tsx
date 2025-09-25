@@ -6,11 +6,13 @@ import Link from "next/link";
 import BottomNav from "../components/BottomNav";
 import ChangePasswordModal from "../components/ChangePasswordModal";
 import NotificationSettingsModal from "../components/NotificationSettingsModal";
+import AvatarUploadModal from "../components/AvatarUploadModal"; // ✅ 추가
 import { UserProfile } from "@/data/profile";
 
 export default function ProfilePage() {
   const [showChangePw, setShowChangePw] = useState(false);
   const [showNotiModal, setShowNotiModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false); // ✅ 추가
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +40,12 @@ export default function ProfilePage() {
   // 프로필 데이터 업데이트 (PUT 요청)
   const updateProfile = async (updatedData: Partial<UserProfile>) => {
     if (!userProfile) return;
-    setIsLoading(true);
+    // Optimistic UI update for avatar
+    if (updatedData.avatarUrl) {
+        setUserProfile(prev => prev ? { ...prev, ...updatedData } : null);
+    } else {
+        setIsLoading(true);
+    }
     setError(null);
     try {
       const response = await fetch("/api/profile", {
@@ -52,7 +59,7 @@ export default function ProfilePage() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data: UserProfile = await response.json();
-      setUserProfile(data);
+      setUserProfile(data); // Re-sync with server state
     } catch (err: any) {
       setError(err.message || "Failed to update profile");
       console.error("Error updating profile:", err);
@@ -61,11 +68,25 @@ export default function ProfilePage() {
     }
   };
 
-  if (isLoading) {
+  // ✅ 아바타 저장 핸들러 함수 추가
+  const handleAvatarSave = async (file: File) => {
+    console.log("새 프로필 사진 저장:", file.name);
+    // 실제 앱에서는 여기서 파일을 서버/스토리지에 업로드하고 URL을 받아옵니다.
+    // 예: const newAvatarUrl = await uploadFileToServer(file);
+    
+    // 여기서는 임시로 클라이언트에서 생성한 URL로 낙관적 업데이트를 수행합니다.
+    const tempUrl = URL.createObjectURL(file);
+    updateProfile({ avatarUrl: tempUrl });
+    
+    // 실제 API 호출 후 URL.revokeObjectURL(tempUrl) 호출 필요
+    setShowAvatarModal(false);
+  };
+
+
+  if (isLoading && !userProfile) { // userProfile이 있으면 로딩 중에도 렌더링
     return (
       <div className="flex min-h-[100dvh] w-full h-full items-center justify-center bg-[#FDFBF8] font-pretendard">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D2B48C]"></div>
-        {/* <p className="ml-3 text-[#3D2C1D]">프로필 불러오는 중...</p> */}
       </div>
     );
   }
@@ -106,11 +127,12 @@ export default function ProfilePage() {
         <section className="text-center">
           <div className="relative inline-block">
             <img
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvM8BeQVRtX-JPgzmA6JCZ0Sx8m-Ver8hiSd4I9V_JbwzHPoychRH2Ok3qqU_bmgZPSQAn_047aMc8nCL1qI5qDcnERJC5Hqq2YwObo_LB9UrvnU4GTgYEp5aGCssWwnVl91-JOk2Nx9SY2vvbx16_bIBhG1DjRKgVPd3pt3GOOA1vAWxA8oGWfQy_pK3stg40qzQ4UZ1g0ywp9k6U8BQBA4cLy-blz0639c4a5y7sWmirFsfQByuYFDQAvMn-duibl6-hECUU606Z"
+              src={userProfile.avatarUrl} // ✅ 동적 데이터로 변경
               alt="User profile picture"
               className="object-cover w-24 h-24 rounded-full shadow-sm"
             />
             <button
+              onClick={() => setShowAvatarModal(true)} // ✅ 추가
               className="absolute bottom-0 right-0 bg-[#D2B48C] rounded-full p-1.5 shadow-md active:scale-95 transition-transform"
               type="button"
               tabIndex={-1}
@@ -280,9 +302,7 @@ export default function ProfilePage() {
         onClose={() => setShowChangePw(false)}
         onSubmit={(newPassword) => {
           console.log("비밀번호 변경 요청:", newPassword);
-          // 실제 Supabase 비밀번호 변경 API 호출 로직 추가 예정
           setShowChangePw(false);
-          // 비밀번호 변경 후 프로필 데이터 갱신이 필요하다면 updateProfile 호출
         }}
       />
       <NotificationSettingsModal
@@ -290,9 +310,16 @@ export default function ProfilePage() {
         onClose={() => setShowNotiModal(false)}
         onSave={(settings) => {
           console.log("알림 설정 저장 요청:", settings);
-          updateProfile({ notificationSettings: settings }); // 프로필에 알림 설정 저장
+          updateProfile({ notificationSettings: settings });
           setShowNotiModal(false);
         }}
+      />
+      {/* ✅ 아바타 업로드 모달 추가 */}
+      <AvatarUploadModal
+        open={showAvatarModal}
+        currentAvatarUrl={userProfile.avatarUrl}
+        onClose={() => setShowAvatarModal(false)}
+        onSave={handleAvatarSave}
       />
     </div>
   );
