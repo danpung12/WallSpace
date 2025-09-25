@@ -1,31 +1,35 @@
 // src/types/kakao.d.ts
 
 // ✅ Kakao Map SDK에서 사용하는 타입들을 정의합니다.
-type KakaoLatLng = {
+export type KakaoLatLng = {
   getLat: () => number;
   getLng: () => number;
 };
 
-type KakaoMap = {
+export type KakaoMap = {
   setCenter: (latlng: KakaoLatLng) => void;
+  relayout: () => void;
+  getNode: () => HTMLElement;
+  setLevel: (level: number) => void;
+  getCenter: () => KakaoLatLng;
 };
 
-type KakaoMarker = {
+export type KakaoMarker = {
   setMap: (map: KakaoMap | null) => void;
 };
 
-type KakaoCustomOverlay = {
+export type KakaoCustomOverlay = {
     setMap: (map: KakaoMap | null) => void;
 }
 
-type KakaoGeocoderResult = {
+export type KakaoGeocoderResult = {
   address: {
     region_1depth_name: string;
     region_2depth_name: string;
   };
 }[];
 
-type KakaoPlace = { 
+export type KakaoPlace = { 
   id: string; 
   place_name: string; 
   address_name: string; 
@@ -34,7 +38,7 @@ type KakaoPlace = {
   y: string; 
 };
 
-type KakaoGeocoderStatus = 'OK' | 'ZERO_RESULT' | 'ERROR';
+export type KakaoGeocoderStatus = 'OK' | 'ZERO_RESULT' | 'ERROR';
 
 
 // ✅ 위에서 정의한 타입들을 사용하여 전역 window.kakao 객체를 선언합니다.

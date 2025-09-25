@@ -6,11 +6,8 @@
     "dev": "next dev --turbopack",
     "start": "next start",
     "lint": "next lint",
-<<<<<<< HEAD
-    "analyze": "cross-env ANALYZE=true next build"
-=======
+    "analyze": "cross-env ANALYZE=true next build",
     "test": "jest --watch"
->>>>>>> feature/setup-testing-environment
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

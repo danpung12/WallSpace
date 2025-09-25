@@ -154,18 +154,17 @@ export default function MainPage() {
       {/* MapProvider로 MapDisplay 컴포넌트를 감쌉니다. */}
       <MapProvider>
         <div
-          className="min-h-screen w-full bg-cover bg-center bg-fixed"
-          style={{ backgroundImage: `url(${backgroundImageUrl})` }}
+          className="min-h-screen w-full bg-[#FDFBF8]"
         >
-          <div className="absolute inset-0 bg-black/60"></div> 
+          {/* <div className="absolute inset-0 bg-black/60"></div> */}
           
-          <MapDisplay /> {/* MapDisplay 컴포넌트를 홈 화면에 직접 렌더링합니다. */}
+          {/* <MapDisplay /> */} {/* MapDisplay 컴포넌트를 홈 화면에 직접 렌더링합니다. */}
            
           <div className="relative z-10 w-full space-y-8 pt-8 pb-12">
             
             <section>
               <div className="container mx-auto px-6">
-                <h2 className="text-xl font-bold text-white mb-4 drop-shadow-lg">새로운 알림</h2>
+                <h2 className="text-xl font-bold text-gray-800 mb-4">새로운 알림</h2>
                 <div className="space-y-3">
                   {notificationsData.map((notification) => (
                     <NotificationItem key={notification.id} {...notification} />
@@ -177,8 +176,8 @@ export default function MainPage() {
             <section className="w-full">
               <div className="container mx-auto px-6">
                 <div className="flex items-baseline mb-4">
-                  <h2 className="text-xl font-bold text-white drop-shadow-lg mr-2">추천 장소</h2>
-                  <p className="text-base font-medium text-white/90 drop-shadow-lg">{currentPlaceName}</p>
+                  <h2 className="text-xl font-bold text-gray-800 mr-2">추천 장소</h2>
+                  <p className="text-base font-medium text-gray-600">{currentPlaceName}</p>
                 </div>
               </div>
               

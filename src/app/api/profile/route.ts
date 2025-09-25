@@ -7,7 +7,7 @@ let mockUserProfile: UserProfile = {
   nickname: "Selena",
   name: "홍길동",
   email: "artist@example.com",
-  avatarUrl: "https://i.pravatar.cc/150?img=68",
+  avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuDvM8BeQVRtX-JPgzmA6JCZ0Sx8m-Ver8hiSd4I9V_JbwzHPoychRH2Ok3qqU_bmgZPSQAn_047aMc8nCL1qI5qDcnERJC5Hqq2YwObo_LB9UrvnU4GTgYEp5aGCssWwnVl91-JOk2Nx9SY2vvbx16_bIBhG1DjRKgVPd3pt3GOOA1vAWxA8oGWfQy_pK3stg40qzQ4UZ1g0ywp9k6U8BQBA4cLy-blz0639c4a5y7sWmirFsfQByuYFDQAvMn-duibl6-hECUU606Z",
   bio: "열정적인 아티스트입니다. 다양한 공간에서 저의 작품을 선보이고 싶습니다.",
   phone: "010-1234-5678",
   address: "서울시 강남구 역삼동",

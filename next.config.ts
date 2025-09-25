@@ -34,6 +34,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+
+  // 개발 중에 나타나는 Next.js 로고(N) 비활성화
+  devIndicators: {
+    buildActivity: false
+  },
 };
 
 export default nextConfig;

@@ -3,7 +3,7 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 // --- 데이터 타입 정의 ---
 type Artwork = {
@@ -247,49 +247,72 @@ export default function Dashboard() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
   const tickingRef = useRef(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 캐러셀 스크롤 관련 로직
-  const calcActive = () => {
-    const c = containerRef.current;
-    if (!c) return;
-    const centerX = c.scrollLeft + c.clientWidth / 2;
-    let bestIdx = 0;
-    let bestDist = Infinity;
-    itemRefs.current.forEach((el, idx) => {
-      if (!el) return;
-      const cardCenter = el.offsetLeft + el.clientWidth / 2;
-      const dist = Math.abs(cardCenter - centerX);
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestIdx = idx;
+  // 중앙에 위치한 카드를 계산하고 해당 카드로 스크롤하는 함수
+  const snapToCenter = useCallback(() => {
+      const c = containerRef.current;
+      if (!c) return;
+
+      const centerX = c.scrollLeft + c.clientWidth / 2;
+      let bestIdx = -1;
+      let bestDist = Infinity;
+
+      itemRefs.current.forEach((el, idx) => {
+          if (!el) return;
+          const cardCenter = el.offsetLeft + el.clientWidth / 2;
+          const dist = Math.abs(cardCenter - centerX);
+          if (dist < bestDist) {
+              bestDist = dist;
+              bestIdx = idx;
+          }
+      });
+
+      if (bestIdx !== -1) {
+          setActiveIndex(bestIdx);
+          // 이 부분이 스크롤 위치를 강제로 변경하여 문제를 일으켰습니다. 제거합니다.
+          // const targetEl = itemRefs.current[bestIdx];
+          // if (targetEl) {
+          //     const targetScrollLeft = targetEl.offsetLeft + targetEl.clientWidth / 2 - c.clientWidth / 2;
+          //     c.scrollTo({ left: targetScrollLeft, behavior: 'auto' });
+          // }
       }
-    });
-    setActiveIndex(bestIdx);
-  };
+  }, []); // 의존성 배열을 비워서 함수가 재생성되지 않도록 합니다.
 
+  // 스크롤 이벤트 핸들러 (디바운싱 적용)
   const onScroll = () => {
-    if (tickingRef.current) return;
-    tickingRef.current = true;
-    requestAnimationFrame(() => {
-      calcActive();
-      tickingRef.current = false;
-    });
+      if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+      }
+      scrollTimeoutRef.current = setTimeout(snapToCenter, 100);
   };
 
   useEffect(() => {
-    const c = containerRef.current;
-    if (!c) return;
-    itemRefs.current = [];
-    c.scrollTo({ left: 0, behavior: 'smooth' });
-    setActiveIndex(0);
-    calcActive();
-    c.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', calcActive);
-    return () => {
-      c.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', calcActive);
-    };
-  }, [userMode]);
+      const c = containerRef.current;
+      if (!c) return;
+
+      // userMode가 변경될 때 캐러셀 상태를 초기화
+      itemRefs.current = itemRefs.current.slice(0, userMode === 'artist' ? ARTWORKS.length : STORES.length);
+      c.scrollTo({ left: 0, behavior: 'auto' });
+      setActiveIndex(0);
+
+      // 'scrollend' 이벤트가 지원되는 경우 사용하고, 아니면 'scroll' 이벤트에 타이머를 사용합니다.
+      const eventName = 'onscrollend' in window ? 'scrollend' : 'scroll';
+      const listener = eventName === 'scrollend' ? snapToCenter : onScroll;
+      
+      c.addEventListener(eventName, listener, { passive: true });
+      window.addEventListener('resize', snapToCenter);
+
+      // 초기 로드 시 중앙 카드 계산
+      const initialTimeout = setTimeout(snapToCenter, 100);
+
+      return () => {
+          c.removeEventListener(eventName, listener);
+          window.removeEventListener('resize', snapToCenter);
+          if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+          clearTimeout(initialTimeout);
+      };
+  }, [userMode, ARTWORKS, STORES, snapToCenter]); // snapToCenter 의존성 제거
 
   const artistBgClass = "bg-[#FDFBF8]"; // 기존 아티스트 모드 배경
   const managerBgClass = "bg-[#F5F1EC]"; // 기존 사장님 모드 배경

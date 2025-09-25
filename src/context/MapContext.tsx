@@ -1,158 +1,208 @@
 'use client';
 
-import React, { createContext, useContext, useRef, useState, useCallback } from 'react';
-// locations 데이터의 경로가 올바른지 확인해주세요. (예: ../data/locations)
-import { locations, Location as LocationType } from '@/data/locations'; 
+import React, { createContext, useContext, useRef, useState, useCallback, useMemo, ReactNode } from 'react';
+import { locations, Location, Space } from '@/data/locations';
+import { KakaoPlace, KakaoMap, KakaoLatLng, KakaoGeocoderResult, KakaoGeocoderStatus } from '@/types/kakao';
 
 // --- 타입 정의 ---
-// 1. 컨텍스트가 공유할 값들의 타입을 정의합니다.
+export interface Artwork { id: number; title: string; artist: string; dimensions: string; price: number; imageUrl: string; }
+export type { Location as LocationType, Space };
+
+// --- 데이터 및 유틸 함수 ---
+export const artworksData: Artwork[] = [
+    { id: 1, title: 'Vibrance', artist: 'Alexia Ray', dimensions: '120cm x 80cm', price: 15, imageUrl: 'https://picsum.photos/id/1018/200/200' },
+    { id: 2, title: 'Solitude', artist: 'Clara Monet', dimensions: '50cm x 70cm', price: 10, imageUrl: 'https://picsum.photos/id/1015/200/200' },
+    { id: 3, title: 'The Vase', artist: 'Mark Chen', dimensions: '100cm x 100cm', price: 20, imageUrl: 'https://picsum.photos/id/1025/200/200' },
+];
+export const disabledDaysData = [28];
+export const toYMD = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+export const isSameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+export const fmtKoreanDate = (d: Date) => `${d.getMonth() + 1}월 ${d.getDate()}일`;
+export const getCalendarCells = (viewDate: Date) => {
+    const y = viewDate.getFullYear(); const m = viewDate.getMonth();
+    const firstWeekday = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const prevMonthDays = new Date(y, m, 0).getDate();
+    const numWeeks = Math.ceil((firstWeekday + daysInMonth) / 7);
+    const totalCells = numWeeks * 7;
+    const cells: { date: Date; inMonth: boolean }[] = [];
+    for (let i = firstWeekday - 1; i >= 0; i--) { cells.push({ date: new Date(y, m - 1, prevMonthDays - i), inMonth: false }); }
+    for (let d = 1; d <= daysInMonth; d++) { cells.push({ date: new Date(y, m, d), inMonth: true }); }
+    while (cells.length < totalCells) { const last = cells[cells.length - 1].date; const next = new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1); cells.push({ date: next, inMonth: next.getMonth() === m }); }
+    return cells;
+};
+
 interface MapContextType {
-    mapInstance: React.MutableRefObject<any | null>;
+    mapInstance: React.RefObject<KakaoMap | null>;
     isMapLoading: boolean;
-    initializeMap: (container: HTMLElement, lat: number, lng: number) => void; // container 인자 추가
-    loadMarkers: (map: any, onMarkerClick?: (place: LocationType) => void) => void; // onMarkerClick 인자 추가
-    locationInfo: { city: string }; // 위치 정보 추가
-    setLocationInfo: React.Dispatch<React.SetStateAction<{ city: string }>>; // 위치 정보 세터 추가
-    getMapInstance: () => any | null; // 지도 인스턴스를 반환하는 함수 추가
-    error: string | null; // 지도 초기화 및 로딩 중 발생한 오류 메시지
-    onMarkerClick?: (place: LocationType) => void; // 마커 클릭 시 호출될 콜백 추가
+    locationInfo: { city: string };
+    selectedPlace: Location | null;
+    setSelectedPlace: React.Dispatch<React.SetStateAction<Location | null>>;
+    initializeMap: (container: HTMLElement) => void;
+    
+    isDetailPageVisible: boolean;
+    setDetailPageVisible: React.Dispatch<React.SetStateAction<boolean>>;
+    isDatePickerOpen: boolean;
+    setDatePickerOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    viewDate: Date;
+    startDate: Date | null;
+    endDate: Date | null;
+    activeFilter: string;
+    selectedArtwork: Artwork | null;
+    setSelectedArtwork: React.Dispatch<React.SetStateAction<Artwork | null>>;
+    isArtworkModalOpen: boolean;
+    setArtworkModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    isArtworkSelectorVisible: boolean;
+    isSearchModalOpen: boolean;
+    setSearchModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    isOptionsMenuOpen: boolean;
+    setOptionsMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    parkingFilter: boolean;
+    setParkingFilter: React.Dispatch<React.SetStateAction<boolean>>;
+    cells: { date: Date; inMonth: boolean }[];
+    hasRange: boolean;
+    filterButtons: string[];
+    headerLabel: string;
+    
+    handlePlaceSelect: (place: KakaoPlace) => void;
+    gotoMonth: (offset: number) => void;
+    isDisabled: (cell: Date) => boolean;
+    onClickDay: (cell: Date) => void;
+    getDayClass: (cell: Date, inMonth: boolean) => string;
+    handleFilterClick: (label: string) => void;
 }
 
-// 2. createContext를 호출할 때, 정의한 타입을 제네릭(<>)으로 전달합니다.
 const MapContext = createContext<MapContextType | null>(null);
 
-export function MapProvider({ children, onMarkerClick }: { children: React.ReactNode, onMarkerClick?: (place: LocationType) => void }) {
-    const mapInstance = useRef<any | null>(null); // 명시적 타입 지정
-    const mapContainerRef = useRef<HTMLDivElement | null>(null); // 지도 컨테이너 ref (MapDisplay에서 소유하므로 실제 사용은 MapDisplay에서)
+export function MapProvider({ children }: { children: ReactNode }) {
+    const mapInstance = useRef<KakaoMap | null>(null);
     const [isMapLoading, setMapLoading] = useState(true);
-    const [locationInfo, setLocationInfo] = useState({ city: '위치 찾는 중...' }); // locationInfo 상태 추가
-    const [error, setError] = useState<string | null>(null); // 오류 상태 추가
-    const isMapInitialized = useRef(false); // MapDisplay에서 지도가 최초로 마운트될 때 initializeMap 호출을 제어
- 
-    // loadMarkers 함수를 initializeMap보다 먼저 정의합니다.
-    const loadMarkers = useCallback((map: any, markerClickHandler?: (place: LocationType) => void) => {
+    const [locationInfo, setLocationInfo] = useState({ city: '위치 찾는 중...' });
+    const [selectedPlace, setSelectedPlace] = useState<Location | null>(null);
+    const isMapInitialized = useRef(false);
+
+    // UI State
+    const [isDetailPageVisible, setDetailPageVisible] = useState(false);
+    const [isDatePickerOpen, setDatePickerOpen] = useState(false);
+    const [viewDate, setViewDate] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+    const [startDate, setStartDate] = useState<Date | null>(null);
+    const [endDate, setEndDate] = useState<Date | null>(null);
+    const [activeFilter, setActiveFilter] = useState('갤러리');
+    const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(artworksData[0] || null);
+    const [isArtworkModalOpen, setArtworkModalOpen] = useState(false);
+    const [isArtworkSelectorVisible, setArtworkSelectorVisible] = useState(false);
+    const [isSearchModalOpen, setSearchModalOpen] = useState(false);
+    const [isOptionsMenuOpen, setOptionsMenuOpen] = useState(false);
+    const [parkingFilter, setParkingFilter] = useState(false);
+
+    // Derived State
+    const filterButtons = ['작품 선택', '카페', '갤러리', '문화회관'];
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+    const cells = useMemo(() => getCalendarCells(viewDate), [viewDate]);
+    const hasRange = useMemo(() => !!(startDate && endDate), [startDate, endDate]);
+    const headerLabel = useMemo(() => `${year}년 ${month + 1}월`, [year, month]);
+
+    const loadMarkers = useCallback((map: KakaoMap) => {
         const { kakao } = window;
-        if (!kakao || !map) return;
- 
+        if (!kakao) return;
         locations.forEach((place) => {
             const placePosition = new kakao.maps.LatLng(place.lat, place.lng);
-
-            // 마커 생성
-            const marker = new kakao.maps.Marker({
-                map: map,
-                position: placePosition
-            });
-
-            // 마커 클릭 이벤트 리스너 추가
-            if (markerClickHandler) {
-                kakao.maps.event.addListener(marker, 'click', () => {
-                    markerClickHandler(place);
-                });
-            }
-
-            // 커스텀 오버레이 생성 (마커 위에 표시될 정보창)
+            const marker = new kakao.maps.Marker({ map, position: placePosition });
+            const handleClick = () => {
+                setSelectedPlace(place);
+                map.setCenter(placePosition);
+            };
+            kakao.maps.event.addListener(marker, 'click', handleClick);
             const contentNode = document.createElement('div');
             contentNode.className = 'custom-overlay-style';
             contentNode.innerHTML = `<div class="font-bold">${place.name}</div><div style="color:${place.statusColor};" class="text-xs mt-0.5">${place.statusText}</div>`;
-
-            // 커스텀 오버레이에도 클릭 이벤트 리스너 추가 (옵션)
-            // contentNode.addEventListener('click', () => {
-            //     onMarkerClick?.(place);
-            // });
-
-            new kakao.maps.CustomOverlay({ 
-                map: map, 
-                position: placePosition, 
-                content: contentNode, 
-                yAnchor: 2.2 
-            });
+            contentNode.onclick = handleClick;
+            new kakao.maps.CustomOverlay({ map, position: placePosition, content: contentNode, yAnchor: 2.2 });
         });
-    }, []); // markerClickHandler는 인자로 받으므로 의존성 배열에서 제거합니다.
+    }, []);
 
-    const initializeMap = useCallback((container: HTMLElement, lat: number, lng: number) => {
-        console.log("MapContext: initializeMap called.", { isMapInitialized: isMapInitialized.current, windowKakao: !!window.kakao, containerExists: !!container });
-        if (isMapInitialized.current || !window.kakao || !container) {
-            console.log("MapContext: Skipping initialization - already initialized, Kakao API not loaded, or container not ready.");
-            return;
+    const initializeMap = useCallback((container: HTMLElement) => {
+        if (isMapInitialized.current || !window.kakao) return;
+        isMapInitialized.current = true;
+        
+        window.kakao.maps.load(() => {
+            const createAndSetupMap = (lat: number, lng: number) => {
+                const map = new window.kakao.maps.Map(container, { center: new window.kakao.maps.LatLng(lat, lng), level: 5 });
+                mapInstance.current = map;
+                loadMarkers(map);
+                const geocoder = new window.kakao.maps.services.Geocoder();
+                const updateLocationInfo = (center: KakaoLatLng) => {
+                    geocoder.coord2Address(center.getLng(), center.getLat(), (result: KakaoGeocoderResult, status: KakaoGeocoderStatus) => {
+                        if (status === 'OK' && result[0]) setLocationInfo({ city: result[0].address.region_2depth_name });
+                    });
+                };
+                updateLocationInfo(map.getCenter());
+                window.kakao.maps.event.addListener(map, 'center_changed', () => updateLocationInfo(map.getCenter()));
+                setMapLoading(false);
+            };
+            navigator.geolocation.getCurrentPosition(p => createAndSetupMap(p.coords.latitude, p.coords.longitude), () => createAndSetupMap(37.5665, 126.9780));
+        });
+    }, [loadMarkers]);
+    
+    const handlePlaceSelect = useCallback((place: KakaoPlace) => {
+        const map = mapInstance.current;
+        if (!map || !window.kakao) return;
+        const coords = new window.kakao.maps.LatLng(Number(place.y), Number(place.x));
+        map.setCenter(coords);
+        map.setLevel(5);
+        setLocationInfo({ city: place.place_name });
+        setSearchModalOpen(false);
+    }, []);
+
+    const gotoMonth = useCallback((offset: number) => setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1)), []);
+    const isDisabled = useCallback((cell: Date) => cell.getMonth() === month && disabledDaysData.includes(cell.getDate()), [month]);
+    const onClickDay = useCallback((cell: Date) => {
+        if (isDisabled(cell)) return;
+        const c = toYMD(cell);
+        if (!startDate || hasRange) { 
+            setStartDate(c); 
+            setEndDate(c); 
+        } else { 
+            if (c < startDate) {
+                setEndDate(startDate);
+                setStartDate(c);
+            } else {
+                setEndDate(c);
+            }
         }
-        isMapInitialized.current = true; // 최초 초기화 플래그 설정
-        setMapLoading(true);
-        setError(null); // 새로운 초기화 시도 시 이전 오류 초기화
- 
-        console.log("MapContext: Calling window.kakao.maps.load()...");
-        window.kakao.maps.load(() => { // onMarkerClick을 initializeMap에 전달
-            console.log("MapContext: window.kakao.maps.load() callback fired.");
-            const geocoder = new window.kakao.maps.services.Geocoder();
+    }, [startDate, hasRange, isDisabled]);
 
-            const updateLocationInfoFromMapCenter = (currentMap: any) => {
-                const center = currentMap.getCenter();
-                geocoder.coord2Address(center.getLng(), center.getLat(), (result: any, status: any) => {
-                    console.log("MapContext: coord2Address result:", { status, result });
-                    if (status === window.kakao.maps.services.Status.OK) {
-                        setLocationInfo({ city: result[0].address.region_2depth_name || result[0].address.region_1depth_name });
-                    } else { setLocationInfo({ city: "주소 정보 없음" }); }
-                });
-            };
+    const getDayClass = useCallback((cell: Date, inMonth: boolean) => {
+        if (isDisabled(cell)) return "date-picker-day date-picker-day-disabled";
+        if (!inMonth) return "date-picker-day date-picker-day-muted";
+        const isSelected = startDate && endDate && isSameDay(startDate, endDate) && isSameDay(cell, startDate);
+        if (isSelected) return "date-picker-day date-picker-day-selected";
+        const isStart = startDate && isSameDay(cell, startDate);
+        const isEnd = endDate && isSameDay(cell, endDate);
+        if(isStart && isEnd) return "date-picker-day date-picker-day-selected";
+        if (isStart) return "date-picker-day date-picker-day-selected date-range-start";
+        if (isEnd) return "date-picker-day date-picker-day-selected date-range-end";
+        if (startDate && endDate && cell > startDate && cell < endDate) return "date-picker-day date-picker-day-in-range";
+        return "date-picker-day";
+    }, [startDate, endDate, isDisabled]);
 
-            // 지도 생성 및 설정 로직을 함수로 분리
-            const createAndSetupMap = (mapLat: number, mapLng: number) => {
-                try {
-                    console.log("MapContext: Attempting to create new Kakao Map instance with container:", container);
-                    const map = new window.kakao.maps.Map(container, {
-                        center: new window.kakao.maps.LatLng(mapLat, mapLng),
-                        level: 5,
-                    });
-                    mapInstance.current = map;
-                    console.log("MapContext: Map instance created:", mapInstance.current);
-
-                    loadMarkers(map, onMarkerClick);
-                    console.log("MapContext: Markers loaded.");
-
-                    updateLocationInfoFromMapCenter(map); // 초기 로드 시 현재 중심 위치 반영
-                    console.log("MapContext: Initial location info updated.");
-
-                    window.kakao.maps.event.addListener(map, 'center_changed', () => {
-                        console.log("MapContext: Map center_changed event fired.");
-                        updateLocationInfoFromMapCenter(map);
-                    });
-                    console.log("MapContext: center_changed listener added.");
-
-                    setMapLoading(false);
-                    console.log("MapContext: Map loading set to false.");
-                } catch (mapError: any) {
-                    setError(`지도 생성 오류: ${mapError.message || mapError}`);
-                    console.error("MapContext: Error creating map:", mapError);
-                    setMapLoading(false);
-                }
-            };
-
-            navigator.geolocation?.getCurrentPosition(
-                (position) => {
-                    console.log("MapContext: Geolocation success.", { coords: position.coords });
-                    createAndSetupMap(position.coords.latitude, position.coords.longitude);
-                },
-                (geoError) => {
-                    console.warn("MapContext: Geolocation failed, falling back to default.", geoError);
-                    setError(`위치 정보 동의 필요: ${geoError.message || geoError}`); // Optional: show geolocation error
-                    createAndSetupMap(lat, lng); // Fallback to initialLat, initialLng
-                },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 } // Add timeout for geolocation
-            );
-        });
-    }, [setLocationInfo, loadMarkers, onMarkerClick]); // setLocationInfo와 loadMarkers를 의존성 배열에 추가합니다.
-
-    const getMapInstance = useCallback(() => mapInstance.current, []); // 지도 인스턴스를 반환하는 함수
+    const handleFilterClick = useCallback((label: string) => {
+        if (label === '작품 선택') {
+            setArtworkSelectorVisible(p => !p);
+        } else {
+            setActiveFilter(label);
+            setArtworkSelectorVisible(false);
+        }
+    }, []);
 
     const value = {
-        mapInstance,
-        isMapLoading,
-        initializeMap,
-        loadMarkers, // loadMarkers 함수도 컨텍스트에 추가
-        locationInfo,
-        setLocationInfo,
-        getMapInstance, // getMapInstance 함수를 컨텍스트에 추가
-        error, // 오류 상태 추가
-        onMarkerClick, // onMarkerClick도 context value에 포함
+        mapInstance, isMapLoading, locationInfo, selectedPlace, setSelectedPlace, initializeMap,
+        isDetailPageVisible, setDetailPageVisible, isDatePickerOpen, setDatePickerOpen, viewDate, startDate, endDate,
+        activeFilter, selectedArtwork, setSelectedArtwork, isArtworkModalOpen, setArtworkModalOpen, isArtworkSelectorVisible,
+        isSearchModalOpen, setSearchModalOpen, isOptionsMenuOpen, setOptionsMenuOpen, parkingFilter, setParkingFilter,
+        cells, hasRange, filterButtons, headerLabel,
+        handlePlaceSelect, gotoMonth, isDisabled, onClickDay, getDayClass, handleFilterClick,
     };
 
     return <MapContext.Provider value={value}>{children}</MapContext.Provider>;
@@ -160,8 +210,6 @@ export function MapProvider({ children, onMarkerClick }: { children: React.React
 
 export function useMap(): MapContextType {
     const context = useContext(MapContext);
-    if (!context) {
-        throw new Error('useMap must be used within a MapProvider');
-    }
+    if (!context) throw new Error('useMap must be used within a MapProvider');
     return context;
 }

@@ -61,6 +61,7 @@ export default function AvatarUploadModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      style={{ paddingBottom: 'calc(64px + env(safe-area-inset-bottom))' }}
       onClick={onClose}
     >
       <div
@@ -73,7 +74,10 @@ export default function AvatarUploadModal({
 
         <div className="flex flex-col items-center space-y-4">
           {/* 이미지 미리보기 */}
-          <div className="relative w-40 h-40 rounded-full overflow-hidden bg-gray-200 shadow-inner">
+          <div 
+            className="relative w-40 h-40 rounded-full overflow-hidden bg-gray-200 shadow-inner group cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
             {previewUrl && (
               <img
                 src={previewUrl}
@@ -81,13 +85,19 @@ export default function AvatarUploadModal({
                 className="object-cover w-full h-full"
               />
             )}
+            <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+            </div>
           </div>
 
           {/* 파일 선택 버튼 */}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full px-4 py-2 text-sm font-semibold text-[#3D2C1D] bg-white border border-[#EAE5DE] rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
+            className="w-full px-4 py-2 text-sm font-semibold text-[#4a3f3a] bg-[#f5f3f1] rounded-lg shadow-sm hover:bg-[#dcd6d1] transition-colors"
           >
             이미지 선택
           </button>
@@ -104,7 +114,7 @@ export default function AvatarUploadModal({
             <button
               type="button"
               onClick={onClose}
-              className="w-full py-2.5 font-semibold text-[#8C7853] bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+              className="w-full h-12 rounded-lg bg-white text-[#A18F79] border border-[#EAE5DE] font-bold hover:bg-[#F5F3F0] transition-colors"
             >
               취소
             </button>
@@ -112,7 +122,7 @@ export default function AvatarUploadModal({
               type="button"
               onClick={handleSaveClick}
               disabled={!selectedFile}
-              className="w-full py-2.5 font-bold text-white bg-[#D2B48C] rounded-lg hover:opacity-90 transition-opacity disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="w-full h-12 rounded-lg bg-[#c19a6b] text-white font-bold hover:opacity-90 transition-opacity disabled:bg-[#D4C8B8] disabled:cursor-not-allowed"
             >
               저장
             </button>

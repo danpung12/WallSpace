@@ -1,80 +1,84 @@
 'use client';
 
-import React, { useRef, useState, useMemo, useEffect } from 'react';
-import Script from 'next/script';
+import React, { useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
-import { locations, Location } from '../../data/locations';
 import { useBottomNav } from '../context/BottomNavContext';
-import ArtworkSelector from './components/ArtworkSelector';
-import LoadingScreen from './components/LoadingScreen';
-import PlaceDetailPanel from './components/PlaceDetailPanel';
+import { useMap, artworksData, isSameDay, fmtKoreanDate } from '@/context/MapContext'; 
 
+// --- OptionsMenu Component Definition ---
+interface OptionsMenuProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function OptionsMenu({ isOpen, onClose }: OptionsMenuProps) {
+  const { parkingFilter, setParkingFilter } = useMap();
+
+  const handleParkingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setParkingFilter(e.target.checked);
+  };
+
+  return (
+    <div className={`options-menu-overlay ${isOpen ? 'open' : ''}`} onClick={onClose}>
+      <div className={`options-menu-content ${isOpen ? 'open' : ''}`} onClick={(e) => e.stopPropagation()}>
+        <div className="options-menu-header">
+          <span>필터</span>
+          <button onClick={onClose} className="close-btn">&times;</button>
+        </div>
+        <div className="options-menu-body">
+          <div className="option-item">
+            <label htmlFor="parking-checkbox" className="option-label">
+              주차장 유무
+            </label>
+            <label className="switch">
+              <input
+                id="parking-checkbox"
+                type="checkbox"
+                checked={parkingFilter}
+                onChange={handleParkingChange}
+              />
+              <span className="slider round"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Dynamic Imports ---
 const AddArtworkModal = dynamic(() => import('./components/AddArtworkModal'));
 const SearchModal = dynamic(() => import('./components/SearchModal'));
 const LocationDetailPage = dynamic(
   () => import('./components/LocationDetailPage')
 );
 
-// --- 타입 선언 ---
-type KakaoLatLng = { getLat: () => number; getLng: () => number; };
-type KakaoMap = { setCenter: (latlng: KakaoLatLng) => void; };
-type KakaoGeocoderResult = { address: { region_1depth_name: string; region_2depth_name: string; }; }[];
-type KakaoGeocoderStatus = 'OK' | 'ZERO_RESULT' | 'ERROR';
-type KakaoPlace = { id: string; place_name: string; address_name: string; road_address_name: string; x: string; y: string; };
-interface Artwork { id: number; title: string; artist: string; dimensions: string; price: number; imageUrl: string; }
-
-// --- 데이터 및 유틸 함수 ---
-const artworks: Artwork[] = [
-    { id: 1, title: 'Vibrance', artist: 'Alexia Ray', dimensions: '120cm x 80cm', price: 15, imageUrl: 'https://picsum.photos/id/1018/200/200' },
-    { id: 2, title: 'Solitude', artist: 'Clara Monet', dimensions: '50cm x 70cm', price: 10, imageUrl: 'https://picsum.photos/id/1015/200/200' },
-    { id: 3, title: 'The Vase', artist: 'Mark Chen', dimensions: '100cm x 100cm', price: 20, imageUrl: 'https://picsum.photos/id/1025/200/200' },
-];
-const disabledDays = [28];
-const toYMD = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-const isSameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-const fmtKoreanDate = (d: Date) => `${d.getMonth() + 1}월 ${d.getDate()}일`;
-const getCalendarCells = (viewDate: Date) => {
-    const y = viewDate.getFullYear(); const m = viewDate.getMonth();
-    const firstWeekday = new Date(y, m, 1).getDay();
-    const daysInMonth = new Date(y, m + 1, 0).getDate();
-    const prevMonthDays = new Date(y, m, 0).getDate();
-    const numWeeks = Math.ceil((firstWeekday + daysInMonth) / 7);
-    const totalCells = numWeeks * 7;
-    const cells: { date: Date; inMonth: boolean }[] = [];
-    for (let i = firstWeekday - 1; i >= 0; i--) { cells.push({ date: new Date(y, m - 1, prevMonthDays - i), inMonth: false }); }
-    for (let d = 1; d <= daysInMonth; d++) { cells.push({ date: new Date(y, m, d), inMonth: true }); }
-    while (cells.length < totalCells) { const last = cells[cells.length - 1].date; const next = new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1); cells.push({ date: next, inMonth: next.getMonth() === m }); }
-    return cells;
-};
-
+// Components
+import MapDisplay from '../components/MapDisplay';
+import LoadingScreen from './components/LoadingScreen';
+import ArtworkSelector from './components/ArtworkSelector';
+import PlaceDetailPanel from './components/PlaceDetailPanel';
 
 // --- 메인 페이지 컴포넌트 ---
 export default function MapPage() {
     const { setNavVisible } = useBottomNav();
-    const [isDetailPageVisible, setDetailPageVisible] = useState(false);
-    const [isMapLoading, setMapLoading] = useState(true);
-    
-    const filterButtons = ['작품 선택', '카페', '갤러리', '문화회관'];
-    const mapContainer = useRef<HTMLDivElement>(null);
-    const mapInstance = useRef<KakaoMap | null>(null);
-    const isMapInitialized = useRef(false);
-
-    const [locationInfo, setLocationInfo] = useState({ city: '위치 찾는 중...' });
-    const [isDatePickerOpen, setDatePickerOpen] = useState(false);
-    const [viewDate, setViewDate] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-    const [startDate, setStartDate] = useState<Date | null>(null);
-    const [endDate, setEndDate] = useState<Date | null>(null);
-    const [activeFilter, setActiveFilter] = useState('갤러리');
-    const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(artworks[0] || null);
-    const [isArtworkModalOpen, setArtworkModalOpen] = useState(false);
-    const [isArtworkSelectorVisible, setArtworkSelectorVisible] = useState(false);
-    const [isSearchModalOpen, setSearchModalOpen] = useState(false);
-    const [selectedPlace, setSelectedPlace] = useState<Location | null>(null);
-    const year = viewDate.getFullYear();
-    const month = viewDate.getMonth();
-    const cells = useMemo(() => getCalendarCells(viewDate), [viewDate]);
-    const hasRange = !!(startDate && endDate);
+    const {
+        isDetailPageVisible, setDetailPageVisible,
+        isDatePickerOpen, setDatePickerOpen,
+        startDate, 
+        endDate,
+        activeFilter,
+        selectedArtwork, setSelectedArtwork,
+        isArtworkModalOpen, setArtworkModalOpen,
+        isArtworkSelectorVisible,
+        isSearchModalOpen, setSearchModalOpen,
+        selectedPlace, setSelectedPlace,
+        locationInfo,
+        isMapLoading,
+        cells, hasRange, filterButtons, headerLabel,
+        isOptionsMenuOpen, setOptionsMenuOpen,
+        handlePlaceSelect, gotoMonth, isDisabled, onClickDay, getDayClass, handleFilterClick,
+    } = useMap();
 
     useEffect(() => {
         if (isDetailPageVisible) {
@@ -87,105 +91,8 @@ export default function MapPage() {
         };
     }, [isDetailPageVisible, setNavVisible]);
     
-    const loadMap = (lat: number, lng: number): KakaoMap | null => {
-        const { kakao } = window;
-        if (!mapContainer.current || !kakao) return null;
-        const mapOption = { center: new kakao.maps.LatLng(lat, lng), level: 5 };
-        const map = new kakao.maps.Map(mapContainer.current, mapOption);
-        mapInstance.current = map;
-        new kakao.maps.services.Geocoder().coord2Address(lng, lat, (result: KakaoGeocoderResult, status: KakaoGeocoderStatus) => {
-            if (status === kakao.maps.services.Status.OK) {
-                setLocationInfo({ city: result[0].address.region_2depth_name || result[0].address.region_1depth_name });
-            } else { setLocationInfo({ city: "주소 정보 없음" }); }
-        });
-        return map;
-    };
-
-    const loadMarkers = (map: KakaoMap) => {
-        const { kakao } = window;
-        if (!kakao) return;
-        locations.forEach((place) => {
-            const placePosition = new kakao.maps.LatLng(place.lat, place.lng);
-            new kakao.maps.Marker({ map, position: placePosition });
-            const contentNode = document.createElement('div');
-            contentNode.className = 'custom-overlay-style';
-            contentNode.innerHTML = `<div class="font-bold">${place.name}</div><div style="color:${place.statusColor};" class="text-xs mt-0.5">${place.statusText}</div>`;
-            contentNode.onclick = () => setSelectedPlace(place);
-            new kakao.maps.CustomOverlay({ map, position: placePosition, content: contentNode, yAnchor: 2.2 });
-        });
-    };
-
-    const initializeMap = () => {
-        if (isMapInitialized.current || !window.kakao) {
-            return;
-        }
-        isMapInitialized.current = true;
-
-        window.kakao.maps.load(() => {
-            const onMapReady = (map: KakaoMap | null) => {
-                if (map) {
-                    loadMarkers(map);
-                    setMapLoading(false);
-                }
-            };
-
-            navigator.geolocation?.getCurrentPosition(
-                (position) => {
-                    const map = loadMap(position.coords.latitude, position.coords.longitude);
-                    onMapReady(map);
-                },
-                () => {
-                    const map = loadMap(37.5665, 126.9780);
-                    onMapReady(map);
-                }, { enableHighAccuracy: true }
-            );
-        });
-    };
-
-    const handlePlaceSelect = (place: KakaoPlace) => {
-        if (!mapInstance.current || !window.kakao) return;
-        const moveLatLon = new window.kakao.maps.LatLng(Number(place.y), Number(place.x));
-        mapInstance.current.setCenter(moveLatLon);
-        setLocationInfo({ city: place.place_name });
-        setSearchModalOpen(false);
-    };
-
-    const gotoMonth = (offset: number) => setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
-    const isDisabled = (cell: Date) => cell.getMonth() === month && cell.getFullYear() === year && disabledDays.includes(cell.getDate());
-    const onClickDay = (cell: Date) => {
-        if (isDisabled(cell)) return;
-        const c = toYMD(cell);
-        if (!startDate || (startDate && endDate && !isSameDay(startDate, endDate))) { setStartDate(c); setEndDate(c); return; }
-        if (startDate && endDate && isSameDay(startDate, endDate)) {
-            if (isSameDay(c, startDate)) { setStartDate(null); setEndDate(null); }
-            else if (c < startDate) { setEndDate(startDate); setStartDate(c); }
-            else { setEndDate(c); }
-        }
-    };
-    const getDayClass = (cell: Date, inMonth: boolean) => {
-        if (isDisabled(cell)) return "date-picker-day date-picker-day-disabled";
-        const isSelectedSingle = startDate && endDate && isSameDay(startDate, endDate) && isSameDay(cell, startDate);
-        const isStart = startDate && isSameDay(cell, startDate) && !isSelectedSingle;
-        const isEnd = endDate && isSameDay(cell, endDate) && !isSelectedSingle;
-        const inRange = startDate && endDate && !isSameDay(startDate, endDate) && toYMD(cell) > toYMD(startDate) && toYMD(cell) < toYMD(endDate);
-        if (isSelectedSingle) return "date-picker-day date-picker-day-selected";
-        if (isStart) return "date-picker-day date-picker-day-selected date-range-start";
-        if (isEnd) return "date-picker-day date-picker-day-selected date-range-end";
-        if (inRange) return "date-picker-day date-picker-day-in-range";
-        if (!inMonth) return "date-picker-day bg-white date-picker-day-muted";
-        return "date-picker-day bg-white";
-    };
-    const handleFilterClick = (label: string) => {
-        if (label === '작품 선택') { setArtworkSelectorVisible(prev => !prev); }
-        else { setActiveFilter(label); setArtworkSelectorVisible(false); }
-    };
-
-    const headerLabel = `${year}년 ${month + 1}월`;
-
     return (
         <div>
-            <Script src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&libraries=services&autoload=false`} strategy="afterInteractive" onLoad={initializeMap} />
-            
             <style>{`
               :root { --theme-brown-lightest:#F5F3F0; --theme-brown-light:#E9E4DD; --theme-brown-medium:#D4C8B8; --theme-brown-dark:#A18F79; --theme-brown-darkest:#4D4337; --white:#ffffff; }
               body { font-family: 'Pretendard', sans-serif; background-color: var(--theme-brown-lightest); color: var(--theme-brown-darkest); overflow: hidden; min-height: 100vh; overscroll-behavior: none; }
@@ -217,28 +124,49 @@ export default function MapPage() {
               .date-range-start { border-top-right-radius: 0; border-bottom-right-radius: 0; }
               .date-range-end { border-top-left-radius: 0; border-bottom-left-radius: 0; }
               .custom-overlay-style { padding: 8px 12px; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; cursor: pointer; font-size: 13px; }
+              
+              /* OptionsMenu 스타일 */
+              .options-menu-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(0px); z-index: 100; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease-in-out, backdrop-filter 0.3s ease-in-out; }
+              .options-menu-overlay.open { opacity: 1; pointer-events: auto; backdrop-filter: blur(4px); }
+              .options-menu-content { background-color: var(--theme-brown-lightest); width: 100%; max-width: 28rem; border-radius: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin: 1rem; transform: scale(0.95); opacity: 0; transition: transform 0.3s ease-out, opacity 0.3s ease-out; }
+              .options-menu-content.open { transform: scale(1); opacity: 1; }
+              .options-menu-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--theme-brown-light); font-weight: bold; font-size: 1.25rem; }
+              .options-menu-header .close-btn { background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--theme-brown-dark); padding: 0; line-height: 1; }
+              .options-menu-body { padding: 1rem; }
+              .option-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; }
+              .option-label { font-size: 1rem; }
+              .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+              .switch input { opacity: 0; width: 0; height: 0; }
+              .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
+              .slider.round { border-radius: 34px; }
+              .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+              input:checked + .slider { background-color: var(--theme-brown-darkest); }
+              input:checked + .slider:before { transform: translateX(22px); }
             `}</style>
 
             <div className={`page-container`}>
-                <div ref={mapContainer} className="background-map">
-                    {isMapLoading && <LoadingScreen />}
-                </div>
-                <div className="top-search-bar">
-                    <div className="top-search-bar-inner">
-                        <div style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1rem' }}>
-                            <span className="material-symbols-outlined cursor-pointer" style={{ color: 'var(--theme-brown-dark)', fontSize: '32px' }} onClick={() => setSearchModalOpen(true)}>search</span>
-                            <div className="search-input-card" onClick={() => setDatePickerOpen(true)}>
-                                <p className="main-text">{locationInfo.city}</p>
-                                <p className="sub-text">{hasRange ? (isSameDay(startDate!, endDate!) ? fmtKoreanDate(startDate!) : `${fmtKoreanDate(startDate!)} - ${fmtKoreanDate(endDate!)}`) : '날짜를 선택하세요'}</p>
-                            </div>
-                            <div style={{ width: '1px', height: '2rem', backgroundColor: 'var(--theme-brown-light)', margin: '0 0.75rem 0 0' }}></div>
-                            <span className="material-symbols-outlined" style={{ fontSize: '32px', color: 'var(--theme-brown-darkest)' }}>tune</span>
-                        </div>
-                        <hr style={{ borderTop: '1px solid var(--theme-brown-light)' }} />
-                        <div className="filter-buttons no-scrollbar">{filterButtons.map((label) => (<button key={label} className={`filter-button ${(label === '작품 선택' && isArtworkSelectorVisible) || activeFilter === label ? 'active' : ''}`} onClick={() => handleFilterClick(label)}>{label}</button>))}</div>
-                    </div>
-                </div>
-                <ArtworkSelector artworks={artworks} selectedArtwork={selectedArtwork} onSelectArtwork={setSelectedArtwork} onAddNew={() => setArtworkModalOpen(true)} isVisible={isArtworkSelectorVisible} />
+                <MapDisplay />
+                {isMapLoading && <LoadingScreen />}
+
+                {!isMapLoading && (
+                  <div className="top-search-bar">
+                      <div className="top-search-bar-inner">
+                          <div style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1rem' }}>
+                              <span className="material-symbols-outlined cursor-pointer" style={{ color: 'var(--theme-brown-dark)', fontSize: '32px' }} onClick={() => setSearchModalOpen(true)}>search</span>
+                              <div className="search-input-card" onClick={() => setDatePickerOpen(true)}>
+                                  <p className="main-text">{locationInfo.city}</p>
+                                  <p className="sub-text">{hasRange ? (isSameDay(startDate!, endDate!) ? fmtKoreanDate(startDate!) : `${fmtKoreanDate(startDate!)} - ${fmtKoreanDate(endDate!)}`) : '날짜를 선택하세요'}</p>
+                              </div>
+                              <div style={{ width: '1px', height: '2rem', backgroundColor: 'var(--theme-brown-light)', margin: '0 0.75rem 0 0' }}></div>
+                              <span className="material-symbols-outlined cursor-pointer" style={{ fontSize: '32px', color: 'var(--theme-brown-darkest)' }} onClick={() => setOptionsMenuOpen(true)}>tune</span>
+                          </div>
+                          <hr style={{ borderTop: '1px solid var(--theme-brown-light)' }} />
+                          <div className="filter-buttons no-scrollbar">{filterButtons.map((label) => (<button key={label} className={`filter-button ${(label === '작품 선택' && isArtworkSelectorVisible) || activeFilter === label ? 'active' : ''}`} onClick={() => handleFilterClick(label)}>{label}</button>))}</div>
+                      </div>
+                  </div>
+                )}
+                <ArtworkSelector artworks={artworksData} selectedArtwork={selectedArtwork} onSelectArtwork={setSelectedArtwork} onAddNew={() => setArtworkModalOpen(true)} isVisible={isArtworkSelectorVisible} />
+                <OptionsMenu isOpen={isOptionsMenuOpen} onClose={() => setOptionsMenuOpen(false)} />
                 {isDatePickerOpen && (
                     <div className="date-picker-modal-overlay" onClick={() => setDatePickerOpen(false)}>
                         <div className="date-picker-modal-content" onClick={(e) => e.stopPropagation()}>
