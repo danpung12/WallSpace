@@ -3,7 +3,9 @@
 /* eslint-disable @next/next/no-img-element */
 import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { createPortal } from "react-dom";
+import Image from "next/image";
+import BottomSheetPortal from "./components/BottomSheetPortal";
+import DraggableMapSheet from "./components/DraggableMapSheet";
 
 /* =========================
  * 타입/유틸
@@ -52,20 +54,7 @@ function loadScriptOnce(src: string, id: string) {
 /* =========================
  * 포털
  * ========================= */
-function BottomSheetPortal({ children }: { children: React.ReactNode }) {
-  const [mountNode, setMountNode] = useState<HTMLElement | null>(null);
-  useEffect(() => {
-    let el = document.getElementById("map-bottom-sheet-root");
-    if (!el) {
-      el = document.createElement("div");
-      el.id = "map-bottom-sheet-root";
-      document.body.appendChild(el);
-    }
-    setMountNode(el);
-  }, []);
-  if (!mountNode) return null;
-  return createPortal(children, mountNode);
-}
+
 
 /* =========================
  * Kakao Map 뷰 (고정)
@@ -117,94 +106,7 @@ function KakaoMapView({ center }: { center: LatLng }) {
 /* =========================
  * 드래그로 높이 조절되는 바텀시트 지도
  * ========================= */
-function DraggableMapSheet({
-  center,
-  bottomOffsetPx = 64,
-  minHeight = 200,
-  maxHeight = 520,
-  initialHeightPx = 260,
-  onHeightChange,
-}: {
-  center: LatLng;
-  bottomOffsetPx?: number;
-  minHeight?: number;
-  maxHeight?: number;
-  initialHeightPx?: number;
-  onHeightChange?: (h: number) => void;
-}) {
-  // 첫 페인트에서 0이 보이지 않도록 초기값을 바로 세팅
-  const [height, setHeight] = useState<number>(initialHeightPx);
 
-  useEffect(() => {
-    const v = Math.min(Math.max(initialHeightPx, minHeight), maxHeight);
-    setHeight(v);
-    onHeightChange?.(v);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const dragRef = useRef<{ startY: number; startH: number; dragging: boolean }>(
-    { startY: 0, startH: 0, dragging: false }
-  );
-
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    dragRef.current = { startY: e.clientY, startH: height, dragging: true };
-    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
-  };
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current.dragging) return;
-    const dy = dragRef.current.startY - e.clientY;
-    const next = Math.min(Math.max(dragRef.current.startH + dy, minHeight), maxHeight);
-    setHeight(next);
-    onHeightChange?.(next);
-  };
-  const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    dragRef.current.dragging = false;
-    (e.currentTarget as HTMLDivElement).releasePointerCapture?.(e.pointerId);
-  };
-
-  return (
-    <section
-      role="region"
-      aria-label="지도에서 보기"
-      className="fixed left-0 right-0 z-[10000]"
-      style={{ bottom: `calc(${bottomOffsetPx}px + env(safe-area-inset-bottom))` }}
-    >
-      <div className="w-full">
-        <div
-          className="overflow-hidden rounded-t-2xl shadow-[0_-12px_28px_rgba(0,0,0,0.12)] border bg-white/60 backdrop-blur-[2px]"
-          style={{ borderColor: "var(--accent-color)" }}
-        >
-          <div className="relative" style={{ height }}>
-            {/* 지도 (Kakao 고정) */}
-            <KakaoMapView center={center} />
-
-            {/* 지도 위 전체 드래그 오버레이 */}
-            <div
-              className="absolute inset-0"
-              style={{
-                touchAction: "none",
-                cursor: "ns-resize",
-                background: "transparent",
-                userSelect: "none",
-                zIndex: 5,
-              }}
-              aria-label="드래그하여 지도 높이 조절"
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={endDrag}
-              onPointerCancel={endDrag}
-            />
-
-            {/* 시각 보정 */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-[var(--background-color)]/95 via-[var(--background-color)]/55 to-transparent" />
-            <div className="pointer-events-none absolute inset-0" style={{ backgroundColor: "var(--accent-color)", mixBlendMode: "multiply", opacity: 0.06 }} />
-            <div className="pointer-events-none absolute -top-px left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, var(--accent-color), transparent)", opacity: 0.85 }} />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* =========================
  * 페이지
@@ -332,7 +234,7 @@ export default function ExplorePlacesPage() {
                       className="block text-left bg-white rounded-2xl p-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)] border-2 border-transparent hover:border-[var(--primary-color)] hover:shadow-[0_6px_14px_rgba(197,127,57,0.25)] transition"
                     >
                       <div className={`w-full h-32 rounded-xl overflow-hidden bg-[var(--accent-color)] ${isActive ? "" : "blur-[1px]"}`}>
-                        {p.img ? <img src={p.img} alt={p.name} className="w-full h-full object-cover" /> : null}
+                        {p.img ? <Image src={p.img} alt={p.name} className="w-full h-full object-cover" width={360} height={128} /> : null}
                       </div>
                       <div className="mt-2">
                         <p className="text-sm text-[var(--text-secondary)]">{p.category}</p>
@@ -378,7 +280,7 @@ export default function ExplorePlacesPage() {
                   className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden flex items-center p-3 border-2 border-transparent transition hover:border-[var(--primary-color)] hover:shadow-[0_6px_14px_rgba(197,127,57,0.25)]"
                 >
                   <div className="w-24 h-24 rounded-xl bg-[var(--accent-color)] overflow-hidden shrink-0">
-                    {p.img ? <img src={p.img} alt={p.name} className="w-full h-full object-cover" /> : null}
+                    {p.img ? <Image src={p.img} alt={p.name} className="w-full h-full object-cover" width={96} height={96} /> : null}
                   </div>
                   <div className="pl-4 flex-1">
                     <h3 className="font-bold text-base text-[var(--text-primary)]">{p.name}</h3>
