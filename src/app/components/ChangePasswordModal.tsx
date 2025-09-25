@@ -7,7 +7,7 @@ export default function ChangePasswordModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onSubmit?: () => void;
+  onSubmit?: (newPassword: string) => void;
 }){
   const overlayRef = useRef(null);
 
@@ -28,7 +28,7 @@ function handleOverlayClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
   return (
     <div
       ref={overlayRef}
-      className={`fixed inset-0 bg-black/50 flex items-end justify-center z-50 transition-opacity duration-200 ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+      className={`fixed inset-0 bg-black/50 flex items-end justify-center z-[999] transition-opacity duration-200 ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
       style={{ transitionProperty: "opacity" }}
       onMouseDown={handleOverlayClick}
     >
@@ -44,7 +44,7 @@ function handleOverlayClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
       >
         <div className="p-4">
           <div className="flex justify-center mb-2">
-            <div className="w-10 h-1.5 bg-[#dcd6d1] rounded-full"></div>
+            <div className="w-10 h-1.5 bg-[#dcd6d1] rounded-full cursor-pointer" onClick={onClose}></div>
           </div>
           <h2 className="mb-6 text-2xl font-bold text-center" style={{ color: "#4a3f3a" }}>
             비밀번호 변경
@@ -53,7 +53,9 @@ function handleOverlayClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
             className="px-4 space-y-5"
             onSubmit={e => {
               e.preventDefault();
-              onSubmit?.();
+              // 실제 비밀번호는 여기서 가져와야 합니다. 여기서는 임시로 빈 문자열 전달
+              const newPassword = (document.getElementById("new-password") as HTMLInputElement).value;
+              onSubmit?.(newPassword);
             }}
           >
             <div>

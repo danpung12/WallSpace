@@ -6,12 +6,15 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import { IoNotificationsCircle } from 'react-icons/io5';
-import { useMap } from '../../context/MapContext'; // ✨ 1. 지도 컨텍스트 훅 임포트
+import { MapProvider, useMap } from '../../context/MapContext'; // ✨ 1. 지도 컨텍스트 훅 및 MapProvider 임포트
 
 // --- Swiper CSS 임포트 ---
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
+
+// MapDisplay 컴포넌트 임포트
+import MapDisplay from '../components/MapDisplay';
 
 // --- 샘플 데이터 ---
 const notificationsData = [
@@ -141,62 +144,50 @@ export default function MainPage() {
   
   const [currentPlaceIndex, setCurrentPlaceIndex] = useState(0);
   const currentPlaceName = placesData[currentPlaceIndex]?.name;
-
-  // ✨ 2. 지도 미리 로딩을 위한 로직 추가
-  const { initializeMap } = useMap();
-  const preloaderRef = useRef(null); // 지도를 몰래 로딩할 div
-
-  useEffect(() => {
-      // preloaderRef.current가 존재하고, window.kakao가 로드되었는지 확인 후 초기화
-      const tryInit = () => {
-          if (preloaderRef.current && window.kakao) {
-              // 서울을 기준으로 기본 위치에서 미리 로딩
-              initializeMap(preloaderRef.current, 37.5665, 126.9780);
-          } else {
-              setTimeout(tryInit, 100); // SDK 로딩까지 잠시 대기
-          }
-      };
-      tryInit();
-  }, [initializeMap]);
-
+ 
+  // 지도 관련 로직은 MapProvider와 MapDisplay 컴포넌트에서 처리됩니다.
+  // 여기서는 MapProvider로 감싸고 MapDisplay 컴포넌트를 렌더링합니다.
+ 
   return (
     <>
       <GlobalSwiperStyles />
-      <div
-        className="min-h-screen w-full bg-cover bg-center bg-fixed"
-        
-      >
-        <div className="absolute inset-0 bg-black/60"></div> 
-        
-        <div className="relative z-10 w-full space-y-8 pt-8 pb-12">
+      {/* MapProvider로 MapDisplay 컴포넌트를 감쌉니다. */}
+      <MapProvider>
+        <div
+          className="min-h-screen w-full bg-cover bg-center bg-fixed"
+          style={{ backgroundImage: `url(${backgroundImageUrl})` }}
+        >
+          <div className="absolute inset-0 bg-black/60"></div> 
           
-          <section>
-            <div className="container mx-auto px-6">
-              <h2 className="text-xl font-bold text-white mb-4 drop-shadow-lg">새로운 알림</h2>
-              <div className="space-y-3">
-                {notificationsData.map((notification) => (
-                  <NotificationItem key={notification.id} {...notification} />
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section className="w-full">
-            <div className="container mx-auto px-6">
-              <div className="flex items-baseline mb-4">
-                <h2 className="text-xl font-bold text-white drop-shadow-lg mr-2">추천 장소</h2>
-                <p className="text-base font-medium text-white/90 drop-shadow-lg">{currentPlaceName}</p>
-              </div>
-            </div>
+          <MapDisplay /> {/* MapDisplay 컴포넌트를 홈 화면에 직접 렌더링합니다. */}
+           
+          <div className="relative z-10 w-full space-y-8 pt-8 pb-12">
             
-            <RecommendedPlaces onSlideChange={setCurrentPlaceIndex} />
-          </section>
-
+            <section>
+              <div className="container mx-auto px-6">
+                <h2 className="text-xl font-bold text-white mb-4 drop-shadow-lg">새로운 알림</h2>
+                <div className="space-y-3">
+                  {notificationsData.map((notification) => (
+                    <NotificationItem key={notification.id} {...notification} />
+                  ))}
+                </div>
+              </div>
+            </section>
+ 
+            <section className="w-full">
+              <div className="container mx-auto px-6">
+                <div className="flex items-baseline mb-4">
+                  <h2 className="text-xl font-bold text-white drop-shadow-lg mr-2">추천 장소</h2>
+                  <p className="text-base font-medium text-white/90 drop-shadow-lg">{currentPlaceName}</p>
+                </div>
+              </div>
+              
+              <RecommendedPlaces onSlideChange={setCurrentPlaceIndex} />
+            </section>
+ 
+          </div>
         </div>
-      </div>
-
-      {/* ✨ 3. 이 div는 화면에 보이지 않지만 지도를 담는 역할을 합니다. */}
-      <div ref={preloaderRef} style={{ width: '1px', height: '1px', position: 'absolute', left: '-9999px', top: '-9999px' }} />
+      </MapProvider>
     </>
   );
 }

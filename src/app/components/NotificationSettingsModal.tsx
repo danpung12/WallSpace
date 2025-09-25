@@ -12,7 +12,7 @@ type NotificationToggles = {
 type NotificationSettingsModalProps = {
   open: boolean;
   onClose: () => void;
-  onSave?: (data: NotificationToggles) => void;
+  onSave?: (data: NotificationToggles) => void; // onSave 타입 수정
 };
 
 function NotificationSettingsModal({
@@ -58,7 +58,7 @@ function NotificationSettingsModal({
   return (
     <div
       ref={overlayRef}
-      className={`fixed inset-0 z-50 bg-black/50 flex items-end justify-center transition-opacity duration-200 ${
+      className={`fixed inset-0 z-[999] bg-black/50 flex items-end justify-center transition-opacity duration-200 ${
         open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       }`}
       style={{ transitionProperty: "opacity" }}
@@ -76,7 +76,7 @@ function NotificationSettingsModal({
         }}
       >
         <div className="flex items-center justify-center w-full h-8 pt-3">
-          <div className="h-1.5 w-10 rounded-full bg-gray-300"></div>
+          <div className="h-1.5 w-10 rounded-full bg-gray-300 cursor-pointer" onClick={onClose}></div>
         </div>
         <div className="p-6 pt-4">
           <h1 className="text-2xl font-bold mb-6 text-[#181411]">사용자 알림 설정</h1>

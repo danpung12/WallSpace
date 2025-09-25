@@ -9,7 +9,9 @@
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.58.0",
     "framer-motion": "^12.23.12",
+    "mcp-supabase": "^0.1.0",
     "next": "15.4.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",

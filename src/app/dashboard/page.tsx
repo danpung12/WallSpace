@@ -59,7 +59,7 @@ function ArtistDashboard({ activeIndex, containerRef, itemRefs, cardBgClass }: {
   return (
     <>
       {/* 내 작품 카드 */}
-      <section className={`${cardBgClass} rounded-xl shadow-md p-4`}>
+      <section className={`${cardBgClass} rounded-xl shadow-md p-4 border border-gray-100`}> {/* border-gray-100 추가 */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-[#3D2C1D]">내 작품</h2>
           <Link href="/dashboard/add" className="bg-[#c19a6b] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90">
@@ -93,7 +93,7 @@ function ArtistDashboard({ activeIndex, containerRef, itemRefs, cardBgClass }: {
       </section>
 
       {/* 전시 중 카드 */}
-      <section className={`${cardBgClass} rounded-xl shadow-md p-4`}>
+      <section className={`${cardBgClass} rounded-xl shadow-md p-4 border border-gray-100`}> {/* border-gray-100 추가 */}
         <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">전시 중</h2>
         <div className="bg-white rounded-xl p-4">
           <p className="text-center text-[#8C7853]">현재 진행 중인 전시가 없습니다.</p>
@@ -101,7 +101,7 @@ function ArtistDashboard({ activeIndex, containerRef, itemRefs, cardBgClass }: {
       </section>
 
       {/* 예정된 예약 카드 */}
-      <section className={`${cardBgClass} rounded-xl shadow-md p-4`}>
+      <section className={`${cardBgClass} rounded-xl shadow-md p-4 border border-gray-100`}> {/* border-gray-100 추가 */}
         <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">예정된 예약</h2>
         <div className="space-y-4">
           {RESERVATIONS.filter(r => r.status !== 'completed').map(reservation => (
@@ -113,7 +113,7 @@ function ArtistDashboard({ activeIndex, containerRef, itemRefs, cardBgClass }: {
       </section>
 
       {/* 지난 예약 카드 */}
-      <section className={`${cardBgClass} rounded-xl shadow-md p-4`}>
+      <section className={`${cardBgClass} rounded-xl shadow-md p-4 border border-gray-100`}> {/* border-gray-100 추가 */}
         <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">지난 예약</h2>
         <div className="space-y-4">
           {RESERVATIONS.filter(r => r.status === 'completed').map(reservation => (
@@ -132,7 +132,7 @@ function ManagerDashboard({ activeIndex, containerRef, itemRefs, cardBgClass }: 
   return (
     <>
       {/* 내 가게 카드 */}
-      <section className={`${cardBgClass} rounded-xl shadow-md p-4`}>
+      <section className={`${cardBgClass} rounded-xl shadow-md p-4 border border-gray-100`}> {/* border-gray-100 추가 */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-[#3D2C1D]">내 가게</h2>
           <Link href="/dashboard/add-store" className="bg-[#c19a6b] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90">
@@ -169,7 +169,7 @@ function ManagerDashboard({ activeIndex, containerRef, itemRefs, cardBgClass }: 
       </section>
       
       {/* 예약 요청 카드 */}
-      <section className={`${cardBgClass} rounded-xl shadow-md p-4`}>
+      <section className={`${cardBgClass} rounded-xl shadow-md p-4 border border-gray-100`}> {/* border-gray-100 추가 */}
         <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">예약 요청</h2>
         <div className="space-y-4">
           {RESERVATIONS.filter(r => r.status !== 'completed').map(reservation => (
@@ -181,7 +181,7 @@ function ManagerDashboard({ activeIndex, containerRef, itemRefs, cardBgClass }: 
       </section>
 
       {/* 지난 예약 카드 */}
-      <section className={`${cardBgClass} rounded-xl shadow-md p-4`}>
+      <section className={`${cardBgClass} rounded-xl shadow-md p-4 border border-gray-100`}> {/* border-gray-100 추가 */}
         <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">지난 예약</h2>
         <div className="space-y-4">
           {RESERVATIONS.filter(r => r.status === 'completed').map(reservation => (
@@ -291,11 +291,12 @@ export default function Dashboard() {
     };
   }, [userMode]);
 
-  const artistBgClass = "bg-[#FDFBF8]";
-  const managerBgClass = "bg-[#F5F1EC]";
+  const artistBgClass = "bg-[#FDFBF8]"; // 기존 아티스트 모드 배경
+  const managerBgClass = "bg-[#F5F1EC]"; // 기존 사장님 모드 배경
   
-  // 사용자 모드에 따라 카드 배경색을 더 연하게 동적으로 설정
-  const cardBgClass = userMode === 'artist' ? 'bg-[#f7f7f7]' : 'bg-[#F7F7F7]';
+  // 사용자 모드에 따라 각 섹션 카드의 배경색을 더 연하게, 명확하게 동적으로 설정
+  // 기존 #f7f7f7 대신 완전한 흰색 또는 메인 배경보다 살짝 밝은 톤으로 조정
+  const cardBgClass = userMode === 'artist' ? 'bg-white' : 'bg-[#FCFBF8]'; // 아티스트 모드는 완전 흰색, 사장님 모드는 아주 연한 미색
 
   return (
     <>
@@ -312,6 +313,7 @@ export default function Dashboard() {
         /* Newly added lighter card colors */
         .bg-\\[\\#FAF8F5\\] { --tw-bg-opacity: 1; background-color: rgb(250 248 245 / var(--tw-bg-opacity)); }
         .bg-\\[\\#F3EFEA\\] { --tw-bg-opacity: 1; background-color: rgb(243 239 234 / var(--tw-bg-opacity)); }
+        .bg-\\[\\#FCFBF8\\] { --tw-bg-opacity: 1; background-color: rgb(252 251 248 / var(--tw-bg-opacity)); } /* 사장님 모드 카드 배경 추가 */
       `}</style>
 
       <div className={`relative flex min-h-[100dvh] flex-col text-[#3D2C1D] font-pretendard transition-colors duration-300 ${userMode === 'artist' ? artistBgClass : managerBgClass}`}>

@@ -1,21 +1,66 @@
 "use client";
 
 import Head from 'next/head';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import BottomNav from '../components/BottomNav';
+import { UserProfile } from '@/data/profile';
 
 export default function EditProfile() {
   const router = useRouter();
-  const [form, setForm] = useState({
-    nickname: 'Selena',
-    name: '홍길동',
-    email: 'selena@example.com',
-    phone: '010-1234-5678',
-  });
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.id]: e.target.value });
+    if (userProfile) {
+      setUserProfile({ ...userProfile, [e.target.id]: e.target.value });
+    }
+  };
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch("/api/profile");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data: UserProfile = await response.json();
+        setUserProfile(data);
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch profile");
+        console.error("Error fetching profile:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!userProfile) return;
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userProfile),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      router.push("/profile"); // Redirect to profile page on success
+    } catch (err: any) {
+      setError(err.message || "Failed to update profile");
+      console.error("Error updating profile:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const readOnlyInputStyle: React.CSSProperties = {
@@ -101,7 +146,7 @@ export default function EditProfile() {
           </section>
 
           {/* 폼 */}
-          <form className="max-w-md px-3 mx-auto space-y-4">
+          <form className="max-w-md px-3 mx-auto space-y-4" onSubmit={handleSubmit}>
             <section className="py-4 space-y-4 shadow-sm px-7 rounded-xl" style={{ background: '#fff' }}>
               {/* 닉네임 */}
               <div>
@@ -124,7 +169,7 @@ export default function EditProfile() {
                     }}
                     id="nickname"
                     type="text"
-                    value={form.nickname}
+                    value={userProfile?.nickname || ''}
                     onChange={handleChange}
                     placeholder="닉네임을 입력해주세요"
                   />
@@ -133,7 +178,7 @@ export default function EditProfile() {
 
               {/* 이름 (읽기 전용) */}
               <div>
-                <label className="block mb-2 text-sm font-medium flex items-center gap-2" htmlFor="name" style={{ color: '#A08C6E' }}>
+                <label className="flex mb-2 text-sm font-medium items-center gap-2" htmlFor="name" style={{ color: '#A08C6E' }}>
                   이름
                 </label>
                 <div className="relative">
@@ -147,7 +192,7 @@ export default function EditProfile() {
                     style={readOnlyInputStyle}
                     id="name"
                     type="text"
-                    value={form.name}
+                    value={userProfile?.name || ''}
                     onChange={handleChange}
                     placeholder="성함을 입력해주세요"
                     disabled
@@ -180,7 +225,7 @@ export default function EditProfile() {
                     }}
                     id="email"
                     type="email"
-                    value={form.email}
+                    value={userProfile?.email || ''}
                     onChange={handleChange}
                     placeholder="이메일 주소를 입력해주세요"
                   />
@@ -189,7 +234,7 @@ export default function EditProfile() {
 
               {/* 전화번호 (읽기 전용) */}
               <div>
-                <label className="block mb-2 text-sm font-medium flex items-center gap-2" htmlFor="phone" style={{ color: '#A08C6E' }}>
+                <label className="flex mb-2 text-sm font-medium items-center gap-2" htmlFor="phone" style={{ color: '#A08C6E' }}>
                   전화번호
                 </label>
                 <div className="relative">
@@ -203,7 +248,7 @@ export default function EditProfile() {
                     style={readOnlyInputStyle}
                     id="phone"
                     type="tel"
-                    value={form.phone}
+                    value={userProfile?.phone || ''}
                     onChange={handleChange}
                     placeholder="전화번호를 입력해주세요"
                     disabled
@@ -258,6 +303,16 @@ export default function EditProfile() {
         {/* Footer */}
         <BottomNav />
       </div>
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-[#FDFBF8] z-[1000]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D2B48C]"></div>
+        </div>
+      )}
+      {error && (
+        <div className="fixed inset-0 flex items-center justify-center bg-red-500 bg-opacity-70 text-white p-4 text-center z-[1000]">
+          <p>오류: {error}</p>
+        </div>
+      )}
     </>
   );
 }

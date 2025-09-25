@@ -70,6 +70,10 @@ declare global {
             ERROR: 'ERROR';
           };
         };
+        event: {
+          addListener: (target: any, eventType: string, handler: (...args: any[]) => void) => void;
+          removeListener: (target: any, eventType: string, handler: (...args: any[]) => void) => void;
+        };
       };
     };
   }

@@ -5,6 +5,14 @@ import { useRouter } from 'next/navigation';
 export default function ArtistOwnerSignUpPage() {
   const router = useRouter();
   const [snsLink, setSnsLink] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [isRequestingCode, setIsRequestingCode] = useState(false);
+  const [isCodeSent, setIsCodeSent] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   type DateInputWithPicker = HTMLInputElement & { showPicker?: () => void };
 
   const dobRef = useRef<HTMLInputElement>(null);
@@ -53,6 +61,36 @@ export default function ArtistOwnerSignUpPage() {
       "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f4f2f0' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
   } as React.CSSProperties;
 
+  const handleRequestCode = () => {
+    setError(null);
+    setMessage(null);
+    if (phoneNumber.length < 10) {
+      setError("전화번호는 최소 10자리 이상이어야 합니다.");
+      return;
+    }
+    setIsRequestingCode(true);
+    setIsCodeSent(true);
+    setMessage("인증 코드가 발송되었습니다.");
+    setTimeout(() => {
+      setIsRequestingCode(false);
+    }, 2000);
+  };
+
+  const handleVerifyCode = () => {
+    setError(null);
+    setMessage(null);
+    if (verificationCode.length !== 6) {
+      setError("인증 번호는 6자리입니다.");
+      return;
+    }
+    setIsVerifying(true);
+    setIsVerified(true);
+    setMessage("인증이 완료되었습니다.");
+    setTimeout(() => {
+      setIsVerifying(false);
+    }, 2000);
+  };
+
   return (
     <>
       {/* 폰트 */}
@@ -91,7 +129,7 @@ export default function ArtistOwnerSignUpPage() {
       <div style={cssVars} className="bg-[var(--background-color)] min-h-screen">
         <div className="relative flex min-h-screen flex-col justify-between" style={bgPattern}>
           {/* Header */}
-          <header className="flex items-center p-6">
+          <header className="flex items-center p-6 sticky top-0 z-10 bg-[var(--background-color)]/85 backdrop-blur">
             <button
               type="button"
               aria-label="Go back"
@@ -181,18 +219,62 @@ export default function ArtistOwnerSignUpPage() {
               {/* Mobile Phone Verification */}
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">핸드폰 인증 (PASS)</label>
-                <div className="flex items-center gap-3">
+                {message && !isVerified && <p className="text-sm text-[var(--primary-color)] mb-2">{message}</p>}
+                {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
+
+                <div className="flex items-center gap-3 mb-3">
                   <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
                     <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">phone_android</span>
                     <input
                       id="phone" type="tel" placeholder="휴대폰 번호를 입력하세요."
                       className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      disabled={isCodeSent || isVerified || isRequestingCode}
                     />
                   </div>
-                  <button type="button" className="flex-shrink-0 rounded-xl h-14 px-5 bg-[var(--accent-color)] text-white text-sm font-bold hover:bg-opacity-90 transition-colors soft-shadow">
-                    인증 요청
+                  <button
+                    type="button"
+                    onClick={handleRequestCode}
+                    disabled={isRequestingCode || isCodeSent || isVerified || phoneNumber.length < 10} // 최소 길이 제한
+                    className="flex-shrink-0 rounded-xl h-14 px-5 bg-[var(--accent-color)] text-white text-sm font-bold hover:bg-opacity-90 transition-colors soft-shadow"
+                  >
+                    {isRequestingCode ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : isCodeSent ? (
+                      "재요청"
+                    ) : (
+                      "인증 요청"
+                    )}
                   </button>
                 </div>
+
+                {isCodeSent && !isVerified && (
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
+                      <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">lock_open</span>
+                      <input
+                        id="verification-code" type="text" placeholder="인증 번호를 입력하세요."
+                        className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value)}
+                        disabled={isVerifying || isVerified}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleVerifyCode}
+                      disabled={isVerifying || isVerified || verificationCode.length !== 6} // 6자리 코드 예상
+                      className="flex-shrink-0 rounded-xl h-14 px-5 bg-[var(--accent-color)] text-white text-sm font-bold hover:bg-opacity-90 transition-colors soft-shadow"
+                    >
+                      {isVerifying ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      ) : (
+                        "인증 확인"
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* SNS Account Link (아이콘 컬러 동적 유지) */}

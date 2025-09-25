@@ -1,23 +1,90 @@
 // src/app/profile/page.tsx
 "use client";
 
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import BottomNav from "../components/BottomNav";
 import ChangePasswordModal from "../components/ChangePasswordModal";
 import NotificationSettingsModal from "../components/NotificationSettingsModal";
-
-const USER_DEFAULT = {
-  nickname: "Selena",
-  name: "홍길동",
-  email: "selena@example.com",
-  phone: "010-1234-5678",
-};
+import { UserProfile } from "@/data/profile";
 
 export default function ProfilePage() {
-  const user = USER_DEFAULT;
   const [showChangePw, setShowChangePw] = useState(false);
   const [showNotiModal, setShowNotiModal] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // 프로필 데이터 가져오기
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch("/api/profile");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data: UserProfile = await response.json();
+        setUserProfile(data);
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch profile");
+        console.error("Error fetching profile:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  // 프로필 데이터 업데이트 (PUT 요청)
+  const updateProfile = async (updatedData: Partial<UserProfile>) => {
+    if (!userProfile) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...userProfile, ...updatedData }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data: UserProfile = await response.json();
+      setUserProfile(data);
+    } catch (err: any) {
+      setError(err.message || "Failed to update profile");
+      console.error("Error updating profile:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[100dvh] w-full h-full items-center justify-center bg-[#FDFBF8] font-pretendard">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D2B48C]"></div>
+        {/* <p className="ml-3 text-[#3D2C1D]">프로필 불러오는 중...</p> */}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#FDFBF8] font-pretendard text-red-500">
+        <p>오류: {error}</p>
+      </div>
+    );
+  }
+
+  if (!userProfile) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#FDFBF8] font-pretendard">
+        <p>프로필 데이터를 찾을 수 없습니다.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex min-h-[100dvh] flex-col bg-[#FDFBF8] text-[#3D2C1D] font-pretendard">
@@ -53,8 +120,8 @@ export default function ProfilePage() {
               </svg>
             </button>
           </div>
-          <h2 className="mt-4 text-2xl font-bold">{user.nickname}</h2>
-          <p className="text-md text-[#8C7853]">{user.name}</p>
+          <h2 className="mt-4 text-2xl font-bold">{userProfile.nickname}</h2>
+          <p className="text-md text-[#8C7853]">{userProfile.name}</p>
         </section>
 
         {/* 사용자 정보 */}
@@ -83,7 +150,7 @@ export default function ProfilePage() {
             </div>
             <div className="flex-1 ml-3">
               <p className="block text-sm font-medium text-[#8C7853] mb-1">필명</p>
-              <p className="text-sm font-medium text-[#3D2C1D]">{user.nickname}</p>
+              <p className="text-sm font-medium text-[#3D2C1D]">{userProfile.nickname}</p>
             </div>
           </div>
 
@@ -96,7 +163,7 @@ export default function ProfilePage() {
             </div>
             <div className="flex-1 ml-3">
               <p className="block text-sm font-medium text-[#8C7853] mb-1">이름</p>
-              <p className="text-sm font-medium text-[#3D2C1D]">{user.name}</p>
+              <p className="text-sm font-medium text-[#3D2C1D]">{userProfile.name}</p>
             </div>
           </div>
 
@@ -109,7 +176,7 @@ export default function ProfilePage() {
             </div>
             <div className="flex-1 ml-3">
               <p className="block text-sm font-medium text-[#8C7853] mb-1">이메일 주소</p>
-              <p className="text-sm font-medium text-[#3D2C1D]">{user.email}</p>
+              <p className="text-sm font-medium text-[#3D2C1D]">{userProfile.email}</p>
             </div>
           </div>
 
@@ -127,7 +194,7 @@ export default function ProfilePage() {
             </div>
             <div className="flex-1 ml-3">
               <p className="block text-sm font-medium text-[#8C7853] mb-1">전화번호</p>
-              <p className="text-sm font-medium text-[#3D2C1D]">{user.phone}</p>
+              <p className="text-sm font-medium text-[#3D2C1D]">{userProfile.phone}</p>
             </div>
           </div>
         </section>
@@ -211,12 +278,21 @@ export default function ProfilePage() {
       <ChangePasswordModal
         open={showChangePw}
         onClose={() => setShowChangePw(false)}
-        onSubmit={() => setShowChangePw(false)}
+        onSubmit={(newPassword) => {
+          console.log("비밀번호 변경 요청:", newPassword);
+          // 실제 Supabase 비밀번호 변경 API 호출 로직 추가 예정
+          setShowChangePw(false);
+          // 비밀번호 변경 후 프로필 데이터 갱신이 필요하다면 updateProfile 호출
+        }}
       />
       <NotificationSettingsModal
         open={showNotiModal}
         onClose={() => setShowNotiModal(false)}
-        onSave={() => setShowNotiModal(false)}
+        onSave={(settings) => {
+          console.log("알림 설정 저장 요청:", settings);
+          updateProfile({ notificationSettings: settings }); // 프로필에 알림 설정 저장
+          setShowNotiModal(false);
+        }}
       />
     </div>
   );
