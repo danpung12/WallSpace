@@ -1,0 +1,30 @@
+{
+    "mcpServers": {
+      "sequential-thinking": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-sequential-thinking"
+        ]
+      },
+      "git": {
+        "command": "uvx",
+        "args": ["mcp-server-git"]
+      },
+      "supabase": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@supabase/mcp-server-supabase@latest",
+          "--project-ref=gnhwzbvlaqdnkahurlbv"
+        ],
+        "env": {
+          "SUPABASE_ACCESS_TOKEN": "sb_publishable_8hRhcIHmbeqGL7mh8bm0GQ_pnBrpnAc"
+        }
+      },
+      "playwright": {
+        "command": "npx",
+        "args": ["@playwright/mcp@latest"]
+      }
+    }
+  }
