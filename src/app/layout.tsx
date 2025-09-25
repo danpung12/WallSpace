@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import TransitionProvider from "./transition-provider";
 import BottomNavGate from "./components/BottomNavGate";
-import { BottomNavProvider } from "./context/BottomNavContext"; // ✨ 1. BottomNavProvider를 임포트합니다.
+import { BottomNavProvider } from "./context/BottomNavContext";
+import { MapProvider } from "@/context/MapContext"; // ✨ 1. MapProvider를 임포트합니다.
+import Script from "next/script"; // ✨ 2. Next.js의 Script 컴포넌트를 임포트합니다.
 
 export const metadata: Metadata = {
   title: "Stitch Design",
@@ -40,7 +42,7 @@ export default function RootLayout({
           }
         `}</style>
         
-        {/* ✅ 깜빡임 방지용 스타일을 여기에 직접 추가 */}
+        {/* ✅ 깜빡임 방지용 스타일 */}
         <style>{`
           body.js-loading [data-is-present] {
             opacity: 0;
@@ -53,11 +55,20 @@ export default function RootLayout({
         className="js-loading bg-[var(--brand-cream)]"
         style={{ fontFamily: "Pretendard, sans-serif" }}
       >
-        {/* ✨ 2. BottomNavProvider로 앱의 컨텐츠를 감싸줍니다. */}
-        <BottomNavProvider>
-          {children}
-          <BottomNavGate />
-        </BottomNavProvider>
+        {/* ✨ 3. MapProvider로 전체를 감싸서 지도 상태를 전역으로 관리합니다. */}
+        <MapProvider>
+          {/* BottomNavProvider는 MapProvider 안에 위치합니다. */}
+          <BottomNavProvider>
+            {children}
+            <BottomNavGate />
+          </BottomNavProvider>
+        </MapProvider>
+
+        {/* ✨ 4. 카카오맵 SDK 스크립트를 body 최하단에 추가하여 앱 전체에서 한 번만 로드되게 합니다. */}
+        <Script
+          src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&libraries=services&autoload=false`}
+          strategy="beforeInteractive" // 페이지가 상호작용 가능해지기 전에 스크립트를 실행합니다.
+        />
       </body>
     </html>
   );

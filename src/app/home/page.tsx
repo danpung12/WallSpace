@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 // --- 라이브러리 임포트 ---
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import { IoNotificationsCircle } from 'react-icons/io5';
+import { useMap } from '../../context/MapContext'; // ✨ 1. 지도 컨텍스트 훅 임포트
 
 // --- Swiper CSS 임포트 ---
 import 'swiper/css';
@@ -63,15 +64,13 @@ const GlobalSwiperStyles = () => {
 
 
 // --- 하위 컴포넌트 ---
-
-// ✅ title, message, time에 대한 타입 정의 추가
 interface NotificationItemProps {
   title: string;
   message: string;
   time: string;
 }
 
-const NotificationItem = ({ title, message, time }: NotificationItemProps) => ( // ✅ Props에 타입 적용
+const NotificationItem = ({ title, message, time }: NotificationItemProps) => (
   <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-4 flex items-start space-x-3 shadow-lg border border-white/20">
     <IoNotificationsCircle className="text-blue-500 text-4xl mt-1 flex-shrink-0" />
     <div className="flex-1 min-w-0">
@@ -84,12 +83,11 @@ const NotificationItem = ({ title, message, time }: NotificationItemProps) => ( 
   </div>
 );
 
-// ✅ onSlideChange에 대한 타입 정의 추가
 interface RecommendedPlacesProps {
   onSlideChange: (index: number) => void;
 }
 
-const RecommendedPlaces = ({ onSlideChange }: RecommendedPlacesProps) => ( // ✅ Props에 타입 적용
+const RecommendedPlaces = ({ onSlideChange }: RecommendedPlacesProps) => (
     <Swiper
       modules={[Pagination]}
       className="w-full peek-swiper"
@@ -144,12 +142,29 @@ export default function MainPage() {
   const [currentPlaceIndex, setCurrentPlaceIndex] = useState(0);
   const currentPlaceName = placesData[currentPlaceIndex]?.name;
 
+  // ✨ 2. 지도 미리 로딩을 위한 로직 추가
+  const { initializeMap } = useMap();
+  const preloaderRef = useRef(null); // 지도를 몰래 로딩할 div
+
+  useEffect(() => {
+      // preloaderRef.current가 존재하고, window.kakao가 로드되었는지 확인 후 초기화
+      const tryInit = () => {
+          if (preloaderRef.current && window.kakao) {
+              // 서울을 기준으로 기본 위치에서 미리 로딩
+              initializeMap(preloaderRef.current, 37.5665, 126.9780);
+          } else {
+              setTimeout(tryInit, 100); // SDK 로딩까지 잠시 대기
+          }
+      };
+      tryInit();
+  }, [initializeMap]);
+
   return (
     <>
       <GlobalSwiperStyles />
       <div
         className="min-h-screen w-full bg-cover bg-center bg-fixed"
-        style={{ backgroundImage: `url(${backgroundImageUrl})` }}
+        
       >
         <div className="absolute inset-0 bg-black/60"></div> 
         
@@ -179,6 +194,9 @@ export default function MainPage() {
 
         </div>
       </div>
+
+      {/* ✨ 3. 이 div는 화면에 보이지 않지만 지도를 담는 역할을 합니다. */}
+      <div ref={preloaderRef} style={{ width: '1px', height: '1px', position: 'absolute', left: '-9999px', top: '-9999px' }} />
     </>
   );
 }

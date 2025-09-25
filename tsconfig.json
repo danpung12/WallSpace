@@ -28,6 +28,6 @@
     "**/*.tsx", 
     ".next/types/**/*.ts", 
     "src/types/kakao.d.ts" // 👈 이 경로를 수정해주세요.
-  ],
+, "src/context/MapContext.js"  ],
   "exclude": ["node_modules"]
 }

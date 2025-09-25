@@ -2,19 +2,20 @@
 
 import React, { useRef, useState, useMemo, useEffect } from 'react';
 import Script from 'next/script';
-import Image from 'next/image'; // ✨ FIX: Import Next.js Image component
-import { locations, Location, Space } from '../../data/locations'; // ✨ FIX: Removed unused 'Review' import
+import Image from 'next/image';
+import { locations, Location, Space } from '../../data/locations';
 import { useBottomNav } from '../context/BottomNavContext';
 import Link from 'next/link';
 
-// --- (타입 선언, 데이터, 유틸 함수 등은 이전과 동일) ---
+// --- 타입 선언 ---
 type KakaoLatLng = { getLat: () => number; getLng: () => number; };
 type KakaoMap = { setCenter: (latlng: KakaoLatLng) => void; };
-// ✨ FIX: 타입 정의 활성화
 type KakaoGeocoderResult = { address: { region_1depth_name: string; region_2depth_name: string; }; }[];
 type KakaoGeocoderStatus = 'OK' | 'ZERO_RESULT' | 'ERROR';
 type KakaoPlace = { id: string; place_name: string; address_name: string; road_address_name: string; x: string; y: string; };
 interface Artwork { id: number; title: string; artist: string; dimensions: string; price: number; imageUrl: string; }
+
+// --- 데이터 및 유틸 함수 ---
 const artworks: Artwork[] = [
     { id: 1, title: 'Vibrance', artist: 'Alexia Ray', dimensions: '120cm x 80cm', price: 15, imageUrl: 'https://picsum.photos/id/1018/200/200' },
     { id: 2, title: 'Solitude', artist: 'Clara Monet', dimensions: '50cm x 70cm', price: 10, imageUrl: 'https://picsum.photos/id/1015/200/200' },
@@ -52,9 +53,7 @@ function ArtworkSelector({ artworks, selectedArtwork, onSelectArtwork, onAddNew,
                     </div>
                     {artworks.map((artwork) => (
                         <div key={artwork.id} className={`flex-shrink-0 text-center cursor-pointer ${selectedArtwork?.id === artwork.id ? 'ring-2 ring-theme-brown-darkest rounded-lg p-0.5' : ''}`} onClick={() => onSelectArtwork(artwork)}>
-                            {/* ✨ FIX: Replaced <img> with <Image /> for optimization */}
                             <Image alt={artwork.title} className="w-20 h-20 rounded-md object-cover" src={artwork.imageUrl} width={80} height={80}/>
-                            {/* ✨ FIX: Escaped quote entities */}
                             <p className="text-xs mt-1 text-theme-brown-darkest">&ldquo;{artwork.title}&rdquo;</p>
                         </div>
                     ))}
@@ -81,14 +80,13 @@ function AddArtworkModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => 
 
 function SearchModal({ isOpen, onClose, onPlaceSelect }: { isOpen: boolean, onClose: () => void, onPlaceSelect: (place: KakaoPlace) => void }) {
     const [query, setQuery] = useState('');
-    const [results, setResults] = useState<KakaoPlace[]>([]);
+    // 'useState' 앞에 '=' 를 추가하여 변수에 할당합니다.
+    const [results, setResults] = useState<KakaoPlace[]>([]); 
     useEffect(() => { if (!isOpen) { setQuery(''); setResults([]); } }, [isOpen]);
     useEffect(() => {
         if (query.trim() === '') { setResults([]); return; }
         const handler = setTimeout(() => {
-            // ✨ FIX: Changed `&&` expression to an `if` statement
             if (window.kakao?.maps.services) {
-                // ✨ FIX: 'any' 타입을 정의된 타입으로 변경
                 new window.kakao.maps.services.Places().keywordSearch(query, (data: KakaoPlace[], status: KakaoGeocoderStatus) => {
                     if (status === window.kakao.maps.services.Status.OK) setResults(data); else setResults([]);
                 });
@@ -123,7 +121,6 @@ function PlaceDetailPanel({ place, onClose, onShowDetail }: { place: Location, o
         <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] p-4 transition-transform duration-300 ease-in-out z-40 cursor-pointer" style={{ transform: 'translateY(0)' }} onClick={onShowDetail}>
             <div className="relative max-w-lg mx-auto">
                 <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="absolute top-0 right-0 bg-gray-200/80 rounded-full p-1.5 z-10 flex items-center justify-center"><span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span></button>
-                {/* ✨ FIX: Replaced <img> with <Image /> for optimization */}
                 <Image src={place.images?.[0] ?? 'https://via.placeholder.com/800x400.png?text=No+Image'} alt={place.name} className="w-full h-48 object-cover rounded-xl mb-4" width={800} height={400} />
                 <h2 className="text-2xl font-bold text-theme-brown-darkest mb-2">{place.name}</h2>
                 <p className="text-theme-brown-dark mb-4 text-sm leading-relaxed">{place.description}</p>
@@ -194,7 +191,6 @@ function LocationDetailPage({ place, onClose }: { place: Location, onClose: () =
             <main className="h-full overflow-y-auto pb-24">
                 <div className="relative w-full h-80 overflow-hidden bg-gray-200">
                     {place.images?.map((imageUrl, index) => (
-                        // ✨ FIX: Replaced <img> with <Image /> using fill layout
                         <Image key={index} src={imageUrl} alt={`${place.name} image ${index + 1}`}
                             fill
                             style={{ objectFit: 'cover' }}
@@ -243,7 +239,6 @@ function LocationDetailPage({ place, onClose }: { place: Location, onClose: () =
                                             `}
                                         >
                                             <div className={`relative overflow-hidden rounded-md ${space.isReserved ? 'filter blur-sm opacity-60' : ''}`}>
-                                                {/* ✨ FIX: Replaced <img> with <Image /> */}
                                                 <Image src={space.imageUrl} alt={space.name} className="w-full h-24 object-cover" width={200} height={96} />
                                             </div>
                                             <div className="pt-2">
@@ -265,11 +260,9 @@ function LocationDetailPage({ place, onClose }: { place: Location, onClose: () =
                                 {place.reviews?.length > 0 ? (
                                     place.reviews.map((review, index) => (
                                         <div key={index} className="flex items-start gap-4">
-                                            {/* ✨ FIX: Replaced <img> with <Image /> */}
                                             <Image src={review.artistImageUrl} alt={review.artistName} className="w-12 h-12 rounded-full object-cover" width={48} height={48} />
                                             <div>
                                                 <p className="font-bold text-theme-brown-darkest">{review.artistName}</p>
-                                                {/* ✨ FIX: Escaped quote entities */}
                                                 <p className="text-theme-brown-dark mt-1">&ldquo;{review.comment}&rdquo;</p>
                                             </div>
                                         </div>
@@ -299,10 +292,9 @@ function LocationDetailPage({ place, onClose }: { place: Location, onClose: () =
     );
 }
 
-// ✨ --- [신규] 로딩 스크린 컴포넌트 --- ✨
 function LoadingScreen() {
     return (
-        <div className="fixed inset-0 bg-theme-brown-lightest z-[9999] flex flex-col items-center justify-center">
+        <div className="w-full h-full bg-theme-brown-lightest flex flex-col items-center justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-theme-brown-dark"></div>
             <p className="mt-4 text-theme-brown-darkest font-semibold">지도를 불러오는 중...</p>
         </div>
@@ -314,11 +306,13 @@ function LoadingScreen() {
 export default function MapPage() {
     const { setNavVisible } = useBottomNav();
     const [isDetailPageVisible, setDetailPageVisible] = useState(false);
-    const [isMapLoading, setMapLoading] = useState(true); // ✨ 1. 지도 로딩 상태 추가
+    const [isMapLoading, setMapLoading] = useState(true);
     
     const filterButtons = ['작품 선택', '카페', '갤러리', '문화회관'];
     const mapContainer = useRef<HTMLDivElement>(null);
     const mapInstance = useRef<KakaoMap | null>(null);
+    const isMapInitialized = useRef(false);
+
     const [locationInfo, setLocationInfo] = useState({ city: '위치 찾는 중...' });
     const [isDatePickerOpen, setDatePickerOpen] = useState(false);
     const [viewDate, setViewDate] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
@@ -352,7 +346,6 @@ export default function MapPage() {
         const mapOption = { center: new kakao.maps.LatLng(lat, lng), level: 5 };
         const map = new kakao.maps.Map(mapContainer.current, mapOption);
         mapInstance.current = map;
-        // ✨ FIX: 'any' 타입을 정의된 타입으로 변경
         new kakao.maps.services.Geocoder().coord2Address(lng, lat, (result: KakaoGeocoderResult, status: KakaoGeocoderStatus) => {
             if (status === kakao.maps.services.Status.OK) {
                 setLocationInfo({ city: result[0].address.region_2depth_name || result[0].address.region_1depth_name });
@@ -376,11 +369,16 @@ export default function MapPage() {
     };
 
     const initializeMap = () => {
-        window.kakao?.maps.load(() => {
+        if (isMapInitialized.current || !window.kakao) {
+            return;
+        }
+        isMapInitialized.current = true;
+
+        window.kakao.maps.load(() => {
             const onMapReady = (map: KakaoMap | null) => {
                 if (map) {
                     loadMarkers(map);
-                    setMapLoading(false); // ✨ 2. 마커 로딩 후 로딩 상태 변경
+                    setMapLoading(false);
                 }
             };
 
@@ -439,8 +437,6 @@ export default function MapPage() {
 
     return (
         <div>
-            {isMapLoading && <LoadingScreen />} {/* ✨ 3. 로딩 상태일 때 로딩 화면 렌더링 */}
-            
             <Script src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&libraries=services&autoload=false`} strategy="afterInteractive" onLoad={initializeMap} />
             
             <style>{`
@@ -476,8 +472,10 @@ export default function MapPage() {
               .custom-overlay-style { padding: 8px 12px; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; cursor: pointer; font-size: 13px; }
             `}</style>
 
-            <div className={`page-container transition-opacity duration-500 ${isMapLoading ? 'opacity-0' : 'opacity-100'}`}>
-                <div ref={mapContainer} className="background-map"></div>
+            <div className={`page-container`}>
+                <div ref={mapContainer} className="background-map">
+                    {isMapLoading && <LoadingScreen />}
+                </div>
                 <div className="top-search-bar">
                     <div className="top-search-bar-inner">
                         <div style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1rem' }}>
@@ -510,7 +508,7 @@ export default function MapPage() {
                                 </div>
                             </main>
                             <footer className="date-picker-modal-footer">
-                                <button className="w-full h-12 rounded-lg bg-[var(--theme-brown-darkest)] text-white font-bold text-base transition-colors duration-200 hover:bg-[#3a3229]">선택 완료</button>
+                                <button onClick={() => setDatePickerOpen(false)} className="w-full h-12 rounded-lg bg-[var(--theme-brown-darkest)] text-white font-bold text-base transition-colors duration-200 hover:bg-[#3a3229]">선택 완료</button>
                             </footer>
                         </div>
                     </div>

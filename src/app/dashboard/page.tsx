@@ -34,22 +34,18 @@ type Reservation = {
 
 
 // --- 목업(Mockup) 데이터 ---
-
-// 1. 작가 페이지 이미지를 처음 코드로 복원
 const ARTWORKS: Artwork[] = [
   { title: '작품 1', size: '50x70cm', slug: 'artwork-1', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBXN0jW9dNacMfUY9Z3bjC1_xCiS15tb-fbfkWAYsD4VZCqx2nvEDgCN5wP6FL6OejGRVn4Eulfteh41r_bOXziuW42R0g6AU-l7dKL7n-hgiMCjmU9WFRSYH6kezy3-ftseDg8p36pj2mdHxEKF8_zZh6pP-sJ__iaMHZw7Xs5ohv9UbA_IWKWQfo4SMO1xKqEm0DFPbSLowGMZ3sE6YCvwt7YrBBV4vaYdyCpTJrFTrJzQRbocN3Z77WgS2xiA_y7q-hEYaBbEiiG' },
   { title: '작품 2', size: '60x60cm', slug: 'artwork-2', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrqrYmsEJa0Sd-hyxHCUnQfvGlC17-VRZFqnO2KJssC_FYvOvejVsv7MDblTqQo6GXa4feOkp2Q9XqoTkiTS3ieGWS7NEEh4j3q6Z4-eyXJ8dljd-kcVFiAIawmbP_BuTVX12EfItqKhwuqpNyubC79EynA2WMfBUv8XdIKZ04xV24RvUJ9eSGjWOP0XGLSb6t6Q6Zf8kMWVGlOT2lftAg6ni-rUQlECOCpekjm8vYjB8hR4N7amKCJyQx-YHmgbj3wXX_wF-XWZU4' },
   { title: '작품 3', size: '40x80cm', slug: 'artwork-3', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1hI9oEpCk1Pbvkp_kEABsMwq3UiQpEXgkQAjoKq3zsxh-1zCYNITVvuXmpNpLF9VoSrWCoNDyoRdxjyqMpDNrTBUpb1pjkgZe5LWlm7gnI0w_y_Q1ei5WNLT30zg7ppiyZf-7lqwmBeZH_SBYUF2jG9N9RewMBMkuchWyUez73Nu8RP_KzNk9qWCHKfu8BIpEzj-f2AZxHz8T-Bo5p7miSGc16CS856SoAquozkXt_T7iQLzYApp90MHErVPMIiIin7npi3pLCGH9' },
 ];
 
-// 2. 사장님 페이지 가게 사진은 임시 이미지 유지
 const STORES: Store[] = [
     { name: '스티치 카페 성수점', location: '서울시 성동구', slug: 'store-1', image: 'https://picsum.photos/id/200/400/300', totalSpaces: 5, reservedSpaces: 3 },
     { name: '스티치 갤러리 서초점', location: '서울시 서초구', slug: 'store-2', image: 'https://picsum.photos/id/201/400/300', totalSpaces: 8, reservedSpaces: 8 },
     { name: '스티치 라운지 홍대점', location: '서울시 마포구', slug: 'store-3', image: 'https://picsum.photos/id/202/400/300', totalSpaces: 10, reservedSpaces: 4 },
 ];
 
-// 예약 데이터의 이미지도 원본 작품 이미지와 동기화
 const RESERVATIONS: Reservation[] = [
   { id: '#12345', artworkTitle: '작품 3', artistName: '김수민', storeName: '스티치 카페 성수점', period: '2025년 10월 20일 ~ 10월 27일', status: 'confirmed', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1hI9oEpCk1Pbvkp_kEABsMwq3UiQpEXgkQAjoKq3zsxh-1zCYNITVvuXmpNpLF9VoSrWCoNDyoRdxjyqMpDNrTBUpb1pjkgZe5LWlm7gnI0w_y_Q1ei5WNLT30zg7ppiyZf-7lqwmBeZH_SBYUF2jG9N9RewMBMkuchWyUez73Nu8RP_KzNk9qWCHKfu8BIpEzj-f2AZxHz8T-Bo5p7miSGc16CS856SoAquozkXt_T7iQLzYApp90MHErVPMIiIin7npi3pLCGH9'},
   { id: '#67890', artworkTitle: '작품 2', artistName: '이현우', storeName: '스티치 라운지 홍대점', period: '2025년 11월 1일 ~ 11월 7일', status: 'pending', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrqrYmsEJa0Sd-hyxHCUnQfvGlC17-VRZFqnO2KJssC_FYvOvejVsv7MDblTqQo6GXa4feOkp2Q9XqoTkiTS3ieGWS7NEEh4j3q6Z4-eyXJ8dljd-kcVFiAIawmbP_BuTVX12EfItqKhwuqpNyubC79EynA2WMfBUv8XdIKZ04xV24RvUJ9eSGjWOP0XGLSb6t6Q6Zf8kMWVGlOT2lftAg6ni-rUQlECOCpekjm8vYjB8hR4N7amKCJyQx-YHmgbj3wXX_wF-XWZU4'},
@@ -59,25 +55,25 @@ const RESERVATIONS: Reservation[] = [
 // --- UI 컴포넌트 ---
 
 // 🧑‍🎨 작가 대시보드 컴포넌트
-function ArtistDashboard({ activeIndex, containerRef, itemRefs }: { activeIndex: number; containerRef: React.RefObject<HTMLDivElement | null>; itemRefs: React.MutableRefObject<(HTMLDivElement | null)[]>; }) {
+function ArtistDashboard({ activeIndex, containerRef, itemRefs, cardBgClass }: { activeIndex: number; containerRef: React.RefObject<HTMLDivElement | null>; itemRefs: React.MutableRefObject<(HTMLDivElement | null)[]>; cardBgClass: string; }) {
   return (
     <>
-      {/* 내 작품 */}
-      <section>
-        <div className="flex items-center justify-between mb-4 px-1">
+      {/* 내 작품 카드 */}
+      <section className={`${cardBgClass} rounded-xl shadow-md p-4`}>
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-[#3D2C1D]">내 작품</h2>
-          <Link href="/dashboard/add" className="bg-[#D2B48C] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90">
+          <Link href="/dashboard/add" className="bg-[#c19a6b] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90">
             작품 추가
           </Link>
         </div>
-        <div ref={containerRef} className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-4 pb-2 px-1 no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div ref={containerRef} className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-4 pb-2 no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
           {ARTWORKS.map((art, idx) => (
             <div
               key={art.slug}
               ref={(el) => { if(itemRefs.current) itemRefs.current[idx] = el; }}
               className={`snap-center flex-shrink-0 w-[75%] sm:w-[60%] transition-all duration-300 ${idx === activeIndex ? 'opacity-100 scale-100' : 'opacity-50 scale-[0.98]'}`}
             >
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
                 <div className="w-full h-40 bg-center bg-no-repeat bg-cover" style={{ backgroundImage: `url("${art.image}")` }} />
                 <div className="p-4">
                   <div className="flex items-start justify-between">
@@ -96,16 +92,16 @@ function ArtistDashboard({ activeIndex, containerRef, itemRefs }: { activeIndex:
         </div>
       </section>
 
-      {/* 전시 중 */}
-      <section>
+      {/* 전시 중 카드 */}
+      <section className={`${cardBgClass} rounded-xl shadow-md p-4`}>
         <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">전시 중</h2>
-        <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="bg-white rounded-xl p-4">
           <p className="text-center text-[#8C7853]">현재 진행 중인 전시가 없습니다.</p>
         </div>
       </section>
 
-      {/* 예약 목록 */}
-      <section>
+      {/* 예정된 예약 카드 */}
+      <section className={`${cardBgClass} rounded-xl shadow-md p-4`}>
         <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">예정된 예약</h2>
         <div className="space-y-4">
           {RESERVATIONS.filter(r => r.status !== 'completed').map(reservation => (
@@ -116,7 +112,8 @@ function ArtistDashboard({ activeIndex, containerRef, itemRefs }: { activeIndex:
         </div>
       </section>
 
-      <section>
+      {/* 지난 예약 카드 */}
+      <section className={`${cardBgClass} rounded-xl shadow-md p-4`}>
         <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">지난 예약</h2>
         <div className="space-y-4">
           {RESERVATIONS.filter(r => r.status === 'completed').map(reservation => (
@@ -131,25 +128,25 @@ function ArtistDashboard({ activeIndex, containerRef, itemRefs }: { activeIndex:
 }
 
 // 🏬 사장님 대시보드 컴포넌트
-function ManagerDashboard({ activeIndex, containerRef, itemRefs }: { activeIndex: number; containerRef: React.RefObject<HTMLDivElement | null>; itemRefs: React.MutableRefObject<(HTMLDivElement | null)[]>; }) {
+function ManagerDashboard({ activeIndex, containerRef, itemRefs, cardBgClass }: { activeIndex: number; containerRef: React.RefObject<HTMLDivElement | null>; itemRefs: React.MutableRefObject<(HTMLDivElement | null)[]>; cardBgClass: string; }) {
   return (
     <>
-      {/* 내 가게 */}
-      <section>
-        <div className="flex items-center justify-between mb-4 px-1">
+      {/* 내 가게 카드 */}
+      <section className={`${cardBgClass} rounded-xl shadow-md p-4`}>
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-[#3D2C1D]">내 가게</h2>
-          <Link href="/dashboard/add-store" className="bg-[#D2B48C] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90">
+          <Link href="/dashboard/add-store" className="bg-[#c19a6b] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90">
             가게 추가
           </Link>
         </div>
-        <div ref={containerRef} className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-4 pb-2 px-1 no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div ref={containerRef} className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-4 pb-2 no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
           {STORES.map((store, idx) => (
             <div
               key={store.slug}
               ref={(el) => { if(itemRefs.current) itemRefs.current[idx] = el; }}
               className={`snap-center flex-shrink-0 w-[75%] sm:w-[60%] transition-all duration-300 ${idx === activeIndex ? 'opacity-100 scale-100' : 'opacity-50 scale-[0.98]'}`}
             >
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
                 <div className="w-full h-40 bg-center bg-no-repeat bg-cover" style={{ backgroundImage: `url("${store.image}")` }} />
                 <div className="p-4">
                   <div className="flex items-start justify-between">
@@ -171,8 +168,8 @@ function ManagerDashboard({ activeIndex, containerRef, itemRefs }: { activeIndex
         </div>
       </section>
       
-      {/* 예약 현황 */}
-      <section>
+      {/* 예약 요청 카드 */}
+      <section className={`${cardBgClass} rounded-xl shadow-md p-4`}>
         <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">예약 요청</h2>
         <div className="space-y-4">
           {RESERVATIONS.filter(r => r.status !== 'completed').map(reservation => (
@@ -183,7 +180,8 @@ function ManagerDashboard({ activeIndex, containerRef, itemRefs }: { activeIndex
         </div>
       </section>
 
-      <section>
+      {/* 지난 예약 카드 */}
+      <section className={`${cardBgClass} rounded-xl shadow-md p-4`}>
         <h2 className="text-2xl font-bold text-[#3D2C1D] mb-4">지난 예약</h2>
         <div className="space-y-4">
           {RESERVATIONS.filter(r => r.status === 'completed').map(reservation => (
@@ -213,7 +211,7 @@ function ReservationCard({ reservation, userType }: { reservation: Reservation; 
   const isCompleted = reservation.status === 'completed';
 
   return (
-    <div className={`rounded-xl shadow-sm p-4 relative flex items-start gap-4 cursor-pointer ${isCompleted ? 'bg-gray-50 opacity-80' : 'bg-white'}`}>
+    <div className={`bg-white rounded-xl shadow-md p-4 relative flex items-start gap-4 cursor-pointer ${isCompleted ? 'bg-gray-50 opacity-80' : 'bg-white'}`}>
       <div
         className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0"
         style={{ backgroundImage: `url("${reservation.image}")` }}
@@ -232,7 +230,6 @@ function ReservationCard({ reservation, userType }: { reservation: Reservation; 
           {reservation.period}
         </p>
       </div>
-      {/* 3. 사장님 페이지에서는 예약 상태 태그를 표시하지 않음 */}
       {userType === 'artist' && (
         <span className={`absolute top-4 right-4 text-xs font-semibold py-1 px-2 rounded-full ${statusStyles[reservation.status]}`}>
           {statusText[reservation.status]}
@@ -296,6 +293,9 @@ export default function Dashboard() {
 
   const artistBgClass = "bg-[#FDFBF8]";
   const managerBgClass = "bg-[#F5F1EC]";
+  
+  // 사용자 모드에 따라 카드 배경색을 더 연하게 동적으로 설정
+  const cardBgClass = userMode === 'artist' ? 'bg-[#f7f7f7]' : 'bg-[#F7F7F7]';
 
   return (
     <>
@@ -307,6 +307,11 @@ export default function Dashboard() {
       <style jsx global>{`
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        .bg-\\[\\#FDFBF8\\] { --tw-bg-opacity: 1; background-color: rgb(253 251 248 / var(--tw-bg-opacity)); }
+        .bg-\\[\\#F5F1EC\\] { --tw-bg-opacity: 1; background-color: rgb(245 241 236 / var(--tw-bg-opacity)); }
+        /* Newly added lighter card colors */
+        .bg-\\[\\#FAF8F5\\] { --tw-bg-opacity: 1; background-color: rgb(250 248 245 / var(--tw-bg-opacity)); }
+        .bg-\\[\\#F3EFEA\\] { --tw-bg-opacity: 1; background-color: rgb(243 239 234 / var(--tw-bg-opacity)); }
       `}</style>
 
       <div className={`relative flex min-h-[100dvh] flex-col text-[#3D2C1D] font-pretendard transition-colors duration-300 ${userMode === 'artist' ? artistBgClass : managerBgClass}`}>
@@ -331,9 +336,9 @@ export default function Dashboard() {
 
         <main className="p-4 space-y-8 pb-24">
           {userMode === 'artist' ? (
-            <ArtistDashboard activeIndex={activeIndex} containerRef={containerRef} itemRefs={itemRefs} />
+            <ArtistDashboard activeIndex={activeIndex} containerRef={containerRef} itemRefs={itemRefs} cardBgClass={cardBgClass} />
           ) : (
-            <ManagerDashboard activeIndex={activeIndex} containerRef={containerRef} itemRefs={itemRefs} />
+            <ManagerDashboard activeIndex={activeIndex} containerRef={containerRef} itemRefs={itemRefs} cardBgClass={cardBgClass} />
           )}
         </main>
       </div>
