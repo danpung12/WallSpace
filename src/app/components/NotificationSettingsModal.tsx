@@ -2,31 +2,34 @@
 import { useEffect, useRef, useState } from "react";
 
 // 타입 선언
-type NotificationToggles = {
-  booking: boolean;
-  space: boolean;
-  promo: boolean;
-  news: boolean;
+export type NotificationSettings = {
+  comments: boolean;
+  exhibitions: boolean;
+  messages: boolean;
 };
 
 type NotificationSettingsModalProps = {
   open: boolean;
   onClose: () => void;
-  onSave?: (data: NotificationToggles) => void; // onSave 타입 수정
+  onSave?: (data: NotificationSettings) => void; // onSave 타입 수정
+  initialSettings: NotificationSettings;
 };
 
 function NotificationSettingsModal({
   open,
   onClose,
   onSave,
+  initialSettings,
 }: NotificationSettingsModalProps) {
   // 상태 예시 (실제로는 props로 받거나 fetch/저장 처리)
-  const [toggles, setToggles] = useState<NotificationToggles>({
-    booking: true,
-    space: false,
-    promo: true,
-    news: false,
-  });
+  const [toggles, setToggles] = useState<NotificationSettings>(initialSettings);
+
+  useEffect(() => {
+    if (open) {
+      setToggles(initialSettings);
+    }
+  }, [open, initialSettings]);
+
 
   // ESC로 닫기
   useEffect(() => {
@@ -45,7 +48,7 @@ function NotificationSettingsModal({
   }
 
   // 스위치 토글 핸들러
-  function handleToggle(key: keyof NotificationToggles) {
+  function handleToggle(key: keyof NotificationSettings) {
     setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
@@ -82,16 +85,22 @@ function NotificationSettingsModal({
           <h1 className="text-2xl font-bold mb-6 text-[#181411]">사용자 알림 설정</h1>
           <div className="space-y-4">
             <SettingItem
-              label="예약 알림"
-              desc="예정된 예약에 대해 알림을 받습니다."
-              checked={toggles.booking}
-              onChange={() => handleToggle("booking")}
+              label="댓글 알림"
+              desc="내 작업에 새로운 댓글이 달리면 알림을 받습니다."
+              checked={toggles.comments}
+              onChange={() => handleToggle("comments")}
             />
             <SettingItem
-              label="새벽 시간 알림"
-              desc="오후 10시 ~ 오전 6시까지의 예약 알림을 받습니다."
-              checked={toggles.space}
-              onChange={() => handleToggle("space")}
+              label="전시 알림"
+              desc="새로운 전시에 대한 알림을 받습니다."
+              checked={toggles.exhibitions}
+              onChange={() => handleToggle("exhibitions")}
+            />
+            <SettingItem
+              label="메시지 알림"
+              desc="다른 사용자로부터 메시지를 받으면 알림을 받습니다."
+              checked={toggles.messages}
+              onChange={() => handleToggle("messages")}
             />
 
           </div>

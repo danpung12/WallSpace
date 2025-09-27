@@ -15,6 +15,7 @@ import 'swiper/css/pagination';
 
 // MapDisplay 컴포넌트 임포트
 import MapDisplay from '../components/MapDisplay';
+import Header from '../components/Header'; // 1. Header 컴포넌트 임포트
 
 // --- 샘플 데이터 ---
 const notificationsData = [
@@ -56,6 +57,13 @@ const GlobalSwiperStyles = () => {
         transition: opacity 300ms;
       }
       .peek-swiper .swiper-slide-active { opacity: 1; }
+
+      /* PC 스크롤 강제 비활성화 */
+      @media (min-width: 1024px) {
+        html, body {
+          overflow: hidden;
+        }
+      }
     `;
     document.head.appendChild(style);
     return () => {
@@ -91,50 +99,67 @@ interface RecommendedPlacesProps {
 }
 
 const RecommendedPlaces = ({ onSlideChange }: RecommendedPlacesProps) => (
-    <Swiper
-      modules={[Pagination]}
-      className="w-full peek-swiper"
-      spaceBetween={16}
-      slidesPerView={'auto'}
-      centeredSlides={true}
-      pagination={{ clickable: true, el: '.swiper-pagination-outer' }}
-      onSlideChange={(swiper) => onSlideChange(swiper.activeIndex)}
-    >
-      {placesData.map((place) => (
-        <SwiperSlide key={place.id}>
-          <div className="bg-white/60 backdrop-blur-lg rounded-2xl shadow-lg p-4 border border-white/20">
-            <div className="w-full h-64 rounded-xl overflow-hidden relative">
-              <Swiper
-                modules={[Navigation]}
-                navigation={{ 
-                  nextEl: `.custom-next-button-${place.id}`, 
-                  prevEl: `.custom-prev-button-${place.id}` 
-                }}
-                className="w-full h-full"
-              >
-                {place.images.map((imgUrl, index) => (
-                  <SwiperSlide key={index}>
-                    <img src={imgUrl} alt={`${place.name} ${index + 1}`} className="w-full h-full object-cover" />
-                  </SwiperSlide>
-                ))}
-              </Swiper>
+  <>
+    {/* Mobile: Swiper */}
+    <div className="lg:hidden">
+      <Swiper
+        modules={[Pagination]}
+        className="w-full peek-swiper"
+        spaceBetween={16}
+        slidesPerView={'auto'}
+        centeredSlides={true}
+        pagination={{ clickable: true, el: '.swiper-pagination-outer' }}
+        onSlideChange={(swiper) => onSlideChange(swiper.activeIndex)}
+      >
+        {placesData.map((place) => (
+          <SwiperSlide key={place.id}>
+            <PlaceCard place={place} />
+          </SwiperSlide>
+        ))}
+        <div className="swiper-pagination-outer text-center mt-4 relative z-10"></div>
+      </Swiper>
+    </div>
 
-              <button className={`custom-prev-button-${place.id} absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110`}>
-                  <span className="material-symbols-outlined text-xl">chevron_left</span>
-              </button>
-              <button className={`custom-next-button-${place.id} absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110`}>
-                  <span className="material-symbols-outlined text-xl">chevron_right</span>
-              </button>
-            </div>
-            <div className="mt-4 px-2">
-              <h3 className="text-xl font-bold text-gray-900">{place.name}</h3>
-              <p className="text-gray-700">{place.category}</p>
-            </div>
-          </div>
-        </SwiperSlide>
+    {/* PC: Grid */}
+    <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
+      {placesData.map((place) => (
+        <PlaceCard key={place.id} place={place} />
       ))}
-      <div className="swiper-pagination-outer text-center mt-4 relative z-10"></div>
-    </Swiper>
+    </div>
+  </>
+);
+
+// --- Place Card Component (New) ---
+const PlaceCard = ({ place }: { place: typeof placesData[0] }) => (
+  <div className="bg-white/60 backdrop-blur-lg rounded-2xl shadow-lg p-4 border border-white/20 h-full flex flex-col">
+    <div className="w-full h-64 lg:h-44 rounded-xl overflow-hidden relative">
+      <Swiper
+        modules={[Navigation]}
+        navigation={{ 
+          nextEl: `.custom-next-button-${place.id}`, 
+          prevEl: `.custom-prev-button-${place.id}` 
+        }}
+        className="w-full h-full"
+      >
+        {place.images.map((imgUrl, index) => (
+          <SwiperSlide key={index}>
+            <img src={imgUrl} alt={`${place.name} ${index + 1}`} className="w-full h-full object-cover" />
+          </SwiperSlide>
+        ))}
+      </Swiper>
+
+      <button className={`custom-prev-button-${place.id} absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110`}>
+          <span className="material-symbols-outlined text-xl">chevron_left</span>
+      </button>
+      <button className={`custom-next-button-${place.id} absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110`}>
+          <span className="material-symbols-outlined text-xl">chevron_right</span>
+      </button>
+    </div>
+    <div className="mt-4 px-2 flex-grow">
+      <h3 className="text-xl font-bold text-gray-900">{place.name}</h3>
+      <p className="text-gray-700">{place.category}</p>
+    </div>
+  </div>
 );
 
 
@@ -151,39 +176,43 @@ export default function MainPage() {
   return (
     <>
       <GlobalSwiperStyles />
-      {/* MapProvider로 MapDisplay 컴포넌트를 감쌉니다. */}
+      <Header /> {/* 2. Header 컴포넌트 추가 */}
       <MapProvider>
-        <div
-          className="min-h-screen w-full bg-[#FDFBF8]"
-        >
+        <div className="min-h-screen w-full bg-[#FDFBF8] lg:h-screen lg:overflow-hidden">
           {/* <div className="absolute inset-0 bg-black/60"></div> */}
-          
+
           {/* <MapDisplay /> */} {/* MapDisplay 컴포넌트를 홈 화면에 직접 렌더링합니다. */}
-           
-          <div className="relative z-10 w-full space-y-8 pt-8 pb-12">
-            
-            <section>
-              <div className="container mx-auto px-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">새로운 알림</h2>
-                <div className="space-y-3">
-                  {notificationsData.map((notification) => (
-                    <NotificationItem key={notification.id} {...notification} />
-                  ))}
+
+          <div className="relative z-10 mx-auto h-full w-full max-w-7xl pt-8 pb-12 lg:px-8 lg:pt-12 lg:pb-0">
+            <div className="lg:flex lg:h-full lg:gap-8">
+              <div className="lg:w-1/3">
+                <section className="px-4 sm:px-6 lg:sticky lg:top-12 lg:px-0">
+                  <h2 className="mb-4 text-xl font-bold text-gray-800">
+                    새로운 알림
+                  </h2>
+                  <div className="space-y-3">
+                    {notificationsData.map((notification) => (
+                      <NotificationItem key={notification.id} {...notification} />
+                    ))}
+                  </div>
+                </section>
+              </div>
+
+              <div className="mt-8 lg:mt-0 lg:flex lg:w-2/3 lg:flex-col">
+                <div className="mb-4 flex items-baseline px-4 sm:px-6 lg:px-0">
+                  <h2 className="mr-2 text-xl font-bold text-gray-800">
+                    추천 장소
+                  </h2>
+                  <p className="text-base font-medium text-gray-600 lg:hidden">
+                    {currentPlaceName}
+                  </p>
+                </div>
+
+                <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+                  <RecommendedPlaces onSlideChange={setCurrentPlaceIndex} />
                 </div>
               </div>
-            </section>
- 
-            <section className="w-full">
-              <div className="container mx-auto px-6">
-                <div className="flex items-baseline mb-4">
-                  <h2 className="text-xl font-bold text-gray-800 mr-2">추천 장소</h2>
-                  <p className="text-base font-medium text-gray-600">{currentPlaceName}</p>
-                </div>
-              </div>
-              
-              <RecommendedPlaces onSlideChange={setCurrentPlaceIndex} />
-            </section>
- 
+            </div>
           </div>
         </div>
       </MapProvider>
