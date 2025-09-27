@@ -3,16 +3,18 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import BottomNav from "../components/BottomNav";
+import Header from "../components/Header"; // 1. Header 컴포넌트 임포트
 import ChangePasswordModal from "../components/ChangePasswordModal";
 import NotificationSettingsModal from "../components/NotificationSettingsModal";
 import AvatarUploadModal from "../components/AvatarUploadModal"; // ✅ 추가
 import { UserProfile } from "@/data/profile";
+import EditProfileModal from "../components/EditProfileModal";
 
 export default function ProfilePage() {
   const [showChangePw, setShowChangePw] = useState(false);
   const [showNotiModal, setShowNotiModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false); // ✅ 추가
+  const [showEditModal, setShowEditModal] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,8 +40,8 @@ export default function ProfilePage() {
   }, []);
 
   // 프로필 데이터 업데이트 (PUT 요청)
-  const updateProfile = async (updatedData: Partial<UserProfile>) => {
-    if (!userProfile) return;
+  const updateProfile = async (updatedData: Partial<UserProfile>): Promise<boolean> => {
+    if (!userProfile) return false;
     // Optimistic UI update for avatar
     if (updatedData.avatarUrl) {
         setUserProfile(prev => prev ? { ...prev, ...updatedData } : null);
@@ -60,9 +62,11 @@ export default function ProfilePage() {
       }
       const data: UserProfile = await response.json();
       setUserProfile(data); // Re-sync with server state
+      return true;
     } catch (err: any) {
       setError(err.message || "Failed to update profile");
       console.error("Error updating profile:", err);
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -109,8 +113,10 @@ export default function ProfilePage() {
 
   return (
     <div className="relative flex min-h-[100dvh] flex-col bg-[#FDFBF8] text-[#3D2C1D] font-pretendard">
-      {/* Header (애니메이션 제거) */}
-      <header className="sticky top-0 z-20 bg-[#FDFBF8]/80 backdrop-blur-sm">
+      <Header /> {/* 2. PC용 Header 컴포넌트 추가 */}
+
+      {/* 기존 모바일 Header (PC에서는 숨김 처리) */}
+      <header className="sticky top-0 z-20 bg-[#FDFBF8]/80 backdrop-blur-sm lg:hidden">
         <div className="flex items-center justify-between p-4">
           <button className="text-[#3D2C1D] active:scale-95 transition-transform" type="button">
             <svg fill="currentColor" height="24" width="24" viewBox="0 0 256 256">
@@ -121,41 +127,47 @@ export default function ProfilePage() {
           <div className="w-6" />
         </div>
       </header>
+      
+      {/* 기존 PC Header는 완전히 삭제합니다. */}
 
-      <main className="flex-1 p-4 space-y-6 pb-0">
+      <main className="flex-1 w-full max-w-7xl mx-auto p-4 lg:p-8 space-y-6">
         {/* Avatar */}
-        <section className="text-center">
+        <section className="text-center lg:text-left lg:flex lg:items-center lg:space-x-8 lg:bg-white lg:p-8 lg:rounded-2xl lg:shadow-sm">
           <div className="relative inline-block">
             <img
               src={userProfile.avatarUrl} // ✅ 동적 데이터로 변경
               alt="User profile picture"
-              className="object-cover w-24 h-24 rounded-full shadow-sm"
+              className="object-cover w-24 h-24 rounded-full shadow-sm lg:w-32 lg:h-32"
             />
             <button
               onClick={() => setShowAvatarModal(true)} // ✅ 추가
-              className="absolute bottom-0 right-0 bg-[#D2B48C] rounded-full p-1.5 shadow-md active:scale-95 transition-transform"
+              className="absolute bottom-0 right-0 bg-[#D2B48C] rounded-full p-1.5 shadow-md active:scale-95 transition-transform lg:p-2"
               type="button"
               tabIndex={-1}
             >
-              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 256 256">
+              <svg className="w-4 h-4 text-white lg:w-5 lg:h-5" fill="currentColor" viewBox="0 0 256 256">
                 <path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,164.12V208a16,16,0,0,0,16,16H92.12A15.86,15.86,0,0,0,104.24,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.12,208H48V164.12L152,60.12l43.89,43.89Z" />
               </svg>
             </button>
           </div>
-          <h2 className="mt-4 text-2xl font-bold">{userProfile.nickname}</h2>
-          <p className="text-md text-[#8C7853]">{userProfile.name}</p>
+          <div className="mt-4 lg:mt-0">
+            <h2 className="text-2xl font-bold lg:text-3xl">{userProfile.nickname}</h2>
+            <p className="text-md text-[#8C7853] lg:text-lg">{userProfile.name}</p>
+          </div>
         </section>
 
-        {/* 사용자 정보 */}
-        <section className="py-4 mx-3 space-y-3 bg-white shadow-sm rounded-xl px-7">
-          <div className="flex items-center justify-between">
+        <div className="lg:grid lg:grid-cols-5 lg:gap-8">
+            <div className="lg:col-span-2 space-y-6">
+                {/* 사용자 정보 */}
+                <section className="py-4 mx-3 space-y-3 bg-white shadow-sm rounded-xl px-7 lg:mx-0 lg:p-6">
+                  <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-[#3D2C1D]">사용자 정보</h3>
-            <Link
-              href="/edit"
+            <button
+              onClick={() => setShowEditModal(true)}
               className="text-[#D2B48C] font-semibold text-sm transition-colors hover:opacity-80 active:opacity-90"
             >
               Edit
-            </Link>
+            </button>
           </div>
 
           {/* 닉네임 */}
@@ -220,12 +232,14 @@ export default function ProfilePage() {
             </div>
           </div>
         </section>
-
-        {/* 계정 관리 */}
-        <section className="px-8 py-6 mx-3 mt-6 bg-white shadow-sm rounded-xl">
-          <h3 className="mb-4 text-lg font-semibold">계정 관리</h3>
-          <div className="space-y-3">
-            {/* 비밀번호 변경 */}
+            </div>
+            
+            <div className="lg:col-span-3">
+                {/* 계정 관리 */}
+                <section className="px-8 py-6 mx-3 mt-6 bg-white shadow-sm rounded-xl lg:mx-0 lg:mt-0 lg:p-6">
+                  <h3 className="mb-4 text-lg font-semibold">계정 관리</h3>
+                  <div className="space-y-3">
+                    {/* 비밀번호 변경 */}
             <button
               type="button"
               onClick={() => setShowChangePw(true)}
@@ -286,11 +300,13 @@ export default function ProfilePage() {
                 <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z" />
               </svg>
             </a>
-          </div>
-        </section>
+                  </div>
+                </section>
+            </div>
+        </div>
 
         {/* 고정 네비에 가리지 않도록 정확히 그 높이만큼만 여백 확보 */}
-        <div aria-hidden className="h-[calc(64px+env(safe-area-inset-bottom))]" />
+        <div aria-hidden className="h-[calc(64px+env(safe-area-inset-bottom))] lg:hidden" />
       </main>
 
       {/* 고정 하단 네비 */}
@@ -308,6 +324,7 @@ export default function ProfilePage() {
       <NotificationSettingsModal
         open={showNotiModal}
         onClose={() => setShowNotiModal(false)}
+        initialSettings={userProfile.notificationSettings}
         onSave={(settings) => {
           console.log("알림 설정 저장 요청:", settings);
           updateProfile({ notificationSettings: settings });
@@ -320,6 +337,23 @@ export default function ProfilePage() {
         currentAvatarUrl={userProfile.avatarUrl}
         onClose={() => setShowAvatarModal(false)}
         onSave={handleAvatarSave}
+      />
+
+      <EditProfileModal
+        open={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setError(null);
+        }}
+        userProfile={userProfile}
+        onSave={async (updatedProfile) => {
+          const success = await updateProfile(updatedProfile);
+          if (success) {
+            setShowEditModal(false);
+          }
+        }}
+        error={error}
+        setError={setError}
       />
     </div>
   );

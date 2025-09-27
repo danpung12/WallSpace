@@ -3,7 +3,9 @@
 import React, { useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useBottomNav } from '../context/BottomNavContext';
-import { useMap, artworksData, isSameDay, fmtKoreanDate } from '@/context/MapContext'; 
+import { useMap, isSameDay, fmtKoreanDate } from '@/context/MapContext';
+import { userArtworks } from '@/data/artworks';
+import Header from '../components/Header';
 
 // --- OptionsMenu Component Definition ---
 interface OptionsMenuProps {
@@ -65,7 +67,7 @@ export default function MapPage() {
     const {
         isDetailPageVisible, setDetailPageVisible,
         isDatePickerOpen, setDatePickerOpen,
-        startDate, 
+        startDate,
         endDate,
         activeFilter,
         selectedArtwork, setSelectedArtwork,
@@ -90,9 +92,10 @@ export default function MapPage() {
             setNavVisible(true);
         };
     }, [isDetailPageVisible, setNavVisible]);
-    
+
     return (
         <div>
+            <Header />
             <style>{`
               :root { --theme-brown-lightest:#F5F3F0; --theme-brown-light:#E9E4DD; --theme-brown-medium:#D4C8B8; --theme-brown-dark:#A18F79; --theme-brown-darkest:#4D4337; --white:#ffffff; }
               body { font-family: 'Pretendard', sans-serif; background-color: var(--theme-brown-lightest); color: var(--theme-brown-darkest); overflow: hidden; min-height: 100vh; overscroll-behavior: none; }
@@ -124,7 +127,7 @@ export default function MapPage() {
               .date-range-start { border-top-right-radius: 0; border-bottom-right-radius: 0; }
               .date-range-end { border-top-left-radius: 0; border-bottom-left-radius: 0; }
               .custom-overlay-style { padding: 8px 12px; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; cursor: pointer; font-size: 13px; }
-              
+
               /* OptionsMenu 스타일 */
               .options-menu-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(0px); z-index: 100; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease-in-out, backdrop-filter 0.3s ease-in-out; }
               .options-menu-overlay.open { opacity: 1; pointer-events: auto; backdrop-filter: blur(4px); }
@@ -161,12 +164,27 @@ export default function MapPage() {
                               <span className="material-symbols-outlined cursor-pointer" style={{ fontSize: '32px', color: 'var(--theme-brown-darkest)' }} onClick={() => setOptionsMenuOpen(true)}>tune</span>
                           </div>
                           <hr style={{ borderTop: '1px solid var(--theme-brown-light)' }} />
-                          <div className="filter-buttons no-scrollbar">{filterButtons.map((label) => (<button key={label} className={`filter-button ${(label === '작품 선택' && isArtworkSelectorVisible) || activeFilter === label ? 'active' : ''}`} onClick={() => handleFilterClick(label)}>{label}</button>))}</div>
+                          <div className="filter-buttons no-scrollbar">{filterButtons.map((label) => (<button key={label} className={`filter-button flex items-center gap-1 ${(label === '작품 선택' && isArtworkSelectorVisible) || activeFilter === label ? 'active' : ''}`} onClick={() => handleFilterClick(label)}>
+                            {label}
+                            {label === '작품 선택' && (
+                              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                                {isArtworkSelectorVisible ? 'expand_less' : 'expand_more'}
+                              </span>
+                            )}
+                            </button>))}</div>
                       </div>
                   </div>
                 )}
-                <ArtworkSelector artworks={artworksData} selectedArtwork={selectedArtwork} onSelectArtwork={setSelectedArtwork} onAddNew={() => setArtworkModalOpen(true)} isVisible={isArtworkSelectorVisible} />
-                <OptionsMenu isOpen={isOptionsMenuOpen} onClose={() => setOptionsMenuOpen(false)} />
+                <ArtworkSelector
+                  artworks={userArtworks}
+                  selectedArtwork={selectedArtwork}
+                  onSelectArtwork={setSelectedArtwork}
+                  isVisible={isArtworkSelectorVisible}
+                />
+                <OptionsMenu
+                  isOpen={isOptionsMenuOpen}
+                  onClose={() => setOptionsMenuOpen(false)}
+                />
                 {isDatePickerOpen && (
                     <div className="date-picker-modal-overlay" onClick={() => setDatePickerOpen(false)}>
                         <div className="date-picker-modal-content" onClick={(e) => e.stopPropagation()}>
