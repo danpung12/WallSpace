@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import TransitionProvider from "./transition-provider";
-import BottomNavGate from "./components/BottomNavGate";
+import NavigationGate from "./components/NavigationGate";
 import { BottomNavProvider } from "./context/BottomNavContext";
 import { MapProvider } from "@/context/MapContext"; // ✨ 1. MapProvider를 임포트합니다.
+import { UserModeProvider } from "./context/UserModeContext"; // 1. UserModeProvider 임포트
 import Script from "next/script"; // ✨ 2. Next.js의 Script 컴포넌트를 임포트합니다.
 
 export const metadata: Metadata = {
@@ -37,9 +38,6 @@ export default function RootLayout({
             --brand-cream: #F5F3F0;
             --brand-dark-brown: #3E352F;
           }
-          body {
-            min-height: max(884px, 100dvh);
-          }
         `}</style>
         
         {/* ✅ 깜빡임 방지용 스타일 */}
@@ -57,11 +55,13 @@ export default function RootLayout({
       >
         {/* ✨ 3. MapProvider로 전체를 감싸서 지도 상태를 전역으로 관리합니다. */}
         <MapProvider>
-          {/* BottomNavProvider는 MapProvider 안에 위치합니다. */}
-          <BottomNavProvider>
-            {children}
-            <BottomNavGate />
-          </BottomNavProvider>
+          <UserModeProvider> {/* 2. UserModeProvider 추가 */}
+            {/* BottomNavProvider는 MapProvider 안에 위치합니다. */}
+            <BottomNavProvider>
+              {children}
+              <NavigationGate />
+            </BottomNavProvider>
+          </UserModeProvider>
         </MapProvider>
 
         {/* ✨ 4. 카카오맵 SDK 스크립트를 body 최하단에 추가하여 앱 전체에서 한 번만 로드되게 합니다. */}
