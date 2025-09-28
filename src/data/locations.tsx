@@ -35,7 +35,7 @@ export interface Location {
 export const locations: Location[] = [
     {
         id: 1,
-        name: '아트스페이스 광교',
+        name: '아트 스페이스 광교',
         lat: 37.2842,
         lng: 127.0543,
         statusText: '예약 가능',
@@ -113,7 +113,13 @@ export const locations: Location[] = [
             { name: '4F 루프탑', imageUrl: 'https://picsum.photos/id/302/400/300', isReserved: false },
             { name: '지하 상영관', imageUrl: 'https://picsum.photos/id/303/400/300', isReserved: false },
         ],
-        reviews: [],
+        reviews: [
+            {
+                artistName: 'Sera Kim',
+                artistImageUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026708d',
+                comment: '공간 자체가 하나의 예술 작품 같아요. 설치 미술 전시를 했는데, 공간과 작품이 잘 어우러져서 시너지가 났습니다.',
+            }
+        ],
         totalSlots: 8,
         reservedSlots: 2,
         reservationStatus: 'available',
@@ -145,4 +151,64 @@ export const locations: Location[] = [
         reservedSlots: 4,
         reservationStatus: 'unavailable',
     },
+    // ---
+    // 아래 데이터는 home/page.tsx의 추천 장소 데이터와 동기화됩니다.
+    // '국립현대미술관 서울'과 '페이지스 바이 페이지'가 추가되었습니다.
+    // '아트스페이스 광교'는 이미 id:1 로 존재하므로 중복 추가하지 않았습니다.
+    // ---
+    {
+        id: 5, // 기존 데이터와 겹치지 않는 고유 ID
+        name: '국립현대미술관 서울',
+        lat: 37.5796,
+        lng: 126.9804,
+        statusText: '예약 가능',
+        statusColor: '#3B82F6',
+        images: [
+            'https://picsum.photos/id/10/800/600',
+            'https://picsum.photos/id/11/800/600',
+            'https://picsum.photos/id/12/800/600'
+        ],
+        description: '서울의 중심에 위치한 국립현대미술관은 한국 현대미술의 현재와 미래를 조망하는 다양한 전시를 선보입니다.',
+        spaces: [
+             { name: '제 1 전시실', imageUrl: 'https://picsum.photos/id/501/400/300', isReserved: false },
+             { name: '디지털 라이브러리', imageUrl: 'https://picsum.photos/id/502/400/300', isReserved: false },
+        ],
+        reviews: [
+            {
+                artistName: 'Minjun Park',
+                artistImageUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026709d',
+                comment: '접근성이 좋고 시설이 훌륭합니다. 특히 디지털 라이브러리는 미디어 아트 전시에 최적의 환경을 제공해주었습니다.',
+            }
+        ],
+        totalSlots: 12,
+        reservedSlots: 5,
+        reservationStatus: 'available',
+    },
+    {
+        id: 6, // 기존 데이터와 겹치지 않는 고유 ID
+        name: '페이지스 바이 페이지',
+        lat: 37.5495,
+        lng: 126.9209,
+        statusText: '문의 필요',
+        statusColor: '#F97316',
+        images: [
+            'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?q=80&w=2070&auto=format&fit=crop',
+            'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?q=80&w=2070&auto=format&fit=crop',
+            'https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2106&auto=format&fit=crop',
+        ],
+        description: '아늑한 분위기의 북카페로, 독립 서적과 함께 맛있는 커피를 즐길 수 있는 특별한 공간입니다.',
+        spaces: [
+            { name: '메인 홀', imageUrl: 'https://picsum.photos/id/601/400/300', isReserved: false },
+        ],
+        reviews: [
+            {
+                artistName: 'Yuna Choi',
+                artistImageUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026710d',
+                comment: '아늑하고 따뜻한 분위기에서 소규모 전시를 열기에 완벽한 장소입니다. 책과 예술이 함께하는 특별한 경험을 할 수 있었어요.',
+            }
+        ],
+        totalSlots: 5,
+        reservedSlots: 2,
+        reservationStatus: 'available',
+    }
 ];

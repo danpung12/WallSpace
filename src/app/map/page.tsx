@@ -65,6 +65,7 @@ import PlaceDetailPanel from './components/PlaceDetailPanel';
 export default function MapPage() {
     const { setNavVisible } = useBottomNav();
     const {
+        mapInstance, // mapInstance 추가
         isDetailPageVisible, setDetailPageVisible,
         isDatePickerOpen, setDatePickerOpen,
         startDate,
@@ -81,6 +82,14 @@ export default function MapPage() {
         isOptionsMenuOpen, setOptionsMenuOpen,
         handlePlaceSelect, gotoMonth, isDisabled, onClickDay, getDayClass, handleFilterClick,
     } = useMap();
+
+    useEffect(() => {
+        if (selectedPlace && mapInstance.current && window.kakao) {
+            const { lat, lng } = selectedPlace;
+            const moveLatLon = new window.kakao.maps.LatLng(lat, lng);
+            mapInstance.current.panTo(moveLatLon);
+        }
+    }, [selectedPlace, mapInstance]);
 
     useEffect(() => {
         if (isDetailPageVisible) {
