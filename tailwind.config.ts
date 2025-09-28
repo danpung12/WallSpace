@@ -8,12 +8,13 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "gradient-conic":
+          "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+      },
       colors: {
-        'theme-brown-lightest': '#F5F3F0',
-        'theme-brown-light': '#E9E4DD',
-        'theme-brown-medium': '#D4C8B8',
-        'theme-brown-dark': '#A18F79',
-        'theme-brown-darkest': '#4D4337',
+        "modal-brown": "rgba(101, 87, 77, 0.9)",
       },
       fontFamily: {
         display: ['Pretendard', 'sans-serif'],
@@ -29,3 +30,4 @@ const config: Config = {
   plugins: [],
 };
 export default config;
+

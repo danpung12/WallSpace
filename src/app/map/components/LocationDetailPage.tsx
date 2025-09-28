@@ -95,11 +95,58 @@ export default function LocationDetailPage({
           </button>
         </div>
 
-        <div className="lg:grid lg:grid-cols-2 lg:gap-8">
-          {/* --- Left Column (PC) --- */}
-          <div className="hidden lg:flex lg:flex-col lg:justify-between lg:p-8">
-            <div>
-              <div className="mb-2 flex items-center gap-3">
+        <div className="lg:flex lg:h-auto lg:max-h-[90vh]">
+          {/* --- Image Carousel Section (PC Left) --- */}
+          <div className="lg:flex lg:w-1/2 lg:flex-col">
+            <div className="relative h-80 w-full flex-shrink-0 bg-gray-200 lg:h-auto lg:flex-grow">
+                {place.images?.map((imageUrl, index) => (
+                  <Image
+                    key={index}
+                    src={imageUrl}
+                    alt={`${place.name} image ${index + 1}`}
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    className={`transition-opacity duration-500 ease-in-out ${
+                      index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
+                ))}
+                {totalImages > 1 && (
+                  <>
+                    <button
+                      onClick={handlePrevImage}
+                      className="absolute left-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white transition-colors duration-200 hover:bg-black/60"
+                    >
+                      <span className="material-symbols-outlined text-xl">
+                        chevron_left
+                      </span>
+                    </button>
+                    <button
+                      onClick={handleNextImage}
+                      className="absolute right-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white transition-colors duration-200 hover:bg-black/60"
+                    >
+                      <span className="material-symbols-outlined text-xl">
+                        chevron_right
+                      </span>
+                    </button>
+                    <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 space-x-2">
+                      {place.images.map((_, index) => (
+                        <span
+                          key={index}
+                          className={`block h-2 w-2 rounded-full ${
+                            index === currentImageIndex
+                              ? 'bg-white'
+                              : 'bg-gray-400/70'
+                          }`}
+                        ></span>
+                      ))}
+                    </div>
+                  </>
+                )}
+            </div>
+            {/* PC Info Section */}
+            <div className="hidden p-8 lg:block">
+              <div className="mb-2 flex flex-wrap items-center gap-3">
                 <h2 className="text-3xl font-bold text-theme-brown-darkest">
                   {place.name}
                 </h2>
@@ -109,7 +156,7 @@ export default function LocationDetailPage({
                   {currentStatus.text}
                 </span>
               </div>
-              <div className="mb-4 flex items-center gap-2 text-lg text-gray-600">
+              <div className="mb-4 flex items-center gap-2 text-base text-gray-600 lg:text-lg">
                 <span className="material-symbols-outlined text-base">
                   groups
                 </span>
@@ -121,75 +168,14 @@ export default function LocationDetailPage({
                 {place.description}
               </p>
             </div>
-            <div className="mt-8">
-              <Link href="/confirm-booking" passHref legacyBehavior>
-                <a className={isButtonDisabled ? 'pointer-events-none' : ''}>
-                  <button
-                    className={`${baseButtonClasses} ${stateButtonClasses}`}
-                    disabled={isButtonDisabled}
-                  >
-                    {buttonText}
-                  </button>
-                </a>
-              </Link>
-            </div>
           </div>
-
-          {/* --- Right Column (PC) / Main Content (Mobile) --- */}
-          <main className="lg:max-h-[90vh] lg:overflow-y-auto lg:pb-8">
-            {/* Image Carousel */}
-            <div className="relative h-80 w-full overflow-hidden bg-gray-200 lg:mt-8 lg:rounded-lg">
-              {place.images?.map((imageUrl, index) => (
-                <Image
-                  key={index}
-                  src={imageUrl}
-                  alt={`${place.name} image ${index + 1}`}
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  className={`transition-opacity duration-500 ease-in-out ${
-                    index === currentImageIndex ? 'opacity-100' : 'opacity-0'
-                  }`}
-                />
-              ))}
-              {totalImages > 1 && (
-                <>
-                  <button
-                    onClick={handlePrevImage}
-                    className="absolute left-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white transition-colors duration-200 hover:bg-black/60"
-                  >
-                    <span className="material-symbols-outlined text-xl">
-                      chevron_left
-                    </span>
-                  </button>
-                  <button
-                    onClick={handleNextImage}
-                    className="absolute right-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white transition-colors duration-200 hover:bg-black/60"
-                  >
-                    <span className="material-symbols-outlined text-xl">
-                      chevron_right
-                    </span>
-                  </button>
-                  <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 space-x-2">
-                    {place.images.map((_, index) => (
-                      <span
-                        key={index}
-                        className={`block h-2 w-2 rounded-full ${
-                          index === currentImageIndex
-                            ? 'bg-white'
-                            : 'bg-gray-400/70'
-                        }`}
-                      ></span>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Content Wrapper for below carousel */}
-            <div className="p-5 lg:p-0 lg:pr-8 lg:pt-8">
-              {/* Mobile-only Info Section */}
-              <div className="lg:hidden">
-                <div className="mb-2 flex items-center gap-3">
+ 
+           {/* --- Details Section (PC Right, full for mobile) --- */}
+          <div className="w-full overflow-y-auto lg:w-1/2">
+            <div className="p-5 lg:p-8">
+              {/* Mobile Info Section */}
+              <div className="mb-8 lg:hidden">
+                <div className="mb-2 flex flex-wrap items-center gap-3">
                   <h2 className="text-3xl font-bold text-theme-brown-darkest">
                     {place.name}
                   </h2>
@@ -199,7 +185,7 @@ export default function LocationDetailPage({
                     {currentStatus.text}
                   </span>
                 </div>
-                <div className="mb-4 flex items-center gap-2 text-lg text-gray-600">
+                <div className="mb-4 flex items-center gap-2 text-base text-gray-600 lg:text-lg">
                   <span className="material-symbols-outlined text-base">
                     groups
                   </span>
@@ -207,12 +193,12 @@ export default function LocationDetailPage({
                     {place.reservedSlots} / {place.totalSlots} 팀 예약 중
                   </span>
                 </div>
-                <p className="mb-8 leading-relaxed text-theme-brown-dark">
+                <p className="leading-relaxed text-theme-brown-dark">
                   {place.description}
                 </p>
               </div>
-
-              {/* Shared Section for Spaces & Reviews */}
+ 
+               {/* Spaces & Reviews Section */}
               <div className="border-t border-theme-brown-light pt-6 lg:border-t-0">
                 <div className="mb-8">
                   <h3 className="mb-4 text-xl font-bold text-theme-brown-darkest">
@@ -303,8 +289,22 @@ export default function LocationDetailPage({
                   </div>
                 </div>
               </div>
+
+              {/* PC Booking Button */}
+              <div className="mt-8 hidden lg:block">
+                <Link href="/confirm-booking" passHref legacyBehavior>
+                  <a className={isButtonDisabled ? 'pointer-events-none' : ''}>
+                    <button
+                      className={`${baseButtonClasses} ${stateButtonClasses}`}
+                      disabled={isButtonDisabled}
+                    >
+                      {buttonText}
+                    </button>
+                  </a>
+                </Link>
+              </div>
             </div>
-          </main>
+          </div>
         </div>
 
         <footer className="sticky bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4 lg:hidden">
