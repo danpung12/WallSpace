@@ -5,14 +5,14 @@ import { locations, Location, Space } from '@/data/locations';
 import { KakaoPlace, KakaoMap, KakaoLatLng, KakaoGeocoderResult, KakaoGeocoderStatus } from '@/types/kakao';
 
 // --- 타입 정의 ---
-export interface Artwork { id: number; title: string; artist: string; dimensions: string; price: number; imageUrl: string; }
+export interface Artwork { id: number; title: string; artist: string; dimensions: string; price: number; imageUrl: string; alt: string; }
 export type { Location as LocationType, Space };
 
 // --- 데이터 및 유틸 함수 ---
 export const artworksData: Artwork[] = [
-    { id: 1, title: 'Vibrance', artist: 'Alexia Ray', dimensions: '120cm x 80cm', price: 15, imageUrl: 'https://picsum.photos/id/1018/200/200' },
-    { id: 2, title: 'Solitude', artist: 'Clara Monet', dimensions: '50cm x 70cm', price: 10, imageUrl: 'https://picsum.photos/id/1015/200/200' },
-    { id: 3, title: 'The Vase', artist: 'Mark Chen', dimensions: '100cm x 100cm', price: 20, imageUrl: 'https://picsum.photos/id/1025/200/200' },
+    { id: 1, title: 'Vibrance', artist: 'Alexia Ray', dimensions: '120cm x 80cm', price: 15, imageUrl: 'https://picsum.photos/id/1018/200/200', alt: 'Vibrance artwork' },
+    { id: 2, title: 'Solitude', artist: 'Clara Monet', dimensions: '50cm x 70cm', price: 10, imageUrl: 'https://picsum.photos/id/1015/200/200', alt: 'Solitude artwork' },
+    { id: 3, title: 'The Vase', artist: 'Mark Chen', dimensions: '100cm x 100cm', price: 20, imageUrl: 'https://picsum.photos/id/1025/200/200', alt: 'The Vase artwork' },
 ];
 export const disabledDaysData = [28];
 export const toYMD = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());

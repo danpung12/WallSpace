@@ -8,6 +8,7 @@ export type KakaoLatLng = {
 
 export type KakaoMap = {
   setCenter: (latlng: KakaoLatLng) => void;
+  panTo: (latlng: KakaoLatLng) => void; // panTo 추가
   relayout: () => void;
   getNode: () => HTMLElement;
   setLevel: (level: number) => void;

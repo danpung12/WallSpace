@@ -76,9 +76,10 @@ export default function SelectUserType() {
                 <span className="sr-only">뒤로 가기</span>
               </button>
             </div>
-            <h1 className="text-xl font-bold text-[var(--brand-dark-brown)] tracking-tight">
-              가입 유형 선택
-            </h1>
+            <div className="text-center">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--brand-dark-brown)]">가입 유형 선택</h1>
+                <p className="text-sm sm:text-base text-gray-600 mt-2">어떤 목적으로 WallSpace를 이용하시나요?</p>
+            </div>
           </header>
 
           <main className="flex flex-col flex-grow justify-center gap-6">

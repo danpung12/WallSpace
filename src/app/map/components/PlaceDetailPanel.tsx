@@ -15,11 +15,11 @@ export default function PlaceDetailPanel({
   if (!place) return null;
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] p-4 transition-transform duration-300 ease-in-out z-40 cursor-pointer"
+      className="fixed bottom-0 left-0 right-0 lg:left-4 lg:bottom-4 lg:right-auto bg-white rounded-t-2xl lg:rounded-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] lg:shadow-2xl p-4 transition-transform duration-300 ease-in-out z-40 cursor-pointer lg:max-w-md"
       style={{ transform: 'translateY(0)' }}
       onClick={onShowDetail}
     >
-      <div className="relative max-w-lg mx-auto">
+      <div className="relative max-w-lg mx-auto lg:mx-0">
         <button
           onClick={(e) => {
             e.stopPropagation();

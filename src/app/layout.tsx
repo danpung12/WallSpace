@@ -50,7 +50,7 @@ export default function RootLayout({
       </head>
 
       <body
-        className="js-loading bg-[var(--brand-cream)]"
+        className="js-loading"
         style={{ fontFamily: "Pretendard, sans-serif" }}
       >
         {/* ✨ 3. MapProvider로 전체를 감싸서 지도 상태를 전역으로 관리합니다. */}

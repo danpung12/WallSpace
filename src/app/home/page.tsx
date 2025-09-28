@@ -6,7 +6,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import { IoNotificationsCircle } from 'react-icons/io5';
-import { MapProvider, useMap } from '../../context/MapContext'; // ✨ 1. 지도 컨텍스트 훅 및 MapProvider 임포트
+import { useMap, LocationType } from '../../context/MapContext'; // ✨ 1. 지도 컨텍스트 훅 및 MapProvider 임포트
+import { locations } from '@/data/locations'; // 전체 장소 데이터 임포트
+import { useRouter } from 'next/navigation'; // 1. useRouter 훅 임포트
 
 // --- Swiper CSS 임포트 ---
 import 'swiper/css';
@@ -24,21 +26,68 @@ const notificationsData = [
 ];
 
 const placesData = [
-  { id: 'place01', name: '아트 스페이스 광교', category: '갤러리', images: [
-    'https://images.unsplash.com/photo-1536924940846-227afb31e2a5?q=80&w=2067&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=2070&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?q=80&w=1974&auto=format&fit=crop',
-  ]},
-  { id: 'place02', name: '국립현대미술관 서울', category: '미술관', images: [
-    'https://picsum.photos/id/10/800/600',
-    'https://picsum.photos/id/11/800/600',
-    'https://picsum.photos/id/12/800/600',
-  ]},
-  { id: 'place03', name: '페이지스 바이 페이지', category: '카페 & 서점', images: [
-    'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?q=80&w=2070&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?q=80&w=2070&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2106&auto=format&fit=crop',
-  ]},
+  { 
+    id: 'place01', 
+    name: '아트 스페이스 광교', 
+    category: '갤러리', 
+    lat: 37.2842, 
+    lng: 127.0543, 
+    images: [
+      'https://images.unsplash.com/photo-1536924940846-227afb31e2a5?q=80&w=2067&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=2070&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?q=80&w=1974&auto=format&fit=crop',
+    ],
+    spaces: [
+        { name: '제 1 전시실', imageUrl: 'https://picsum.photos/id/101/400/300', isReserved: false },
+        { name: '멀티룸 A', imageUrl: 'https://picsum.photos/id/102/400/300', isReserved: false },
+        { name: '야외 조각 공원', imageUrl: 'https://picsum.photos/id/103/400/300', isReserved: true },
+    ],
+    reviews: [
+        {
+            artistName: 'Alexia Ray',
+            artistImageUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026704d',
+            comment: '자연광이 정말 아름다운 공간입니다. 제 조각 작품들이 훨씬 돋보였어요. 다음 개인전도 여기서 하고 싶네요.',
+        },
+        {
+            artistName: 'Joon Lee',
+            artistImageUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026705d',
+            comment: '시설이 정말 깨끗하고 관리가 잘 되어있습니다. 특히 야외 공간은 설치 미술에 최적의 장소라고 생각합니다. 강력 추천!',
+        }
+    ]
+  },
+  { 
+    id: 'place02', 
+    name: '국립현대미술관 서울', 
+    category: '미술관', 
+    lat: 37.5796, 
+    lng: 126.9804, 
+    images: [
+      'https://picsum.photos/id/10/800/600',
+      'https://picsum.photos/id/11/800/600',
+      'https://picsum.photos/id/12/800/600',
+    ],
+    spaces: [
+        { name: '제 1 전시실', imageUrl: 'https://picsum.photos/id/501/400/300', isReserved: false },
+        { name: '디지털 라이브러리', imageUrl: 'https://picsum.photos/id/502/400/300', isReserved: false },
+    ],
+    reviews: []
+  },
+  { 
+    id: 'place03', 
+    name: '페이지스 바이 페이지', 
+    category: '카페 & 서점', 
+    lat: 37.5495, 
+    lng: 126.9209, 
+    images: [
+      'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?q=80&w=2070&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?q=80&w=2070&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2106&auto=format&fit=crop',
+    ],
+    spaces: [
+        { name: '메인 홀', imageUrl: 'https://picsum.photos/id/601/400/300', isReserved: false },
+    ],
+    reviews: []
+  },
 ];
 
 
@@ -82,7 +131,7 @@ interface NotificationItemProps {
 }
 
 const NotificationItem = ({ title, message, time }: NotificationItemProps) => (
-  <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-4 flex items-start space-x-3 shadow-lg border border-white/20">
+  <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-4 flex items-start space-x-3 shadow-lg border border-white/20 cursor-pointer hover:bg-white transition-colors duration-200">
     <IoNotificationsCircle className="text-blue-500 text-4xl mt-1 flex-shrink-0" />
     <div className="flex-1 min-w-0">
       <div className="flex justify-between items-center">
@@ -98,40 +147,72 @@ interface RecommendedPlacesProps {
   onSlideChange: (index: number) => void;
 }
 
-const RecommendedPlaces = ({ onSlideChange }: RecommendedPlacesProps) => (
-  <>
-    {/* Mobile: Swiper */}
-    <div className="lg:hidden">
-      <Swiper
-        modules={[Pagination]}
-        className="w-full peek-swiper"
-        spaceBetween={16}
-        slidesPerView={'auto'}
-        centeredSlides={true}
-        pagination={{ clickable: true, el: '.swiper-pagination-outer' }}
-        onSlideChange={(swiper) => onSlideChange(swiper.activeIndex)}
-      >
-        {placesData.map((place) => (
-          <SwiperSlide key={place.id}>
-            <PlaceCard place={place} />
-          </SwiperSlide>
-        ))}
-        <div className="swiper-pagination-outer text-center mt-4 relative z-10"></div>
-      </Swiper>
-    </div>
+const RecommendedPlaces = ({ onSlideChange }: RecommendedPlacesProps) => {
+  const { setSelectedPlace, mapInstance } = useMap();
+  const router = useRouter(); // 2. router 인스턴스 생성
 
-    {/* PC: Grid */}
-    <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
-      {placesData.map((place) => (
-        <PlaceCard key={place.id} place={place} />
-      ))}
-    </div>
-  </>
-);
+  const handlePlaceCardClick = (place: typeof placesData[0]) => {
+    // placesData의 형식을 LocationType에 맞게 변환
+    const locationData: LocationType = {
+      ...place,
+      id: Math.random(), // 임시 ID 생성
+      statusText: '정보 확인',
+      statusColor: '#888',
+      description: `${place.name} - ${place.category}`,
+      totalSlots: 0,
+      reservedSlots: 0,
+      reservationStatus: 'available'
+    };
+    
+    if (locationData) {
+      setSelectedPlace(locationData);
+      if (mapInstance.current && window.kakao) {
+        const moveLatLon = new window.kakao.maps.LatLng(locationData.lat, locationData.lng);
+        mapInstance.current.panTo(moveLatLon);
+      }
+      router.push('/map'); // 3. '/map' 경로로 이동
+    }
+  };
+
+  return (
+    <>
+      {/* Mobile: Swiper */}
+      <div className="lg:hidden">
+        <Swiper
+          modules={[Pagination]}
+          className="w-full peek-swiper"
+          spaceBetween={16}
+          slidesPerView={'auto'}
+          centeredSlides={true}
+          pagination={{ clickable: true, el: '.swiper-pagination-outer' }}
+          onSlideChange={(swiper) => onSlideChange(swiper.activeIndex)}
+        >
+          {placesData.map((place) => (
+            <SwiperSlide key={place.id}>
+              <div onClick={() => handlePlaceCardClick(place)}>
+                <PlaceCard place={place} />
+              </div>
+            </SwiperSlide>
+          ))}
+          <div className="swiper-pagination-outer text-center mt-4 relative z-10"></div>
+        </Swiper>
+      </div>
+
+      {/* PC: Grid */}
+      <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
+        {placesData.map((place) => (
+          <div key={place.id} onClick={() => handlePlaceCardClick(place)}>
+            <PlaceCard place={place} />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+};
 
 // --- Place Card Component (New) ---
-const PlaceCard = ({ place }: { place: typeof placesData[0] }) => (
-  <div className="bg-white/60 backdrop-blur-lg rounded-2xl shadow-lg p-4 border border-white/20 h-full flex flex-col">
+const PlaceCard = ({ place }: { place: (typeof placesData)[0] }) => (
+  <div className="bg-white/60 backdrop-blur-lg rounded-2xl shadow-lg p-4 border border-white/20 h-full flex flex-col cursor-pointer">
     <div className="w-full h-64 lg:h-44 rounded-xl overflow-hidden relative">
       <Swiper
         modules={[Navigation]}
@@ -177,45 +258,43 @@ export default function MainPage() {
     <>
       <GlobalSwiperStyles />
       <Header /> {/* 2. Header 컴포넌트 추가 */}
-      <MapProvider>
-        <div className="min-h-screen w-full bg-[#FDFBF8] lg:h-screen lg:overflow-hidden">
-          {/* <div className="absolute inset-0 bg-black/60"></div> */}
+      <div className="min-h-screen w-full bg-[#FDFBF8] lg:h-screen lg:overflow-hidden">
+        {/* <div className="absolute inset-0 bg-black/60"></div> */}
 
-          {/* <MapDisplay /> */} {/* MapDisplay 컴포넌트를 홈 화면에 직접 렌더링합니다. */}
+        {/* <MapDisplay /> */} {/* MapDisplay 컴포넌트를 홈 화면에 직접 렌더링합니다. */}
 
-          <div className="relative z-10 mx-auto h-full w-full max-w-7xl pt-8 pb-12 lg:px-8 lg:pt-12 lg:pb-0">
-            <div className="lg:flex lg:h-full lg:gap-8">
-              <div className="lg:w-1/3">
-                <section className="px-4 sm:px-6 lg:sticky lg:top-12 lg:px-0">
-                  <h2 className="mb-4 text-xl font-bold text-gray-800">
-                    새로운 알림
-                  </h2>
-                  <div className="space-y-3">
-                    {notificationsData.map((notification) => (
-                      <NotificationItem key={notification.id} {...notification} />
-                    ))}
-                  </div>
-                </section>
+        <div className="relative z-10 mx-auto h-full w-full max-w-7xl pt-8 pb-12 lg:px-8 lg:pt-12 lg:pb-0">
+          <div className="lg:flex lg:h-full lg:gap-8">
+            <div className="lg:w-1/3">
+              <section className="px-4 sm:px-6 lg:sticky lg:top-12 lg:px-0">
+                <h2 className="mb-4 text-xl font-bold text-gray-800">
+                  새로운 알림
+                </h2>
+                <div className="space-y-3">
+                  {notificationsData.map((notification) => (
+                    <NotificationItem key={notification.id} {...notification} />
+                  ))}
+                </div>
+              </section>
+            </div>
+
+            <div className="mt-8 lg:mt-0 lg:flex lg:w-2/3 lg:flex-col">
+              <div className="mb-4 flex items-baseline px-4 sm:px-6 lg:px-0">
+                <h2 className="mr-2 text-xl font-bold text-gray-800">
+                  추천 장소
+                </h2>
+                <p className="text-base font-medium text-gray-600 lg:hidden">
+                  {currentPlaceName}
+                </p>
               </div>
 
-              <div className="mt-8 lg:mt-0 lg:flex lg:w-2/3 lg:flex-col">
-                <div className="mb-4 flex items-baseline px-4 sm:px-6 lg:px-0">
-                  <h2 className="mr-2 text-xl font-bold text-gray-800">
-                    추천 장소
-                  </h2>
-                  <p className="text-base font-medium text-gray-600 lg:hidden">
-                    {currentPlaceName}
-                  </p>
-                </div>
-
-                <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
-                  <RecommendedPlaces onSlideChange={setCurrentPlaceIndex} />
-                </div>
+              <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+                <RecommendedPlaces onSlideChange={setCurrentPlaceIndex} />
               </div>
             </div>
           </div>
         </div>
-      </MapProvider>
+      </div>
     </>
   );
 }
