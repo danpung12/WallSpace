@@ -30,8 +30,6 @@ const placesData = [
     id: 'place01', 
     name: '아트 스페이스 광교', 
     category: '갤러리', 
-    address: '경기 수원시',
-    distance: '2.5km',
     lat: 37.2842, 
     lng: 127.0543, 
     images: [
@@ -61,8 +59,6 @@ const placesData = [
     id: 'place02', 
     name: '국립현대미술관 서울', 
     category: '미술관', 
-    address: '서울 종로구',
-    distance: '15.2km',
     lat: 37.5796, 
     lng: 126.9804, 
     images: [
@@ -80,8 +76,6 @@ const placesData = [
     id: 'place03', 
     name: '페이지스 바이 페이지', 
     category: '카페 & 서점', 
-    address: '서울 마포구',
-    distance: '12.8km',
     lat: 37.5495, 
     lng: 126.9209, 
     images: [
@@ -235,26 +229,16 @@ const PlaceCard = ({ place }: { place: (typeof placesData)[0] }) => (
         ))}
       </Swiper>
 
-      <button 
-          onClick={(e) => e.stopPropagation()}
-          className={`custom-prev-button-${place.id} absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110`}>
+      <button className={`custom-prev-button-${place.id} absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110`}>
           <span className="material-symbols-outlined text-xl">chevron_left</span>
       </button>
-      <button 
-          onClick={(e) => e.stopPropagation()}
-          className={`custom-next-button-${place.id} absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110`}>
+      <button className={`custom-next-button-${place.id} absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110`}>
           <span className="material-symbols-outlined text-xl">chevron_right</span>
       </button>
     </div>
     <div className="mt-4 px-2 flex-grow">
-      <div className="flex items-baseline gap-2">
-        <h3 className="text-xl font-bold text-gray-900">{place.name}</h3>
-        <p className="text-sm text-gray-600">{place.category}</p>
-      </div>
-      <div className="flex items-baseline gap-2 mt-1">
-        <p className="text-base text-gray-800">{place.address}</p>
-        <p className="text-sm text-gray-500">여기서 {place.distance}</p>
-      </div>
+      <h3 className="text-xl font-bold text-gray-900">{place.name}</h3>
+      <p className="text-gray-700">{place.category}</p>
     </div>
   </div>
 );
@@ -274,7 +258,7 @@ export default function MainPage() {
     <>
       <GlobalSwiperStyles />
       <Header /> {/* 2. Header 컴포넌트 추가 */}
-      <div className="min-h-screen w-full bg-[#FDFBF8] lg:h-screen lg:overflow-hidden">
+      <div className="min-h-screen w-full bg-[#F0EBE5] lg:h-screen lg:overflow-hidden">
         {/* <div className="absolute inset-0 bg-black/60"></div> */}
 
         {/* <MapDisplay /> */} {/* MapDisplay 컴포넌트를 홈 화면에 직접 렌더링합니다. */}
