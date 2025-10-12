@@ -18,6 +18,7 @@ export interface Review {
 export interface Location {
     id: number;
     name: string;
+    category: string; // 카테고리 필드 추가
     lat: number;
     lng: number;
     statusText: string;
@@ -36,6 +37,7 @@ export const locations: Location[] = [
     {
         id: 1,
         name: '아트 스페이스 광교',
+        category: '갤러리',
         lat: 37.2842,
         lng: 127.0543,
         statusText: '예약 가능',
@@ -70,6 +72,7 @@ export const locations: Location[] = [
     {
         id: 2,
         name: '서울시립미술관',
+        category: '갤러리',
         lat: 37.5656,
         lng: 126.9753,
         statusText: '문의 필요',
@@ -97,6 +100,7 @@ export const locations: Location[] = [
     {
         id: 3,
         name: '아라리오뮤지엄',
+        category: '갤러리',
         lat: 37.5729,
         lng: 126.9852,
         statusText: '예약 가능',
@@ -127,6 +131,7 @@ export const locations: Location[] = [
     {
         id: 4,
         name: 'D뮤지엄',
+        category: '갤러리',
         lat: 37.5383,
         lng: 127.0125,
         statusText: '예약 불가',
@@ -159,6 +164,7 @@ export const locations: Location[] = [
     {
         id: 5, // 기존 데이터와 겹치지 않는 고유 ID
         name: '국립현대미술관 서울',
+        category: '문화회관',
         lat: 37.5796,
         lng: 126.9804,
         statusText: '예약 가능',
@@ -187,6 +193,7 @@ export const locations: Location[] = [
     {
         id: 6, // 기존 데이터와 겹치지 않는 고유 ID
         name: '페이지스 바이 페이지',
+        category: '카페',
         lat: 37.5495,
         lng: 126.9209,
         statusText: '문의 필요',

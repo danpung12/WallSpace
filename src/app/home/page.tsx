@@ -30,8 +30,7 @@ const placesData = [
     id: 'place01', 
     name: '아트 스페이스 광교', 
     category: '갤러리', 
-    address: '경기 수원시',
-    distance: '2.5km',
+    address: '경기도 수원시',
     lat: 37.2842, 
     lng: 127.0543, 
     images: [
@@ -61,8 +60,7 @@ const placesData = [
     id: 'place02', 
     name: '국립현대미술관 서울', 
     category: '미술관', 
-    address: '서울 종로구',
-    distance: '15.2km',
+    address: '서울특별시 종로구',
     lat: 37.5796, 
     lng: 126.9804, 
     images: [
@@ -80,8 +78,7 @@ const placesData = [
     id: 'place03', 
     name: '페이지스 바이 페이지', 
     category: '카페 & 서점', 
-    address: '서울 마포구',
-    distance: '12.8km',
+    address: '서울특별시 마포구',
     lat: 37.5495, 
     lng: 126.9209, 
     images: [
@@ -97,14 +94,38 @@ const placesData = [
 ];
 
 
+// --- 유틸리티 함수 ---
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return d.toFixed(1); // Return distance with 1 decimal place
+};
+
+
 // --- CSS 스타일 ---
 const GlobalSwiperStyles = () => {
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
-      body { margin: 0; padding: 0; }
-      .swiper-pagination-bullet { background-color: #d1d5db !important; opacity: 1 !important; }
-      .swiper-pagination-bullet-active { background-color: #ffffff !important; }
+      body { 
+        margin: 0; 
+        padding: 0; 
+        background-color: var(--background-color);
+      }
+      .swiper-pagination-bullet { 
+        background-color: var(--accent-color) !important; 
+        opacity: 0.5 !important; 
+      }
+      .swiper-pagination-bullet-active { 
+        opacity: 1 !important; 
+      }
       
       .peek-swiper .swiper-slide {
         width: 85%;
@@ -137,23 +158,29 @@ interface NotificationItemProps {
 }
 
 const NotificationItem = ({ title, message, time }: NotificationItemProps) => (
-  <div className="bg-white/70 backdrop-blur-lg rounded-2xl p-4 flex items-start space-x-3 shadow-lg border border-white/20 cursor-pointer hover:bg-white transition-colors duration-200">
-    <IoNotificationsCircle className="text-blue-500 text-4xl mt-1 flex-shrink-0" />
+  <div className="h-24 bg-white/70 backdrop-blur-lg rounded-2xl p-4 flex items-center space-x-3 shadow-lg border border-white/20 cursor-pointer hover:bg-white transition-colors duration-200"
+    style={{ 
+      backgroundColor: 'rgba(255, 255, 255, 0.7)',
+      borderColor: 'rgba(255, 255, 255, 0.2)'
+    }}
+  >
+    <IoNotificationsCircle className="text-4xl flex-shrink-0" style={{ color: 'var(--accent-color)' }} />
     <div className="flex-1 min-w-0">
       <div className="flex justify-between items-center">
-        <h3 className="font-bold text-gray-900 truncate">{title}</h3>
-        <p className="text-xs text-gray-600 flex-shrink-0 ml-2">{time}</p>
+        <h3 className="font-bold truncate" style={{ color: 'var(--text-color)' }}>{title}</h3>
+        <p className="text-xs flex-shrink-0 ml-2" style={{ color: 'var(--subtle-text-color)' }}>{time}</p>
       </div>
-      <p className="text-sm text-gray-700 mt-1">{message}</p>
+      <p className="text-sm mt-1" style={{ color: 'var(--subtle-text-color)' }}>{message}</p>
     </div>
   </div>
 );
 
 interface RecommendedPlacesProps {
   onSlideChange: (index: number) => void;
+  userLocation: { lat: number; lng: number } | null;
 }
 
-const RecommendedPlaces = ({ onSlideChange }: RecommendedPlacesProps) => {
+const RecommendedPlaces = ({ onSlideChange, userLocation }: RecommendedPlacesProps) => {
   const { setSelectedPlace, mapInstance } = useMap();
   const router = useRouter(); // 2. router 인스턴스 생성
 
@@ -196,7 +223,7 @@ const RecommendedPlaces = ({ onSlideChange }: RecommendedPlacesProps) => {
           {placesData.map((place) => (
             <SwiperSlide key={place.id}>
               <div onClick={() => handlePlaceCardClick(place)}>
-                <PlaceCard place={place} />
+                <PlaceCard place={place} userLocation={userLocation} />
               </div>
             </SwiperSlide>
           ))}
@@ -208,7 +235,7 @@ const RecommendedPlaces = ({ onSlideChange }: RecommendedPlacesProps) => {
       <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
         {placesData.map((place) => (
           <div key={place.id} onClick={() => handlePlaceCardClick(place)}>
-            <PlaceCard place={place} />
+            <PlaceCard place={place} userLocation={userLocation} />
           </div>
         ))}
       </div>
@@ -217,47 +244,89 @@ const RecommendedPlaces = ({ onSlideChange }: RecommendedPlacesProps) => {
 };
 
 // --- Place Card Component (New) ---
-const PlaceCard = ({ place }: { place: (typeof placesData)[0] }) => (
-  <div className="bg-white/60 backdrop-blur-lg rounded-2xl shadow-lg p-4 border border-white/20 h-full flex flex-col cursor-pointer">
-    <div className="w-full h-64 lg:h-44 rounded-xl overflow-hidden relative">
-      <Swiper
-        modules={[Navigation]}
-        navigation={{ 
-          nextEl: `.custom-next-button-${place.id}`, 
-          prevEl: `.custom-prev-button-${place.id}` 
-        }}
-        className="w-full h-full"
-      >
-        {place.images.map((imgUrl, index) => (
-          <SwiperSlide key={index}>
-            <img src={imgUrl} alt={`${place.name} ${index + 1}`} className="w-full h-full object-cover" />
-          </SwiperSlide>
-        ))}
-      </Swiper>
+type PlaceCardProps = {
+  place: (typeof placesData)[0];
+  userLocation: { lat: number; lng: number } | null;
+};
 
-      <button 
+const PlaceCard = ({ place, userLocation }: PlaceCardProps) => {
+  const [isBeginning, setIsBeginning] = useState(true);
+  const [isEnd, setIsEnd] = useState(place.images.length <= 1);
+  const distance = userLocation
+    ? calculateDistance(userLocation.lat, userLocation.lng, place.lat, place.lng)
+    : null;
+
+  return (
+    <div className="backdrop-blur-lg rounded-2xl shadow-lg p-4 border h-full flex flex-col cursor-pointer"
+      style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        borderColor: 'rgba(255, 255, 255, 0.2)'
+      }}
+    >
+      <div className="w-full h-64 lg:h-44 rounded-xl overflow-hidden relative">
+        <Swiper
+          modules={[Navigation]}
+          navigation={{
+            nextEl: `.custom-next-button-${place.id}`,
+            prevEl: `.custom-prev-button-${place.id}`,
+          }}
+          className="w-full h-full"
           onClick={(e) => e.stopPropagation()}
-          className={`custom-prev-button-${place.id} absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110`}>
-          <span className="material-symbols-outlined text-xl">chevron_left</span>
-      </button>
-      <button 
+          onSlideChange={(swiper) => {
+            setIsBeginning(swiper.isBeginning);
+            setIsEnd(swiper.isEnd);
+          }}
+          onInit={(swiper) => {
+            setIsBeginning(swiper.isBeginning);
+            setIsEnd(swiper.isEnd);
+          }}
+        >
+          {place.images.map((imgUrl, index) => (
+            <SwiperSlide key={index}>
+              <img
+                src={imgUrl}
+                alt={`${place.name} ${index + 1}`}
+                className="w-full h-full object-cover"
+              />
+            </SwiperSlide>
+          ))}
+        </Swiper>
+
+        <button
+          className={`custom-prev-button-${place.id} absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 hover:scale-110 ${isBeginning ? 'opacity-0 pointer-events-none' : 'opacity-70 hover:opacity-100'}`}
           onClick={(e) => e.stopPropagation()}
-          className={`custom-next-button-${place.id} absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110`}>
-          <span className="material-symbols-outlined text-xl">chevron_right</span>
-      </button>
-    </div>
-    <div className="mt-4 px-2 flex-grow">
-      <div className="flex items-baseline gap-2">
-        <h3 className="text-xl font-bold text-gray-900">{place.name}</h3>
-        <p className="text-sm text-gray-600">{place.category}</p>
+        >
+          <span className="material-symbols-outlined text-xl">
+            chevron_left
+          </span>
+        </button>
+        <button
+          className={`custom-next-button-${place.id} absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 hover:scale-110 ${isEnd ? 'opacity-0 pointer-events-none' : 'opacity-70 hover:opacity-100'}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className="material-symbols-outlined text-xl">
+            chevron_right
+          </span>
+        </button>
       </div>
-      <div className="flex items-baseline gap-2 mt-1">
-        <p className="text-base text-gray-800">{place.address}</p>
-        <p className="text-sm text-gray-500">여기서 {place.distance}</p>
+      <div className="mt-4 px-2 flex-grow">
+        <div className="flex items-baseline gap-2">
+          <h3 className="text-xl font-bold" style={{ color: 'var(--text-color)' }}>{place.name}</h3>
+          <p className="text-sm" style={{ color: 'var(--subtle-text-color)' }}>{place.category}</p>
+        </div>
+        <div className="flex items-baseline gap-2 mt-1 text-sm" style={{ color: 'var(--subtle-text-color)' }}>
+          <p>{place.address}</p>
+          {distance && (
+            <>
+              <span>·</span>
+              <p>여기서 {distance}km</p>
+            </>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 
 // --- 메인 페이지 컴포넌트 ---
@@ -265,7 +334,25 @@ export default function MainPage() {
   const backgroundImageUrl = 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=1974&auto=format&fit=crop';
   
   const [currentPlaceIndex, setCurrentPlaceIndex] = useState(0);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const currentPlaceName = placesData[currentPlaceIndex]?.name;
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error("Error getting user location:", error);
+          // Handle error or set a default location
+        }
+      );
+    }
+  }, []);
  
   // 지도 관련 로직은 MapProvider와 MapDisplay 컴포넌트에서 처리됩니다.
   // 여기서는 MapProvider로 감싸고 MapDisplay 컴포넌트를 렌더링합니다.
@@ -274,7 +361,7 @@ export default function MainPage() {
     <>
       <GlobalSwiperStyles />
       <Header /> {/* 2. Header 컴포넌트 추가 */}
-      <div className="min-h-screen w-full bg-[#FDFBF8] lg:h-screen lg:overflow-hidden">
+      <div className="min-h-screen w-full lg:h-screen lg:overflow-hidden" style={{ backgroundColor: 'var(--background-color)' }}>
         {/* <div className="absolute inset-0 bg-black/60"></div> */}
 
         {/* <MapDisplay /> */} {/* MapDisplay 컴포넌트를 홈 화면에 직접 렌더링합니다. */}
@@ -283,7 +370,7 @@ export default function MainPage() {
           <div className="lg:flex lg:h-full lg:gap-8">
             <div className="lg:w-1/3">
               <section className="px-4 sm:px-6 lg:sticky lg:top-12 lg:px-0">
-                <h2 className="mb-4 text-xl font-bold text-gray-800">
+                <h2 className="mb-4 text-xl font-bold" style={{ color: 'var(--text-color)' }}>
                   새로운 알림
                 </h2>
                 <div className="space-y-3">
@@ -296,16 +383,19 @@ export default function MainPage() {
 
             <div className="mt-8 lg:mt-0 lg:flex lg:w-2/3 lg:flex-col">
               <div className="mb-4 flex items-baseline px-4 sm:px-6 lg:px-0">
-                <h2 className="mr-2 text-xl font-bold text-gray-800">
+                <h2 className="mr-2 text-xl font-bold" style={{ color: 'var(--text-color)' }}>
                   추천 장소
                 </h2>
-                <p className="text-base font-medium text-gray-600 lg:hidden">
+                <p className="text-base font-medium lg:hidden" style={{ color: 'var(--subtle-text-color)' }}>
                   {currentPlaceName}
                 </p>
               </div>
 
               <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
-                <RecommendedPlaces onSlideChange={setCurrentPlaceIndex} />
+                <RecommendedPlaces
+                  onSlideChange={setCurrentPlaceIndex}
+                  userLocation={userLocation}
+                />
               </div>
             </div>
           </div>

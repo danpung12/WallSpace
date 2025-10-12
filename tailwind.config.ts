@@ -15,6 +15,7 @@ const config: Config = {
       },
       colors: {
         "modal-brown": "rgba(101, 87, 77, 0.9)",
+        "home-background": "#FDFBF8",
       },
       fontFamily: {
         display: ['Pretendard', 'sans-serif'],

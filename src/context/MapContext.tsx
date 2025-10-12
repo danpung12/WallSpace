@@ -47,7 +47,7 @@ interface MapContextType {
     viewDate: Date;
     startDate: Date | null;
     endDate: Date | null;
-    activeFilter: string;
+    activeFilter: string | null;
     selectedArtwork: Artwork | null;
     setSelectedArtwork: React.Dispatch<React.SetStateAction<Artwork | null>>;
     isArtworkModalOpen: boolean;
@@ -76,6 +76,7 @@ const MapContext = createContext<MapContextType | null>(null);
 
 export function MapProvider({ children }: { children: ReactNode }) {
     const mapInstance = useRef<KakaoMap | null>(null);
+    const markersRef = useRef<any[]>([]); // Ref to store markers
     const [isMapLoading, setMapLoading] = useState(true);
     const [locationInfo, setLocationInfo] = useState({ city: '위치 찾는 중...' });
     const [selectedPlace, setSelectedPlace] = useState<Location | null>(null);
@@ -87,7 +88,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
     const [viewDate, setViewDate] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
-    const [activeFilter, setActiveFilter] = useState('갤러리');
+    const [activeFilter, setActiveFilter] = useState<string | null>(null);
     const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(artworksData[0] || null);
     const [isArtworkModalOpen, setArtworkModalOpen] = useState(false);
     const [isArtworkSelectorVisible, setArtworkSelectorVisible] = useState(false);
@@ -106,21 +107,46 @@ export function MapProvider({ children }: { children: ReactNode }) {
     const loadMarkers = useCallback((map: KakaoMap) => {
         const { kakao } = window;
         if (!kakao) return;
+        
+        // Clear existing markers from ref
+        markersRef.current = [];
+
         locations.forEach((place) => {
             const placePosition = new kakao.maps.LatLng(place.lat, place.lng);
+            
             const marker = new kakao.maps.Marker({ map, position: placePosition });
+            
             const handleClick = () => {
                 setSelectedPlace(place);
                 map.setCenter(placePosition);
             };
+            
             kakao.maps.event.addListener(marker, 'click', handleClick);
+            
             const contentNode = document.createElement('div');
             contentNode.className = 'custom-overlay-style';
             contentNode.innerHTML = `<div class="font-bold">${place.name}</div><div style="color:${place.statusColor};" class="text-xs mt-0.5">${place.statusText}</div>`;
             contentNode.onclick = handleClick;
-            new kakao.maps.CustomOverlay({ map, position: placePosition, content: contentNode, yAnchor: 2.2 });
+            
+            const overlay = new kakao.maps.CustomOverlay({ map, position: placePosition, content: contentNode, yAnchor: 2.2 });
+            
+            // Store marker and its associated data
+            markersRef.current.push({ marker, overlay, place });
         });
     }, []);
+
+    // Effect to filter markers based on activeFilter or parkingFilter
+    React.useEffect(() => {
+        markersRef.current.forEach(({ marker, overlay, place }) => {
+            const isCategoryMatch = !activeFilter || place.category === activeFilter;
+            const isParkingMatch = !parkingFilter || place.hasParking;
+            const isVisible = isCategoryMatch && isParkingMatch;
+            
+            marker.setVisible(isVisible);
+            overlay.setVisible(isVisible);
+        });
+    }, [activeFilter, parkingFilter]);
+
 
     const initializeMap = useCallback((container: HTMLElement) => {
         if (isMapInitialized.current || !window.kakao) return;
@@ -191,7 +217,8 @@ export function MapProvider({ children }: { children: ReactNode }) {
         if (label === '작품 선택') {
             setArtworkSelectorVisible(p => !p);
         } else {
-            setActiveFilter(label);
+            // If the clicked filter is already active, deactivate it. Otherwise, activate it.
+            setActiveFilter(prevFilter => (prevFilter === label ? null : label));
             setArtworkSelectorVisible(false);
         }
     }, []);

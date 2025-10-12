@@ -5,6 +5,7 @@ import NavigationGate from "./components/NavigationGate";
 import { BottomNavProvider } from "./context/BottomNavContext";
 import { MapProvider } from "@/context/MapContext"; // ✨ 1. MapProvider를 임포트합니다.
 import { UserModeProvider } from "./context/UserModeContext"; // 1. UserModeProvider 임포트
+import { ReservationProvider } from "@/context/ReservationContext"; // ReservationProvider 임포트
 import Script from "next/script"; // ✨ 2. Next.js의 Script 컴포넌트를 임포트합니다.
 
 export const metadata: Metadata = {
@@ -56,11 +57,13 @@ export default function RootLayout({
         {/* ✨ 3. MapProvider로 전체를 감싸서 지도 상태를 전역으로 관리합니다. */}
         <MapProvider>
           <UserModeProvider> {/* 2. UserModeProvider 추가 */}
-            {/* BottomNavProvider는 MapProvider 안에 위치합니다. */}
-            <BottomNavProvider>
-              {children}
-              <NavigationGate />
-            </BottomNavProvider>
+            <ReservationProvider>
+              {/* BottomNavProvider는 MapProvider 안에 위치합니다. */}
+              <BottomNavProvider>
+                <TransitionProvider>{children}</TransitionProvider>
+                <NavigationGate />
+              </BottomNavProvider>
+            </ReservationProvider>
           </UserModeProvider>
         </MapProvider>
 
