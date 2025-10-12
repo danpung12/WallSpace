@@ -2,15 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 
-interface ArtistSignUpModalProps {
+interface GuestSignUpModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSwitchToGuest: () => void; // '손님으로 전환'을 위한 콜백
+  onSwitchToArtist: () => void; // '아티스트로 전환'을 위한 콜백
 }
 
-const ArtistSignUpModal: React.FC<ArtistSignUpModalProps> = ({ isOpen, onClose, onSwitchToGuest }) => {
+const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, onSwitchToArtist }) => {
   const [shouldRender, setShouldRender] = useState(isOpen);
-  const [snsLink, setSnsLink] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -25,14 +24,6 @@ const ArtistSignUpModal: React.FC<ArtistSignUpModalProps> = ({ isOpen, onClose, 
     return null;
   }
   
-  const getSnsIconName = (url: string) => {
-    if (url.includes('instagram.com')) return 'photo_camera';
-    if (url.includes('facebook.com')) return 'groups';
-    if (url.includes('twitter.com') || url.includes('x.com')) return 'tag';
-    if (url.includes('tiktok.com')) return 'videocam';
-    return 'link';
-  };
-
   const InputField = ({ id, label, type = 'text', placeholder, icon, ...props }: any) => (
     <div>
       <label htmlFor={id} className="block text-sm font-medium pb-2 text-gray-600">{label}</label>
@@ -60,7 +51,7 @@ const ArtistSignUpModal: React.FC<ArtistSignUpModalProps> = ({ isOpen, onClose, 
       >
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">예술가/사장님 가입</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">손님으로 가입</h1>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-900 transition-colors">
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -95,33 +86,6 @@ const ArtistSignUpModal: React.FC<ArtistSignUpModalProps> = ({ isOpen, onClose, 
                 </label>
               </div>
             </div>
-            
-            {/* Phone Verification */}
-            <div>
-                <label className="block text-sm font-medium pb-2 text-gray-600">핸드폰 인증</label>
-                <div className="flex gap-4">
-                    <div className="relative flex-grow flex items-center bg-gray-100 rounded-xl border-2 border-transparent focus-within:border-[#A89587] focus-within:bg-white transition-all">
-                        <span className="material-symbols-outlined absolute left-4 text-gray-500 pointer-events-none">phone_android</span>
-                        <input type="tel" placeholder="휴대폰 번호" className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none" />
-                    </div>
-                    <button className="flex-shrink-0 rounded-xl h-14 px-5 bg-gray-200 text-gray-800 font-bold hover:bg-gray-300 transition-colors">
-                        인증 요청
-                    </button>
-                </div>
-            </div>
-
-            {/* SNS Link */}
-             <div>
-                <label htmlFor="sns-link" className="block text-sm font-medium pb-2 text-gray-600">SNS 계정 (선택)</label>
-                <div className="relative flex items-center bg-gray-100 rounded-xl border-2 border-transparent focus-within:border-[#A89587] focus-within:bg-white transition-all">
-                  <span className="material-symbols-outlined absolute left-4 text-gray-500 pointer-events-none">{getSnsIconName(snsLink)}</span>
-                  <input
-                    id="sns-link" type="text" value={snsLink} onChange={(e) => setSnsLink(e.target.value)}
-                    placeholder="SNS 계정 링크를 입력하세요"
-                    className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none"
-                  />
-                </div>
-            </div>
         </div>
         
         {/* Footer */}
@@ -130,10 +94,10 @@ const ArtistSignUpModal: React.FC<ArtistSignUpModalProps> = ({ isOpen, onClose, 
               가입하기
             </button>
              <button 
-                onClick={onSwitchToGuest}
+                onClick={onSwitchToArtist}
                 className="w-full text-center text-sm text-gray-500 hover:text-gray-800 hover:underline"
             >
-                손님으로 가입하시나요?
+                예술가/사장님으로 가입하시나요?
             </button>
         </div>
       </div>
@@ -141,4 +105,4 @@ const ArtistSignUpModal: React.FC<ArtistSignUpModalProps> = ({ isOpen, onClose, 
   );
 };
 
-export default ArtistSignUpModal;
+export default GuestSignUpModal;

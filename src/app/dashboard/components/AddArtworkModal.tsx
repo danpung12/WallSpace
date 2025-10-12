@@ -15,10 +15,11 @@ interface AddArtworkModalProps {
   onClose: () => void;
   onSave: (artwork: Omit<Artwork, 'imageUrl' | 'id'> & { id?: number; file: File | null }) => void;
   artworkToEdit: Artwork | null;
-  onDelete?: (id: number) => void; 
+  onDelete?: (id: number) => void;
 }
 
 const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSave, artworkToEdit, onDelete }) => {
+
   const [shouldRender, setShouldRender] = useState(isOpen);
   
   // Form state
@@ -41,9 +42,11 @@ const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSa
     description.trim() !== '' &&
     (previewUrl !== null);
 
+
   useEffect(() => {
     if (isOpen) {
       setShouldRender(true);
+
       if (isEditMode && artworkToEdit) {
         setTitle(artworkToEdit.title);
         const [h, w] = artworkToEdit.dimensions.replace(/cm/g, '').split('x').map(s => s.trim());
@@ -52,6 +55,7 @@ const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSa
         setDescription(''); // Assuming description is not part of mock, reset it
         setPreviewUrl(artworkToEdit.imageUrl);
         setSelectedFile(null);
+
       } else {
         // Reset form for "Add" mode
         setTitle('');
@@ -64,13 +68,16 @@ const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSa
     } else {
       const timer = setTimeout(() => {
         setShouldRender(false);
+
       }, 300); // Match this to the transition duration
+
       return () => clearTimeout(timer);
     }
   }, [isOpen, artworkToEdit, isEditMode]);
   
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     if (!isFormValid) return;
     
     const dimensions = `${height}cm x ${width}cm`;
@@ -94,20 +101,24 @@ const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSa
     }
   };
 
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setSelectedFile(file);
       const newPreviewUrl = URL.createObjectURL(file);
+
       if (previewUrl && previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewUrl);
       }
+
       setPreviewUrl(newPreviewUrl);
     }
   };
 
   const handleRemoveFile = () => {
     setSelectedFile(null);
+
     if (previewUrl && previewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(previewUrl);
     }
@@ -116,6 +127,7 @@ const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSa
         setPreviewUrl(artworkToEdit.imageUrl);
     } else {
         setPreviewUrl(null);
+
     }
 
     if (fileInputRef.current) {
@@ -137,6 +149,7 @@ const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSa
 
   return (
     <div
+
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0'}`}
       onClick={onClose}
     >
@@ -144,6 +157,7 @@ const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSa
         className={`relative w-full max-w-2xl max-h-[90vh] p-6 sm:p-8 md:p-10 rounded-2xl shadow-xl border border-gray-200 bg-white text-gray-800 flex flex-col transform transition-all duration-300 ease-in-out ${isOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'}`}
         onClick={(e) => e.stopPropagation()}
       >
+
         <div className="flex-shrink-0 flex items-center justify-between mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             {isEditMode ? '작품 수정' : '작품 추가'}
