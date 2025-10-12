@@ -1,34 +1,27 @@
 'use client';
+import React, { createContext, useState, useContext, ReactNode } from 'react';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-
-interface BottomNavContextType {
+type BottomNavContextType = {
   isNavVisible: boolean;
-  setNavVisible: (visible: boolean) => void;
-}
+  setIsNavVisible: (isVisible: boolean) => void;
+};
 
 const BottomNavContext = createContext<BottomNavContextType | undefined>(undefined);
 
-export function BottomNavProvider({ children }: { children: ReactNode }) {
-  const [isNavVisible, _setNavVisible] = useState(true);
-
-  // ✨ 상태 변경이 일어날 때마다 로그를 찍는 함수를 새로 만듭니다.
-  const setNavVisible = (visible: boolean) => {
-    console.log(`[Context Provider] isNavVisible 상태 변경 요청: ${visible}`);
-    _setNavVisible(visible);
-  };
+export const BottomNavProvider = ({ children }: { children: ReactNode }) => {
+  const [isNavVisible, setIsNavVisible] = useState(true);
 
   return (
-    <BottomNavContext.Provider value={{ isNavVisible, setNavVisible }}>
+    <BottomNavContext.Provider value={{ isNavVisible, setIsNavVisible }}>
       {children}
     </BottomNavContext.Provider>
   );
-}
+};
 
-export function useBottomNav() {
+export const useBottomNav = () => {
   const context = useContext(BottomNavContext);
   if (context === undefined) {
     throw new Error('useBottomNav must be used within a BottomNavProvider');
   }
   return context;
-}
+};

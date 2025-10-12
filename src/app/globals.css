@@ -4,6 +4,17 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Warm Theme Colors */
+  --primary-color: #3E352F; /* Dark Brown */
+  --accent-color: #A89587; /* Beige */
+  --background-color: #F5F1EC; /* Light Beige */
+  --surface-color: #FFFFFF;
+  --border-color: #EAE5DE;
+  --subtle-text-color: #6B5E54;
+  --text-color: #3D2C1D;
+  --border-radius: 12px;
+  --error-color: #e74c3c;
 }
 
 @media (prefers-color-scheme: dark) {

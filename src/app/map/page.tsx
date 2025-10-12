@@ -49,7 +49,9 @@ function OptionsMenu({ isOpen, onClose }: OptionsMenuProps) {
 }
 
 // --- Dynamic Imports ---
-const AddArtworkModal = dynamic(() => import('./components/AddArtworkModal'));
+const AddArtworkModal = dynamic(
+  () => import('../dashboard/components/AddArtworkModal')
+);
 const SearchModal = dynamic(() => import('./components/SearchModal'));
 const LocationDetailPage = dynamic(
   () => import('./components/LocationDetailPage')
@@ -63,7 +65,7 @@ import PlaceDetailPanel from './components/PlaceDetailPanel';
 
 // --- 메인 페이지 컴포넌트 ---
 export default function MapPage() {
-    const { setNavVisible } = useBottomNav();
+    const { setIsNavVisible } = useBottomNav();
     const {
         mapInstance, // mapInstance 추가
         isDetailPageVisible, setDetailPageVisible,
@@ -83,6 +85,14 @@ export default function MapPage() {
         handlePlaceSelect, gotoMonth, isDisabled, onClickDay, getDayClass, handleFilterClick,
     } = useMap();
 
+    // 작품 추가/수정 관련 핸들러
+    const handleSaveArtwork = (artworkData: any) => {
+        // TODO: Implement actual save logic (e.g., API call)
+        console.log('Saving artwork:', artworkData);
+        // For now, we can just close the modal.
+        // In a real app, you might want to refetch artworks list.
+    };
+
     useEffect(() => {
         if (selectedPlace && mapInstance.current && window.kakao) {
             const { lat, lng } = selectedPlace;
@@ -93,19 +103,56 @@ export default function MapPage() {
 
     useEffect(() => {
         if (isDetailPageVisible) {
-            setNavVisible(false);
+            setIsNavVisible(false);
         } else {
-            setNavVisible(true);
+            setIsNavVisible(true);
         }
         return () => {
-            setNavVisible(true);
+            setIsNavVisible(true);
         };
-    }, [isDetailPageVisible, setNavVisible]);
+    }, [isDetailPageVisible, setIsNavVisible]);
 
     return (
-        <div>
+        <div className="map-page-container">
+            <div className="header-trigger-zone"></div>
             <Header />
             <style>{`
+              /* PC header hover effect */
+              @media (min-width: 1024px) {
+                .map-page-container {
+                  position: relative;
+                }
+                .header-trigger-zone {
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  right: 0;
+                  height: 2rem; /* 32px, Increased hover area */
+                  z-index: 100;
+                }
+                .map-page-container > header {
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  right: 0;
+                  z-index: 50;
+                  transform: translateY(-100%);
+                  transition: transform 0.3s ease-in-out;
+                  border-bottom: 1px solid #e5e7eb;
+                }
+                .header-trigger-zone:hover ~ header,
+                .map-page-container > header:hover {
+                  transform: translateY(0);
+                }
+                .map-page-container .top-search-bar {
+                  transition: top 0.3s ease-in-out;
+                }
+                .header-trigger-zone:hover ~ .page-container .top-search-bar,
+                .map-page-container > header:hover ~ .page-container .top-search-bar {
+                  top: 4rem; /* h-16 (Header height) */
+                }
+              }
+
               :root { --theme-brown-lightest:#F5F3F0; --theme-brown-light:#E9E4DD; --theme-brown-medium:#D4C8B8; --theme-brown-dark:#A18F79; --theme-brown-darkest:#4D4337; --white:#ffffff; }
               body { font-family: 'Pretendard', sans-serif; background-color: var(--theme-brown-lightest); color: var(--theme-brown-darkest); overflow: hidden; min-height: 100vh; overscroll-behavior: none; }
               .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-size: 28px; vertical-align: middle; }
@@ -189,6 +236,7 @@ export default function MapPage() {
                   selectedArtwork={selectedArtwork}
                   onSelectArtwork={setSelectedArtwork}
                   isVisible={isArtworkSelectorVisible}
+                  onAddArtwork={() => setArtworkModalOpen(true)}
                 />
                 <OptionsMenu
                   isOpen={isOptionsMenuOpen}
@@ -215,7 +263,12 @@ export default function MapPage() {
                         </div>
                     </div>
                 )}
-                <AddArtworkModal isOpen={isArtworkModalOpen} onClose={() => setArtworkModalOpen(false)} />
+                <AddArtworkModal
+                  isOpen={isArtworkModalOpen}
+                  onClose={() => setArtworkModalOpen(false)}
+                  onSave={handleSaveArtwork}
+                  artworkToEdit={null} // Pass null for adding new artwork
+                />
                 <SearchModal isOpen={isSearchModalOpen} onClose={() => setSearchModalOpen(false)} onPlaceSelect={handlePlaceSelect} />
                 <div className={`transition-opacity duration-300 ease-in-out ${selectedPlace && !isDetailPageVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                     {selectedPlace && <PlaceDetailPanel place={selectedPlace} onClose={() => setSelectedPlace(null)} onShowDetail={() => setDetailPageVisible(true)} />}

@@ -9,11 +9,13 @@ export default function ArtworkSelector({
   selectedArtwork,
   onSelectArtwork,
   isVisible,
+  onAddArtwork,
 }: {
   artworks: Artwork[];
   selectedArtwork: Artwork | null;
   onSelectArtwork: (artwork: Artwork) => void;
   isVisible: boolean;
+  onAddArtwork: () => void;
 }) {
   return (
     <div
@@ -25,14 +27,17 @@ export default function ArtworkSelector({
     >
       <div className="mx-auto w-fit rounded-lg border border-theme-brown-light bg-white/70 px-4 py-3 shadow-lg backdrop-blur-sm">
         <div className="flex items-center space-x-3 overflow-x-auto no-scrollbar">
-          <Link href="/dashboard/add" className="flex-shrink-0 text-center">
+          <button
+            onClick={onAddArtwork}
+            className="flex-shrink-0 text-center cursor-pointer"
+          >
             <div className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed border-theme-brown-dark bg-theme-brown-medium">
               <span className="material-symbols-outlined text-theme-brown-darkest">
                 add
               </span>
             </div>
             <p className="text-xs mt-1 text-theme-brown-darkest">작품 추가</p>
-          </Link>
+          </button>
           {artworks.map((artwork) => (
             <div
               key={artwork.id}

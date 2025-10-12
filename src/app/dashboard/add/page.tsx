@@ -55,7 +55,7 @@ export default function AddArtworkPage() {
             border: 1px solid #d1d5db;
             padding: 0.625rem 0.75rem;
             outline: none;
-            background: #fff;
+            background: transparent;
             transition: box-shadow 0.2s ease, border-color 0.2s ease;
           }
           .input-field:focus {
@@ -117,7 +117,7 @@ export default function AddArtworkPage() {
             {/* 작품 사진 */}
             <div>
               <label className="input-label">작품 사진</label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md bg-white/50">
                 <div className="space-y-1 text-center">
                   <svg aria-hidden="true" className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M28 8H12a4 4 0 0 0-4 4v20" />
@@ -128,7 +128,7 @@ export default function AddArtworkPage() {
                     <path d="M40 8h8M44 4v8" />
                   </svg>
                   <div className="flex text-sm text-[var(--text-secondary)] justify-center gap-1">
-                    <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-[var(--primary-color)] hover:opacity-80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[var(--primary-color)] px-1">
+                    <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-[var(--primary-color)] hover:opacity-80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[var(--primary-color)] px-1">
                       <span>파일 업로드</span>
                       <input id="file-upload" name="file-upload" type="file" className="sr-only" />
                     </label>

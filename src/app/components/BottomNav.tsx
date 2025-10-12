@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useBottomNav } from '@/app/context/BottomNavContext';
 
 function NavLinks() {
   const pathname = usePathname();
@@ -38,6 +39,12 @@ function NavLinks() {
 }
 
 function BottomNav() {
+  const { isNavVisible } = useBottomNav();
+
+  if (!isNavVisible) {
+    return null;
+  }
+
   return (
     <footer
       className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-100 z-50 lg:hidden"

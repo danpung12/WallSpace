@@ -1,310 +1,233 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import Header from "@/app/components/Header"; // 1. PC 헤더 임포트
+import { Suspense, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useReservations } from '@/context/ReservationContext';
+import { Reservation } from '@/data/reservations';
+import CancelModal from './components/CancelModal';
+import Header from "@/app/components/Header";
+import { useBottomNav } from '@/app/context/BottomNavContext';
+import Footer from '@/app/components/Footer';
 
-type BookingStatus = "Confirmed" | "Cancelled";
-
-type Artwork = {
-  title: string;
-  artist: string;
-  size: string;
-  imageUrl: string;
-};
-
-type SpaceInfo = {
-  name: string;
-  venue: string;
-  dimensions: string;
-  imageUrl: string;
-};
-
-type Period = { start: string; end: string };
-type Pricing = { dailyRate: number; serviceFee: number };
-
-type Booking = {
-  id: string;
-  status: BookingStatus;
-  artwork: Artwork;
-  space: SpaceInfo;
-  period: Period;
-  pricing: Pricing;
-};
-
-export default function BookingDetailPage() {
+function BookingDetailContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { getReservationById, updateReservationStatus } = useReservations();
+  const [reservation, setReservation] = useState<Reservation | null>(null);
+  const [isModalOpen, setModalOpen] = useState(false);
+  const { setIsNavVisible } = useBottomNav();
 
-  const [booking, setBooking] = useState<Booking>({
-    id: "12345",
-    status: "Confirmed",
-    artwork: {
-      title: `"작품 A"`,
-      artist: "Sellena",
-      size: `24" x 36"`,
-      imageUrl:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuCMwyo-fhoVBFnNyQkDOjm5VOm91Rgqj_NjOU2wf_cp8YpBkynVHyrlfUWvKqnvvRt3EtFU7KNDcSoj_Zf0BWlaa5Hv3mzMvMONZC2PgsyR10i_Pr1cIxPddbfpqkiAYh7Fft7nQ8OcExf9p7KEB9Llnmllha_Usljq0piZKkWYcw_rfq-ZW6LcoaaWIDDi8T9EPUqidl5Q3zzWq55SuFBo6Njn41HkYXgq_BOvVBOa1h7j-M6DVimiMM9xi74QhDPyZhBYb0WksLNP",
-    },
-    space: {
-      name: "섹션 A",
-      venue: "Cafe Canvas",
-      dimensions: `48" x 72"`,
-      imageUrl:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuB1hI9oEpCk1Pbvkp_kEABsMwq3UiQpEXgkQAjoKq3zsxh-1zCYNITVvuXmpNpLF9VoSrWCoNDyoRdxjyqMpDNrTBUpb1pjkgZe5LWlm7gnI0w_y_Q1ei5WNLT30zg7ppiyZf-7lqwmBeZH_SBYUF2jG9N9RewMBMkuchWyUez73Nu8RP_KzNk9qWCHKfu8BIpEzj-f2AZxHz8T-Bo5p7miSGc16CS856SoAquozkXt_T7iQLzYApp90MHErVPMIiIin7npi3pLCGH9",
-    },
-    period: { start: "2025-07-20", end: "2025-07-27" },
-    pricing: { dailyRate: 10, serviceFee: 5 },
-  });
+  useEffect(() => {
+    // Hide BottomNav when this component mounts
+    setIsNavVisible(false);
+    // Show BottomNav when this component unmounts
+    return () => {
+      setIsNavVisible(true);
+    };
+  }, [setIsNavVisible]);
 
+  useEffect(() => {
+    const id = searchParams.get('id');
+    if (id) {
+      const foundReservation = getReservationById(id);
+      setReservation(foundReservation || null);
+    }
+  }, [searchParams, getReservationById]);
+
+  // --- Start of Original UI Logic ---
   const durationDays = useMemo(() => {
-    const start = new Date(booking.period.start);
-    const end = new Date(booking.period.end);
-    return Math.max(0, Math.round((+end - +start) / (1000 * 60 * 60 * 24)));
-  }, [booking.period.start, booking.period.end]);
+    if (!reservation) return 0;
+    const start = new Date(reservation.startDate);
+    const end = new Date(reservation.endDate);
+    // Add 1 for inclusive day counting
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
+  }, [reservation]);
 
-  const totalCost = useMemo(
-    () => booking.pricing.dailyRate * durationDays + booking.pricing.serviceFee,
-    [booking.pricing.dailyRate, booking.pricing.serviceFee, durationDays]
-  );
+  const totalCost = useMemo(() => {
+    if (!reservation) return 0;
+    return durationDays * reservation.price;
+  }, [reservation, durationDays]);
 
-  // 금액 표시: USD → KRW(×1000) 후 콤마 포맷
-  const fmtKRW = (usd: number) =>
-    new Intl.NumberFormat("ko-KR").format(Math.round(usd * 1000));
+  const formattedPeriod = useMemo(() => {
+    if (!reservation) return "";
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    const startDate = new Date(reservation.startDate).toLocaleDateString('ko-KR', options);
+    const endDate = new Date(reservation.endDate).toLocaleDateString('ko-KR', options);
+    return `${startDate} ~ ${endDate}`;
+  }, [reservation]);
+  // --- End of Original UI Logic ---
 
-  const fmtDate = (iso: string) =>
-    new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-
-  const onBack = () => router.back();
-  const onViewReceipt = () => window.print();
-  const onCancel = () => {
-    if (booking.status === "Cancelled") return;
-    if (confirm("정말 예약을 취소하시겠어요?")) {
-      setBooking((b) => ({ ...b, status: "Cancelled" }));
-      alert("예약이 취소되었습니다.");
+  const handleBack = () => router.back();
+  const handleCancelClick = () => setModalOpen(true);
+  const handleConfirmCancel = () => {
+    if (reservation) {
+      updateReservationStatus(reservation.id, 'cancelled');
+      // Go back to the dashboard to see the updated list
+      router.push('/dashboard');
     }
   };
 
+  if (!reservation) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-gray-500">예약 정보를 불러오는 중이거나 찾을 수 없습니다.</p>
+      </div>
+    );
+  }
+
   return (
     <>
-      <Header /> {/* 2. PC 헤더 추가 */}
-
-      {/* 전역 테마 변수 */}
+      {/* <Header /> */} {/* Header 컴포넌트 호출 제거 */}
       <style jsx global>{`
         :root {
-          --primary-color: #d2b48c;
-          --secondary-color: #f5f5f5;
-          --background-color: #fdfbf8;
-          --text-primary: #3d2c1d;
-          --text-secondary: #8c7853;
-          --accent-color: #f0ead6;
+          --primary-color: #d2b48c; --secondary-color: #f5f5f5; --background-color: #fdfbf8;
+          --text-primary: #3d2c1d; --text-secondary: #8c7853; --accent-color: #f0ead6;
         }
-        body {
-          background-color: var(--background-color);
-          color: var(--text-primary);
-          min-height: max(884px, 100dvh);
-        }
+        body { background-color: var(--background-color); color: var(--text-primary); }
       `}</style>
-
-      <header className="fixed top-0 left-0 right-0 z-20 bg-[var(--background-color)]/80 backdrop-blur-sm lg:hidden">
-        {/* 3. 모바일 헤더 숨기기 */}
-        <div className="flex items-center justify-between p-4">
-          <button
-            onClick={onBack}
-            className="text-[var(--text-primary)]"
-            aria-label="Back"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="28"
-              height="28"
-              viewBox="0 0 256 256"
-              fill="currentColor"
-              aria-hidden
+      <div className="flex flex-col min-h-screen">
+        <header className="sticky top-0 z-10 bg-[var(--background-color)]/80 backdrop-blur-sm">
+          <div className="flex items-center justify-between p-4">
+            <button
+              className="text-[var(--text-primary)] active:scale-95 transition"
+              type="button"
+              onClick={handleBack}
+              aria-label="뒤로 가기"
             >
-              <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z" />
-            </svg>
-          </button>
-          <h1 className="text-xl font-bold text-[var(--text-primary)]">
-            예약 상세정보
-          </h1>
-          <div className="w-7" />
-        </div>
-      </header>
-
-      <main className="flex-1 p-4 lg:p-8 lg:max-w-7xl lg:mx-auto">
-        <div className="pt-16 lg:pt-8">
-          {/* Booking overview */}
-          <section className="bg-white rounded-xl shadow-sm p-6 lg:flex lg:justify-between lg:items-center">
-            <h1 className="text-xl font-bold text-[var(--text-primary)] hidden lg:block">
-              예약 상세정보
-            </h1>
-            <div className="flex justify-between items-start lg:items-center lg:gap-4">
-              <div>
-                <p className="text-sm font-medium text-[var(--text-secondary)]">
-                  예약 ID: #{booking.id}
-                </p>
-              </div>
-              <span
-                className={
-                  "text-xs font-semibold py-1 px-3 rounded-full " +
-                  (booking.status === "Confirmed"
-                    ? "text-green-600 bg-green-100"
-                    : "text-red-600 bg-red-100")
-                }
+              <svg
+                fill="none"
+                height="24"
+                width="24"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                {booking.status}
-              </span>
-            </div>
-          </section>
-
-          <div className="lg:grid lg:grid-cols-3 lg:gap-8 mt-6">
-            <div className="lg:col-span-2 space-y-6">
-              {/* Artwork & Space Details */}
-              <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Artwork */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                  <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">
-                    작품 정보
-                  </h3>
-                  <div className="flex items-start gap-4">
-                    <div
-                      className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0"
-                      style={{
-                        backgroundImage: `url("${booking.artwork.imageUrl}")`,
-                      }}
-                    />
-                    <div className="flex-1 space-y-1">
-                      <p className="text-base font-semibold text-[var(--text-primary)]">
-                        {booking.artwork.title}
-                      </p>
-                      <p className="text-sm text-[var(--text-secondary)]">
-                        by {booking.artwork.artist}
-                      </p>
-                      <p className="text-sm text-[var(--text-secondary)]">
-                        사이즈: {booking.artwork.size}
-                      </p>
+                <path d="M19 12H5" />
+                <path d="m12 19-7-7 7-7" />
+              </svg>
+            </button>
+            <h1 className="text-xl font-bold text-[var(--text-primary)]">
+              예약 상세
+            </h1>
+            <div className="w-6" />
+          </div>
+        </header>
+        
+        <main className="flex-grow p-4 lg:py-8 lg:px-40">
+          <div className="pt-4 lg:pt-8">
+            <section className="bg-white rounded-xl shadow-sm p-5 lg:p-8 lg:flex lg:justify-between lg:items-center">
+              <h1 className="text-xl font-bold">예약 상세정보</h1>
+              <div className="flex items-center gap-4 mt-4 lg:mt-0">
+                <p className="text-sm font-medium text-[var(--text-secondary)]">예약 ID: {reservation.id}</p>
+                <span className={`text-xs font-semibold py-1 px-3 rounded-full ${
+                  reservation.status === "confirmed" ? "text-green-600 bg-green-100" 
+                  : reservation.status === "pending" ? "text-yellow-600 bg-yellow-100"
+                  : "text-red-600 bg-red-100"
+                }`}>
+                  {reservation.status === "confirmed" ? "확정" : reservation.status === "pending" ? "확인 중" : "취소됨"}
+                </span>
+              </div>
+            </section>
+            <div className="lg:grid lg:grid-cols-3 lg:gap-6 mt-6">
+              <div className="lg:col-span-2 space-y-6">
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-xl shadow-sm p-5 lg:p-8">
+                    <h3 className="text-lg font-bold mb-4">작품 정보</h3>
+                    <div className="flex items-center gap-4">
+                      <div className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0" style={{ backgroundImage: `url("${reservation.image}")` }} />
+                      <div className="flex-1 space-y-1">
+                        <p className="text-base font-semibold">{`"${reservation.artworkTitle}"`}</p>
+                        <p className="text-sm text-[var(--text-secondary)]">by {reservation.artistName}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Space */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                  <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">
-                    예약 장소
-                  </h3>
-                  <div className="flex items-start gap-4">
-                    <div
-                      className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0"
-                      style={{
-                        backgroundImage: `url("${booking.space.imageUrl}")`,
-                      }}
-                    />
-                    <div className="flex-1 space-y-1">
-                      <p className="text-base font-semibold text-[var(--text-primary)]">
-                        {booking.space.name}
-                      </p>
-                      <p className="text-sm text-[var(--text-secondary)]">
-                        {booking.space.venue}
-                      </p>
-                      <p className="text-sm text-[var(--text-secondary)]">
-                        공간 크기: {booking.space.dimensions}
-                      </p>
+                  <div className="bg-white rounded-xl shadow-sm p-5 lg:p-8">
+                    <h3 className="text-lg font-bold mb-4">예약 장소</h3>
+                    <div className="flex items-center gap-4">
+                       <div className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0" style={{ backgroundImage: `url("https://picsum.photos/id/200/400/300")` }} />
+                       <div className="flex-1 space-y-1">
+                         <p className="text-base font-semibold">{reservation.storeName}</p>
+                       </div>
                     </div>
                   </div>
-                </div>
-              </section>
+                </section>
+                <section className="bg-white rounded-xl shadow-sm p-5 lg:p-8">
+                  <h3 className="text-lg font-bold mb-4">예약 기간</h3>
+                  <p>{formattedPeriod}</p>
+                </section>
+              </div>
+              <div className="lg:col-span-1 space-y-6 mt-6 lg:mt-0">
+                <section className="bg-white rounded-xl shadow-sm p-5 lg:p-8">
+                  <h3 className="text-lg font-bold mb-4">비용 요약</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-[var(--text-secondary)]">일일 요금</p>
+                      <p className="text-sm">{reservation.price.toLocaleString()}원 x {durationDays}일</p>
+                    </div>
+                    <div className="border-t border-dashed border-gray-200 my-3" />
+                    <div className="flex items-center justify-between">
+                      <p className="text-base font-bold">총 비용</p>
+                      <p className="text-xl font-bold text-[var(--primary-color)]">{totalCost.toLocaleString()}원</p>
+                    </div>
+                  </div>
+                </section>
 
-              {/* Period */}
-              <section className="bg-white rounded-xl shadow-sm p-6">
-                <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">
-                  예약 기간
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-[var(--text-secondary)]">
-                      시작일
-                    </p>
-                    <p className="text-base font-semibold text-[var(--text-primary)]">
-                      {fmtDate(booking.period.start)}
-                    </p>
+                {/* This div is visible on all screen sizes, but padding and buttons change */}
+                <div>
+                  <div className="mt-6 flex justify-between items-center lg:px-2">
+                      <span className="text-lg font-bold text-gray-800">총 결제 금액</span>
+                      <span className="text-2xl font-bold text-[var(--primary-color)]">{totalCost.toLocaleString()}원</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-[var(--text-secondary)]">
-                      종료일
-                    </p>
-                    <p className="text-base font-semibold text-[var(--text-primary)]">
-                      {fmtDate(booking.period.end)}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-[var(--text-secondary)]">
-                      기간
-                    </p>
-                    <p className="text-base font-semibold text-[var(--text-primary)]">
-                      {durationDays} Days
-                    </p>
-                  </div>
-                </div>
-              </section>
-            </div>
-
-            <div className="lg:col-span-1 space-y-6 mt-6 lg:mt-0">
-              {/* Cost */}
-              <section className="bg-white rounded-xl shadow-sm p-6">
-                <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">
-                  비용 요약
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-[var(--text-secondary)]">
-                      일일 요금 (24&quot;x36&quot;)
-                    </p>
-                    <p className="text-sm text-[var(--text-primary)]">
-                      ₩{fmtKRW(booking.pricing.dailyRate)} x {durationDays} 일
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-[var(--text-secondary)]">수수료</p>
-                    <p className="text-sm text-[var(--text-primary)]">
-                      ₩{fmtKRW(booking.pricing.serviceFee)}
-                    </p>
-                  </div>
-                  <div className="border-t border-dashed border-gray-200 my-3" />
-                  <div className="flex items-center justify-between">
-                    <p className="text-base font-bold text-[var(--text-primary)]">
-                      총 비용
-                    </p>
-                    <p className="text-xl font-bold text-[var(--primary-color)]">
-                      ₩{fmtKRW(totalCost)}
-                    </p>
+                  <div className="pt-4 space-y-3 lg:px-2">
+                      <button className="bg-[var(--primary-color)] text-white py-3 px-6 rounded-lg w-full">영수증 보기</button>
+                      {/* Desktop-only cancel button */}
+                      <button
+                          onClick={handleCancelClick}
+                          disabled={reservation.status !== 'confirmed' && reservation.status !== 'pending'}
+                          className="hidden lg:block bg-transparent border border-[var(--text-secondary)] text-[var(--text-secondary)] py-3 px-6 rounded-lg w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                          {reservation.status === 'cancelled' ? '취소된 예약' : reservation.status === 'completed' ? '완료된 예약' : '예약 취소'}
+                      </button>
                   </div>
                 </div>
-              </section>
 
-              {/* Actions */}
-              <div className="pt-4 space-y-3">
-                <button
-                  className="bg-[var(--primary-color)] text-white py-3 px-6 rounded-lg hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] focus:ring-opacity-50 transition-colors w-full text-center"
-                  onClick={onViewReceipt}
-                >
-                  영수증 보기
-                </button>
-                <button
-                  className="bg-transparent border border-[var(--text-secondary)] text-[var(--text-secondary)] py-3 px-6 rounded-lg hover:bg-[var(--accent-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] focus:ring-opacity-50 transition-colors w-full text-center disabled:opacity-50"
-                  onClick={onCancel}
-                  disabled={booking.status === "Cancelled"}
-                >
-                  예약 취소
-                </button>
               </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
+
+        <Footer />
+      </div>
+
+      {/* Mobile-only sticky footer for Cancel button */}
+      {reservation && (reservation.status === 'confirmed' || reservation.status === 'pending') && (
+        <footer 
+          className="sticky bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-200 lg:hidden"
+          style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+        >
+          <button
+            onClick={handleCancelClick}
+            className="w-full h-12 rounded-xl bg-transparent border border-[var(--text-secondary)] text-[var(--text-secondary)] font-semibold transition-colors hover:bg-gray-50"
+          >
+            예약 취소
+          </button>
+        </footer>
+      )}
+
+      <CancelModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} onConfirm={handleConfirmCancel} />
     </>
   );
+}
+
+export default function BookingDetailPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+            <BookingDetailContent />
+        </Suspense>
+    )
 }
