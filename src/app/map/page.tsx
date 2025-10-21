@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useMemo, Suspense } from 'react';
+import React, { useEffect, useMemo, Suspense, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useBottomNav } from '../context/BottomNavContext';
 import { useMap, isSameDay, fmtKoreanDate } from '@/context/MapContext';
 import { userArtworks } from '@/data/artworks';
@@ -130,6 +130,25 @@ function MapPageContent() {
         handlePlaceSelect, gotoMonth, isDisabled, onClickDay, getDayClass, handleFilterClick,
     } = useMap();
     const searchParams = useSearchParams();
+    const router = useRouter();
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkIsMobile = () => {
+            setIsMobile(window.innerWidth < 1024);
+        };
+        checkIsMobile();
+        window.addEventListener('resize', checkIsMobile);
+        return () => window.removeEventListener('resize', checkIsMobile);
+    }, []);
+
+    const handleAddArtworkClick = () => {
+        if (isMobile) {
+            router.push('/dashboard/add');
+        } else {
+            setArtworkModalOpen(true);
+        }
+    };
 
     useEffect(() => {
         const placeId = searchParams.get('placeId');
@@ -207,21 +226,23 @@ function MapPageContent() {
                 .map-page-container > header:hover ~ .page-container .top-search-bar {
                   top: 4rem; /* h-16 (Header height) */
                 }
+                .top-search-bar-inner { max-width: 22rem; } /* PC에서 너비 줄이기 */
               }
 
               :root { --theme-brown-lightest:#F5F3F0; --theme-brown-light:#E9E4DD; --theme-brown-medium:#D4C8B8; --theme-brown-dark:#A18F79; --theme-brown-darkest:#4D4337; --white:#ffffff; }
               body { font-family: 'Pretendard', sans-serif; background-color: var(--theme-brown-lightest); color: var(--theme-brown-darkest); overflow: hidden; min-height: 100vh; overscroll-behavior: none; }
-              .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-size: 28px; vertical-align: middle; }
+              .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-size: 24px; vertical-align: middle; }
               .no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
               .page-container { position: relative; height: 100vh; width: 100vw; }
               .background-map { position: absolute; inset: 0; z-index: 0; }
-              .top-search-bar { position: absolute; top: 0; left: 0; right: 0; padding: 1rem; z-index: 20; }
-              .top-search-bar-inner { max-width: 24rem; margin: 0 auto; background-color: rgba(255,255,255,0.95); backdrop-filter: blur(4px); border-radius: 1rem; border: 1px solid var(--theme-brown-light); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-              .search-input-card { flex-grow: 1; margin: 0 1.25rem; padding: 0.5rem 1rem; background-color: var(--white); border-radius: 9999px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 4px 8px rgba(0,0,0,0.08); transition: all 0.3s ease; cursor: pointer; }
+              .top-search-bar { position: absolute; top: 0; left: 0; right: 0; padding: 0.75rem; z-index: 20; }
+              .top-search-bar-inner { max-width: 18.5rem; margin: 0 auto; background-color: rgba(255,255,255,0.95); backdrop-filter: blur(4px); border-radius: 0.75rem; border: 1px solid var(--theme-brown-light); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+              .search-input-card { flex-grow: 1; margin: 0 0.75rem; padding: 0.25rem 0.75rem; background-color: var(--white); border-radius: 9999px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 4px 8px rgba(0,0,0,0.08); transition: all 0.3s ease; cursor: pointer; }
               .search-input-card:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
-              .search-input-card .main-text { font-weight: bold; font-size: 1.125rem; } .search-input-card .sub-text { font-size: 0.875rem; color: var(--theme-brown-dark); }
-              .filter-buttons { padding: 0.5rem; display: flex; justify-content: space-around; gap: 0.25rem; overflow-x: auto; }
-              .filter-button { padding: 0.375rem 0.75rem; font-size: 0.875rem; white-space: nowrap; border-radius: 9999px; border: 1px solid var(--theme-brown-medium); background-color: rgba(255,255,255,0.9); color: var(--theme-brown-darkest); box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s; cursor: pointer; }
+              .search-input-card .main-text { font-weight: bold; font-size: 0.9rem; }
+              .search-input-card .sub-text { font-size: 0.7rem; color: var(--theme-brown-dark); }
+              .filter-buttons { padding: 0.4rem; display: flex; justify-content: space-around; gap: 0.25rem; overflow-x: auto; }
+              .filter-button { padding: 0.3rem 0.6rem; font-size: 0.75rem; white-space: nowrap; border-radius: 9999px; border: 1px solid var(--theme-brown-medium); background-color: rgba(255,255,255,0.9); color: var(--theme-brown-darkest); box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s; cursor: pointer; }
               .filter-button:hover { background-color: var(--theme-brown-light); }
               .filter-button.active { background-color: var(--theme-brown-darkest); color: var(--white); border-color: var(--theme-brown-darkest); }
               .date-picker-modal-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.6); z-index: 50; display: flex; align-items: center; justify-content: center; }
@@ -266,20 +287,20 @@ function MapPageContent() {
                 {!isMapLoading && (
                   <div className="top-search-bar">
                       <div className="top-search-bar-inner">
-                          <div style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1rem' }}>
-                              <span className="material-symbols-outlined cursor-pointer" style={{ color: 'var(--theme-brown-dark)', fontSize: '32px' }} onClick={() => setSearchModalOpen(true)}>search</span>
+                          <div style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 0.75rem' }}>
+                              <span className="material-symbols-outlined cursor-pointer" style={{ color: 'var(--theme-brown-dark)' }} onClick={() => setSearchModalOpen(true)}>search</span>
                               <div className="search-input-card" onClick={() => setDatePickerOpen(true)}>
                                   <p className="main-text">{locationInfo.city}</p>
                                   <p className="sub-text">{hasRange ? (isSameDay(startDate!, endDate!) ? fmtKoreanDate(startDate!) : `${fmtKoreanDate(startDate!)} - ${fmtKoreanDate(endDate!)}`) : '날짜를 선택하세요'}</p>
                               </div>
-                              <div style={{ width: '1px', height: '2rem', backgroundColor: 'var(--theme-brown-light)', margin: '0 0.75rem 0 0' }}></div>
-                              <span className="material-symbols-outlined cursor-pointer" style={{ fontSize: '32px', color: 'var(--theme-brown-darkest)' }} onClick={() => setOptionsMenuOpen(true)}>tune</span>
+                              <div style={{ width: '1px', height: '1.5rem', backgroundColor: 'var(--theme-brown-light)', margin: '0 0.5rem 0 0' }}></div>
+                              <span className="material-symbols-outlined cursor-pointer" style={{ color: 'var(--theme-brown-darkest)' }} onClick={() => setOptionsMenuOpen(true)}>tune</span>
                           </div>
                           <hr style={{ borderTop: '1px solid var(--theme-brown-light)' }} />
                           <div className="filter-buttons no-scrollbar">{filterButtons.map((label) => (<button key={label} className={`filter-button flex items-center gap-1 ${(label === '작품 선택' && isArtworkSelectorVisible) || activeFilter === label ? 'active' : ''}`} onClick={() => handleFilterClick(label)}>
                             {label}
                             {label === '작품 선택' && (
-                              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
                                 {isArtworkSelectorVisible ? 'expand_less' : 'expand_more'}
                               </span>
                             )}
@@ -292,7 +313,7 @@ function MapPageContent() {
                   selectedArtwork={selectedArtwork}
                   onSelectArtwork={setSelectedArtwork}
                   isVisible={isArtworkSelectorVisible}
-                  onAddArtwork={() => setArtworkModalOpen(true)}
+                  onAddArtwork={handleAddArtworkClick}
                 />
                 <OptionsMenu
                   isOpen={isOptionsMenuOpen}

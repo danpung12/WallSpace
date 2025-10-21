@@ -271,7 +271,7 @@ export const locations: Location[] = [
         ],
         description: '아늑한 분위기의 북카페로, 독립 서적과 함께 맛있는 커피를 즐길 수 있는 특별한 공간입니다.',
         spaces: [
-            { name: '메인 홀', imageUrl: 'https://picsum.photos/id/601/400/300', isReserved: false, width: 300, height: 250, price: 100000 },
+            { name: '메인 홀', imageUrl: 'https://images.pexels.com/photos/1034662/pexels-photo-1034662.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', isReserved: false, width: 300, height: 250, price: 100000 },
         ],
         reviews: [
             {

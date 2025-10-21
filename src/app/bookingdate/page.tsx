@@ -1,16 +1,25 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { locations } from '@/data/locations';
 import DateBooking from './components/DateBooking';
 import type { Location, Space } from '@/data/locations';
+import { useBottomNav } from '../context/BottomNavContext';
 
 function DateBookingContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const placeId = searchParams.get('placeId');
   const spaceName = searchParams.get('spaceName');
+  const { setIsNavVisible } = useBottomNav();
+
+  useEffect(() => {
+    setIsNavVisible(false);
+    return () => {
+      setIsNavVisible(true);
+    };
+  }, [setIsNavVisible]);
 
   const location = locations.find((loc) => loc.id.toString() === placeId);
   const initialSpace = location?.spaces.find((s) => s.name === spaceName);

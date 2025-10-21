@@ -90,7 +90,7 @@ export default function LocationDetailPage({
       />
 
       <div className="relative h-full w-full overflow-y-auto bg-white custom-scrollbar-thin lg:h-fit lg:max-w-4xl lg:rounded-2xl lg:shadow-2xl lg:overflow-visible">
-        <header className="absolute left-0 right-0 top-0 z-10 flex items-center bg-white/80 p-4 backdrop-blur-sm lg:static lg:hidden">
+        <header className="sticky top-0 z-10 flex items-center bg-white/80 p-4 backdrop-blur-sm lg:static lg:hidden">
           <button
             onClick={onClose}
             className="rounded-full p-2 hover:bg-gray-100"

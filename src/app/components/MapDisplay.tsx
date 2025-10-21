@@ -22,11 +22,14 @@ export default function MapDisplay() {
   useEffect(() => {
     const map = mapInstance.current;
     if (map && mapContainerRef.current) {
-      const mapNode = map.getNode();
-      if (mapNode.parentNode !== mapContainerRef.current) {
-        mapContainerRef.current.appendChild(mapNode);
+        // 컨테이너에 이미 지도가 렌더링된 경우(자식 노드가 있는 경우) 추가 작업을 하지 않습니다.
+        if (mapContainerRef.current.children.length > 0) {
+            return;
+        }
+
+        const container = mapContainerRef.current;
+        container.appendChild(map.getNode());
         map.relayout();
-      }
     }
   }, [mapInstance]);
 

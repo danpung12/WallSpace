@@ -147,14 +147,31 @@ interface NotificationItemProps {
 }
 
 const NotificationItem = ({ title, message, time }: NotificationItemProps) => (
-  <div className="h-24 lg:h-28 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg rounded-2xl p-4 lg:p-5 flex items-center space-x-3 shadow-lg border border-white/20 dark:border-gray-700/30 cursor-pointer hover:bg-white dark:hover:bg-gray-800 transition-colors duration-200">
-    <IoNotificationsCircle className="text-4xl lg:text-5xl flex-shrink-0 text-[#D2B48C] dark:text-[#E8C8A0]" />
+  <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg rounded-2xl flex items-center shadow-lg border border-white/20 dark:border-gray-700/30 cursor-pointer hover:bg-white dark:hover:bg-gray-800 transition-colors duration-200"
+    style={{ 
+      height: 'clamp(5.5rem, 11.37vh, 7rem)',
+      padding: 'clamp(0.75rem, 1.9vh, 1.25rem)',
+      gap: 'clamp(0.5rem, 0.77vw, 0.75rem)'
+    }}>
+    <IoNotificationsCircle 
+      className="flex-shrink-0 text-[#D2B48C] dark:text-[#E8C8A0]"
+      style={{ fontSize: 'clamp(2rem, 9.23vw, 2.5rem)' }}
+    />
     <div className="flex-1 min-w-0">
       <div className="flex justify-between items-center">
-        <h3 className="font-bold truncate text-base lg:text-lg text-[#2C2C2C] dark:text-gray-100">{title}</h3>
-        <p className="text-xs lg:text-sm flex-shrink-0 ml-2 text-[#887563] dark:text-gray-400">{time}</p>
+        <h3 className="font-bold truncate text-[#2C2C2C] dark:text-gray-100"
+          style={{ fontSize: 'clamp(0.875rem, 4.1vw, 1.125rem)' }}>{title}</h3>
+        <p className="flex-shrink-0 text-[#887563] dark:text-gray-400"
+          style={{ 
+            fontSize: 'clamp(0.6875rem, 3.08vw, 0.875rem)',
+            marginLeft: 'clamp(0.375rem, 0.77vw, 0.5rem)'
+          }}>{time}</p>
       </div>
-      <p className="text-sm lg:text-base mt-1 text-[#887563] dark:text-gray-400">{message}</p>
+      <p className="text-[#887563] dark:text-gray-400"
+        style={{ 
+          fontSize: 'clamp(0.75rem, 3.59vw, 0.9375rem)',
+          marginTop: 'clamp(0.125rem, 0.3vh, 0.25rem)'
+        }}>{message}</p>
     </div>
   </div>
 );
@@ -171,6 +188,21 @@ const RecommendedPlaces = ({ onSlideChange, userLocation }: RecommendedPlacesPro
     router.push(`/map?placeId=${place.id}`); // 3. '/map' 경로로 placeId와 함께 이동
   };
 
+  const [spaceBetween, setSpaceBetween] = React.useState(16);
+  
+  React.useEffect(() => {
+    const updateSpaceBetween = () => {
+      const vw = window.innerWidth;
+      // clamp(14px, 4.1vw, 16px) 계산 - iPhone 12 Pro에서 정확히 16px
+      const calculatedSpace = Math.max(14, Math.min(vw * 0.041, 16));
+      setSpaceBetween(calculatedSpace);
+    };
+    
+    updateSpaceBetween();
+    window.addEventListener('resize', updateSpaceBetween);
+    return () => window.removeEventListener('resize', updateSpaceBetween);
+  }, []);
+
   return (
     <>
       {/* Mobile: Swiper */}
@@ -178,7 +210,7 @@ const RecommendedPlaces = ({ onSlideChange, userLocation }: RecommendedPlacesPro
         <Swiper
           modules={[Pagination]}
           className="w-full peek-swiper"
-          spaceBetween={16}
+          spaceBetween={spaceBetween}
           slidesPerView={'auto'}
           centeredSlides={true}
           pagination={{ clickable: true, el: '.swiper-pagination-outer' }}
@@ -193,7 +225,8 @@ const RecommendedPlaces = ({ onSlideChange, userLocation }: RecommendedPlacesPro
               />
             </SwiperSlide>
           ))}
-          <div className="swiper-pagination-outer text-center mt-4 relative z-10"></div>
+          <div className="swiper-pagination-outer text-center relative z-10"
+            style={{ marginTop: 'clamp(0.75rem, 1.9vh, 1rem)' }}></div>
         </Swiper>
       </div>
 
@@ -227,10 +260,16 @@ const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
     : null;
 
   return (
-    <div className="backdrop-blur-lg rounded-2xl shadow-lg p-4 lg:p-5 border h-full flex flex-col cursor-pointer bg-white/60 dark:bg-gray-800/60 border-white/20 dark:border-gray-700/30 hover:bg-white/80 dark:hover:bg-gray-800/80 transition-colors duration-200">
+    <div className="backdrop-blur-lg rounded-2xl shadow-lg border h-full flex flex-col cursor-pointer bg-white/60 dark:bg-gray-800/60 border-white/20 dark:border-gray-700/30 hover:bg-white/80 dark:hover:bg-gray-800/80 transition-colors duration-200 lg:p-5"
+      style={{ 
+        padding: 'clamp(0.75rem, 1.9vh, 1.25rem)'
+      }}>
       <div
-        className="w-full h-64 lg:h-56 rounded-xl overflow-hidden relative group"
+        className="w-full rounded-xl overflow-hidden relative group lg:h-56"
         onClick={onImageClick}
+        style={{
+          height: 'clamp(11rem, 30.33vh, 16rem)'
+        }}
       >
         <Swiper
           modules={[Navigation]}
@@ -261,36 +300,69 @@ const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
         </Swiper>
 
         {place.tags && place.tags.length > 0 && (
-          <div className="absolute top-4 left-4 z-10">
-            <span className="text-white text-lg font-bold" style={{ textShadow: '0px 1px 4px rgba(0, 0, 0, 0.5)' }}>
+          <div className="absolute z-10"
+            style={{
+              top: 'clamp(0.75rem, 1.9vh, 1rem)',
+              left: 'clamp(0.75rem, 1.9vh, 1rem)'
+            }}>
+            <span className="text-white font-bold" 
+              style={{ 
+                textShadow: '0px 1px 4px rgba(0, 0, 0, 0.5)',
+                fontSize: 'clamp(1.125rem, 4.62vw, 1.5rem)'
+              }}>
               #{place.tags[0]}
             </span>
           </div>
         )}
 
         <button
-          className={`custom-prev-button-${place.id} absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 hover:scale-110 ${isBeginning ? 'opacity-0 pointer-events-none' : 'opacity-70 group-hover:opacity-100'}`}
+          className={`custom-prev-button-${place.id} absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 hover:scale-110 ${isBeginning ? 'opacity-0 pointer-events-none' : 'opacity-70 group-hover:opacity-100'}`}
           onClick={(e) => e.stopPropagation()}
+          style={{
+            left: 'clamp(0.375rem, 2.05vw, 0.5rem)',
+            width: 'clamp(1.75rem, 8.21vw, 2rem)',
+            height: 'clamp(1.75rem, 8.21vw, 2rem)'
+          }}
         >
-          <span className="material-symbols-outlined text-xl">
+          <span className="material-symbols-outlined"
+            style={{ fontSize: 'clamp(1rem, 5.13vw, 1.25rem)' }}>
             chevron_left
           </span>
         </button>
         <button
-          className={`custom-next-button-${place.id} absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 hover:scale-110 ${isEnd ? 'opacity-0 pointer-events-none' : 'opacity-70 group-hover:opacity-100'}`}
+          className={`custom-next-button-${place.id} absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 hover:scale-110 ${isEnd ? 'opacity-0 pointer-events-none' : 'opacity-70 group-hover:opacity-100'}`}
           onClick={(e) => e.stopPropagation()}
+          style={{
+            right: 'clamp(0.375rem, 2.05vw, 0.5rem)',
+            width: 'clamp(1.75rem, 8.21vw, 2rem)',
+            height: 'clamp(1.75rem, 8.21vw, 2rem)'
+          }}
         >
-          <span className="material-symbols-outlined text-xl">
+          <span className="material-symbols-outlined"
+            style={{ fontSize: 'clamp(1rem, 5.13vw, 1.25rem)' }}>
             chevron_right
           </span>
         </button>
       </div>
-      <div className="mt-4 px-2 flex-grow">
-        <div className="flex items-baseline gap-2">
-          <h3 className="text-xl lg:text-2xl font-bold text-[#2C2C2C] dark:text-gray-100">{place.name}</h3>
-          <p className="text-sm lg:text-base text-[#887563] dark:text-gray-400">{place.category}</p>
+      <div className="flex-grow lg:px-2"
+        style={{
+          marginTop: 'clamp(0.75rem, 1.9vh, 1rem)',
+          paddingLeft: 'clamp(0.375rem, 2.05vw, 0.5rem)',
+          paddingRight: 'clamp(0.375rem, 2.05vw, 0.5rem)'
+        }}>
+        <div className="flex items-baseline"
+          style={{ gap: 'clamp(0.375rem, 2.05vw, 0.5rem)' }}>
+          <h3 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
+            style={{ fontSize: 'clamp(1rem, 5.13vw, 1.25rem)' }}>{place.name}</h3>
+          <p className="text-[#887563] dark:text-gray-400 lg:text-base"
+            style={{ fontSize: 'clamp(0.75rem, 3.59vw, 0.875rem)' }}>{place.category}</p>
         </div>
-        <div className="flex items-baseline gap-2 mt-1 text-sm lg:text-base text-[#887563] dark:text-gray-400">
+        <div className="flex items-baseline text-[#887563] dark:text-gray-400 lg:text-base"
+          style={{ 
+            gap: 'clamp(0.375rem, 2.05vw, 0.5rem)',
+            marginTop: 'clamp(0.125rem, 0.47vh, 0.25rem)',
+            fontSize: 'clamp(0.75rem, 3.59vw, 0.875rem)'
+          }}>
           <p>{place.address.split(' ').slice(0, 2).join(' ')}</p>
           {distance && (
             <>
@@ -366,16 +438,32 @@ export default function MainPage() {
     <>
       <GlobalSwiperStyles />
       <Header /> {/* 2. Header 컴포넌트 추가 */}
-      <div className="min-h-screen w-full lg:h-screen lg:overflow-hidden relative bg-[#e8e3da] dark:bg-[#1a1a1a] transition-colors duration-300">
+      <div className="h-screen w-full lg:h-screen lg:overflow-hidden relative bg-[#e8e3da] dark:bg-[#1a1a1a] transition-colors duration-300 flex flex-col">
 
-        <div className="relative z-10 mx-auto h-full w-full max-w-screen-2xl pt-8 pb-12 lg:px-8 lg:pt-12 lg:pb-0">
+        <div className="relative z-10 mx-auto w-full max-w-screen-2xl flex-grow overflow-y-auto scrollbar-hide lg:px-8 lg:pt-12 lg:pb-0"
+          style={{
+            paddingTop: 'clamp(1.5rem, 3.79vh, 2rem)',
+            paddingBottom: 'clamp(2.5rem, 5.69vh, 3rem)'
+          }}>
           <div className="lg:flex lg:h-full lg:gap-8">
             <div className="lg:w-1/3">
-              <section className="px-4 sm:px-6 lg:sticky lg:top-12 lg:px-0">
-                <h2 className="mb-4 text-xl lg:text-2xl font-bold text-[#2C2C2C] dark:text-gray-100">
+              <section className="sm:px-6 lg:sticky lg:top-12 lg:px-0"
+                style={{
+                  paddingLeft: 'clamp(0.875rem, 4.1vw, 1rem)',
+                  paddingRight: 'clamp(0.875rem, 4.1vw, 1rem)'
+                }}>
+                <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
+                  style={{
+                    marginBottom: 'clamp(0.75rem, 1.9vh, 1rem)',
+                    fontSize: 'clamp(1rem, 5.13vw, 1.25rem)'
+                  }}>
                   새로운 알림
                 </h2>
-                <div className="space-y-3">
+                <div style={{ 
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'clamp(0.625rem, 1.42vh, 0.75rem)'
+                }}>
                   {notificationsData.map((notification) => (
                     <NotificationItem key={notification.id} {...notification} />
                   ))}
@@ -383,17 +471,32 @@ export default function MainPage() {
               </section>
             </div>
 
-            <div className="mt-8 lg:mt-0 lg:flex lg:w-2/3 lg:flex-col">
-              <div className="mb-4 flex items-baseline px-4 sm:px-6 lg:px-0">
-                <h2 className="mr-2 text-xl lg:text-2xl font-bold text-[#2C2C2C] dark:text-gray-100">
+            <div className="lg:mt-0 lg:flex lg:w-2/3 lg:flex-col"
+              style={{
+                marginTop: 'clamp(1.5rem, 3.79vh, 2rem)'
+              }}>
+              <div className="flex items-baseline sm:px-6 lg:px-0"
+                style={{
+                  marginBottom: 'clamp(0.75rem, 1.9vh, 1rem)',
+                  paddingLeft: 'clamp(0.875rem, 4.1vw, 1rem)',
+                  paddingRight: 'clamp(0.875rem, 4.1vw, 1rem)'
+                }}>
+                <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
+                  style={{
+                    marginRight: 'clamp(0.375rem, 2.05vw, 0.5rem)',
+                    fontSize: 'clamp(1rem, 5.13vw, 1.25rem)'
+                  }}>
                   추천 장소
                 </h2>
-                <p className="text-base font-medium lg:hidden text-[#887563] dark:text-gray-400">
+                <p className="font-medium lg:hidden text-[#887563] dark:text-gray-400"
+                  style={{
+                    fontSize: 'clamp(0.875rem, 4.1vw, 1rem)'
+                  }}>
                   {currentPlaceName}
                 </p>
               </div>
 
-              <div className={`lg:min-h-0 lg:flex-1 fade-scroll-container ${showTopFade ? 'show-top-fade' : ''} ${showBottomFade ? 'show-bottom-fade' : ''}`}>
+              <div className={`lg:min-h-0 lg:flex-1`}>
                 <div ref={scrollContainerRef} className="h-full w-full overflow-y-auto scrollbar-hide">
                   <RecommendedPlaces
                     onSlideChange={setCurrentPlaceIndex}

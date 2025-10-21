@@ -74,7 +74,7 @@ export default function PlaceDetailPanel({
         <p className="text-theme-brown-dark mb-4 text-sm leading-relaxed truncate">
           {place.description}
         </p>
-        <div className="border-t border-theme-brown-light pt-3">
+        <div className="border-t border-theme-brown-light pt-3 hidden lg:block">
           <h3 className="font-bold text-theme-brown-darkest mb-3">
             예약 가능 공간
           </h3>
@@ -91,7 +91,7 @@ export default function PlaceDetailPanel({
               ))}
           </div>
         </div>
-        <button className="w-full h-12 mt-6 rounded-lg bg-[var(--theme-brown-darkest)] text-white font-bold text-base transition-colors duration-200 hover:bg-[#3a3229]">
+        <button className="w-full h-12 mt-4 rounded-lg bg-[var(--theme-brown-darkest)] text-white font-bold text-base transition-colors duration-200 hover:bg-[#3a3229]">
           이 공간 예약하기
         </button>
       </div>
