@@ -22,7 +22,7 @@ import Header from '../components/Header'; // 1. Header 컴포넌트 임포트
 
 // --- 샘플 데이터 ---
 const notificationsData = [
-  { id: 1, title: '예약 확정', message: '요청하신 \'아트 스페이스 광교\' 예약이 확정되었습니다.', time: '방금 전' },
+  { id: 1, title: '예약 확정', message: '요청하신 \'아트 스페이스\' 예약이 확정되었습니다.', time: '방금 전' },
   { id: 2, title: '새로운 메시지', message: '\'김작가\'님으로부터 새로운 메시지가 도착했습니다.', time: '15분 전' },
 ];
 
@@ -149,28 +149,28 @@ interface NotificationItemProps {
 const NotificationItem = ({ title, message, time }: NotificationItemProps) => (
   <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg rounded-2xl flex items-center shadow-lg border border-white/20 dark:border-gray-700/30 cursor-pointer hover:bg-white dark:hover:bg-gray-800 transition-colors duration-200"
     style={{ 
-      height: 'clamp(5.5rem, 11.37vh, 7rem)',
-      padding: 'clamp(0.75rem, 1.9vh, 1.25rem)',
-      gap: 'clamp(0.5rem, 0.77vw, 0.75rem)'
+      height: 'clamp(4.75rem, 11.37vh, 7rem)',
+      padding: 'clamp(0.5rem, 1.9vh, 1.25rem)',
+      gap: 'clamp(0.375rem, 0.77vw, 0.75rem)'
     }}>
     <IoNotificationsCircle 
       className="flex-shrink-0 text-[#D2B48C] dark:text-[#E8C8A0]"
-      style={{ fontSize: 'clamp(2rem, 9.23vw, 2.5rem)' }}
+      style={{ fontSize: 'clamp(1.75rem, 9.23vw, 2.5rem)' }}
     />
     <div className="flex-1 min-w-0">
       <div className="flex justify-between items-center">
         <h3 className="font-bold truncate text-[#2C2C2C] dark:text-gray-100"
-          style={{ fontSize: 'clamp(0.875rem, 4.1vw, 1.125rem)' }}>{title}</h3>
+          style={{ fontSize: 'clamp(0.8125rem, 4.1vw, 1.125rem)' }}>{title}</h3>
         <p className="flex-shrink-0 text-[#887563] dark:text-gray-400"
           style={{ 
-            fontSize: 'clamp(0.6875rem, 3.08vw, 0.875rem)',
-            marginLeft: 'clamp(0.375rem, 0.77vw, 0.5rem)'
+            fontSize: 'clamp(0.625rem, 3.08vw, 0.875rem)',
+            marginLeft: 'clamp(0.25rem, 0.77vw, 0.5rem)'
           }}>{time}</p>
       </div>
       <p className="text-[#887563] dark:text-gray-400"
         style={{ 
-          fontSize: 'clamp(0.75rem, 3.59vw, 0.9375rem)',
-          marginTop: 'clamp(0.125rem, 0.3vh, 0.25rem)'
+          fontSize: 'clamp(0.6875rem, 3.59vw, 0.9375rem)',
+          marginTop: 'clamp(0.0625rem, 0.3vh, 0.25rem)'
         }}>{message}</p>
     </div>
   </div>
@@ -193,8 +193,8 @@ const RecommendedPlaces = ({ onSlideChange, userLocation }: RecommendedPlacesPro
   React.useEffect(() => {
     const updateSpaceBetween = () => {
       const vw = window.innerWidth;
-      // clamp(14px, 4.1vw, 16px) 계산 - iPhone 12 Pro에서 정확히 16px
-      const calculatedSpace = Math.max(14, Math.min(vw * 0.041, 16));
+      // clamp(12px, 4.1vw, 16px) 계산 - iPhone 12 Pro에서 정확히 16px
+      const calculatedSpace = Math.max(12, Math.min(vw * 0.041, 16));
       setSpaceBetween(calculatedSpace);
     };
     
@@ -226,7 +226,7 @@ const RecommendedPlaces = ({ onSlideChange, userLocation }: RecommendedPlacesPro
             </SwiperSlide>
           ))}
           <div className="swiper-pagination-outer text-center relative z-10"
-            style={{ marginTop: 'clamp(0.75rem, 1.9vh, 1rem)' }}></div>
+            style={{ marginTop: 'clamp(0.5rem, 1.9vh, 1rem)' }}></div>
         </Swiper>
       </div>
 
@@ -262,13 +262,13 @@ const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
   return (
     <div className="backdrop-blur-lg rounded-2xl shadow-lg border h-full flex flex-col cursor-pointer bg-white/60 dark:bg-gray-800/60 border-white/20 dark:border-gray-700/30 hover:bg-white/80 dark:hover:bg-gray-800/80 transition-colors duration-200 lg:p-5"
       style={{ 
-        padding: 'clamp(0.75rem, 1.9vh, 1.25rem)'
+        padding: 'clamp(0.5rem, 1.9vh, 1.25rem)'
       }}>
       <div
         className="w-full rounded-xl overflow-hidden relative group lg:h-56"
         onClick={onImageClick}
         style={{
-          height: 'clamp(11rem, 30.33vh, 16rem)'
+          height: 'clamp(10rem, 30.33vh, 16rem)'
         }}
       >
         <Swiper
@@ -302,13 +302,13 @@ const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
         {place.tags && place.tags.length > 0 && (
           <div className="absolute z-10"
             style={{
-              top: 'clamp(0.75rem, 1.9vh, 1rem)',
-              left: 'clamp(0.75rem, 1.9vh, 1rem)'
+              top: 'clamp(0.5rem, 1.9vh, 1rem)',
+              left: 'clamp(0.5rem, 1.9vh, 1rem)'
             }}>
             <span className="text-white font-bold" 
               style={{ 
                 textShadow: '0px 1px 4px rgba(0, 0, 0, 0.5)',
-                fontSize: 'clamp(1.125rem, 4.62vw, 1.5rem)'
+                fontSize: 'clamp(1rem, 4.62vw, 1.5rem)'
               }}>
               #{place.tags[0]}
             </span>
@@ -319,13 +319,13 @@ const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
           className={`custom-prev-button-${place.id} absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 hover:scale-110 ${isBeginning ? 'opacity-0 pointer-events-none' : 'opacity-70 group-hover:opacity-100'}`}
           onClick={(e) => e.stopPropagation()}
           style={{
-            left: 'clamp(0.375rem, 2.05vw, 0.5rem)',
-            width: 'clamp(1.75rem, 8.21vw, 2rem)',
-            height: 'clamp(1.75rem, 8.21vw, 2rem)'
+            left: 'clamp(0.25rem, 2.05vw, 0.5rem)',
+            width: 'clamp(1.625rem, 8.21vw, 2rem)',
+            height: 'clamp(1.625rem, 8.21vw, 2rem)'
           }}
         >
           <span className="material-symbols-outlined"
-            style={{ fontSize: 'clamp(1rem, 5.13vw, 1.25rem)' }}>
+            style={{ fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)' }}>
             chevron_left
           </span>
         </button>
@@ -333,35 +333,35 @@ const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
           className={`custom-next-button-${place.id} absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 hover:scale-110 ${isEnd ? 'opacity-0 pointer-events-none' : 'opacity-70 group-hover:opacity-100'}`}
           onClick={(e) => e.stopPropagation()}
           style={{
-            right: 'clamp(0.375rem, 2.05vw, 0.5rem)',
-            width: 'clamp(1.75rem, 8.21vw, 2rem)',
-            height: 'clamp(1.75rem, 8.21vw, 2rem)'
+            right: 'clamp(0.25rem, 2.05vw, 0.5rem)',
+            width: 'clamp(1.625rem, 8.21vw, 2rem)',
+            height: 'clamp(1.625rem, 8.21vw, 2rem)'
           }}
         >
           <span className="material-symbols-outlined"
-            style={{ fontSize: 'clamp(1rem, 5.13vw, 1.25rem)' }}>
+            style={{ fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)' }}>
             chevron_right
           </span>
         </button>
       </div>
       <div className="flex-grow lg:px-2"
         style={{
-          marginTop: 'clamp(0.75rem, 1.9vh, 1rem)',
-          paddingLeft: 'clamp(0.375rem, 2.05vw, 0.5rem)',
-          paddingRight: 'clamp(0.375rem, 2.05vw, 0.5rem)'
+          marginTop: 'clamp(0.5rem, 1.9vh, 1rem)',
+          paddingLeft: 'clamp(0.25rem, 2.05vw, 0.5rem)',
+          paddingRight: 'clamp(0.25rem, 2.05vw, 0.5rem)'
         }}>
         <div className="flex items-baseline"
-          style={{ gap: 'clamp(0.375rem, 2.05vw, 0.5rem)' }}>
+          style={{ gap: 'clamp(0.25rem, 2.05vw, 0.5rem)' }}>
           <h3 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
-            style={{ fontSize: 'clamp(1rem, 5.13vw, 1.25rem)' }}>{place.name}</h3>
+            style={{ fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)' }}>{place.name}</h3>
           <p className="text-[#887563] dark:text-gray-400 lg:text-base"
-            style={{ fontSize: 'clamp(0.75rem, 3.59vw, 0.875rem)' }}>{place.category}</p>
+            style={{ fontSize: 'clamp(0.6875rem, 3.59vw, 0.875rem)' }}>{place.category}</p>
         </div>
         <div className="flex items-baseline text-[#887563] dark:text-gray-400 lg:text-base"
           style={{ 
-            gap: 'clamp(0.375rem, 2.05vw, 0.5rem)',
-            marginTop: 'clamp(0.125rem, 0.47vh, 0.25rem)',
-            fontSize: 'clamp(0.75rem, 3.59vw, 0.875rem)'
+            gap: 'clamp(0.25rem, 2.05vw, 0.5rem)',
+            marginTop: 'clamp(0.0625rem, 0.47vh, 0.25rem)',
+            fontSize: 'clamp(0.6875rem, 3.59vw, 0.875rem)'
           }}>
           <p>{place.address.split(' ').slice(0, 2).join(' ')}</p>
           {distance && (
@@ -442,27 +442,27 @@ export default function MainPage() {
 
         <div className="relative z-10 mx-auto w-full max-w-screen-2xl flex-grow overflow-y-auto scrollbar-hide lg:px-8 lg:pt-12 lg:pb-0"
           style={{
-            paddingTop: 'clamp(1.5rem, 3.79vh, 2rem)',
-            paddingBottom: 'clamp(2.5rem, 5.69vh, 3rem)'
+            paddingTop: 'clamp(1rem, 3.79vh, 2rem)',
+            paddingBottom: 'clamp(1.5rem, 5.69vh, 3rem)'
           }}>
           <div className="lg:flex lg:h-full lg:gap-8">
             <div className="lg:w-1/3">
               <section className="sm:px-6 lg:sticky lg:top-12 lg:px-0"
                 style={{
-                  paddingLeft: 'clamp(0.875rem, 4.1vw, 1rem)',
-                  paddingRight: 'clamp(0.875rem, 4.1vw, 1rem)'
+                  paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
+                  paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)'
                 }}>
                 <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
                   style={{
-                    marginBottom: 'clamp(0.75rem, 1.9vh, 1rem)',
-                    fontSize: 'clamp(1rem, 5.13vw, 1.25rem)'
+                    marginBottom: 'clamp(0.5rem, 1.9vh, 1rem)',
+                    fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)'
                   }}>
                   새로운 알림
                 </h2>
                 <div style={{ 
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 'clamp(0.625rem, 1.42vh, 0.75rem)'
+                  gap: 'clamp(0.5rem, 1.42vh, 0.75rem)'
                 }}>
                   {notificationsData.map((notification) => (
                     <NotificationItem key={notification.id} {...notification} />
@@ -473,24 +473,24 @@ export default function MainPage() {
 
             <div className="lg:mt-0 lg:flex lg:w-2/3 lg:flex-col"
               style={{
-                marginTop: 'clamp(1.5rem, 3.79vh, 2rem)'
+                marginTop: 'clamp(1rem, 3.79vh, 2rem)'
               }}>
               <div className="flex items-baseline sm:px-6 lg:px-0"
                 style={{
-                  marginBottom: 'clamp(0.75rem, 1.9vh, 1rem)',
-                  paddingLeft: 'clamp(0.875rem, 4.1vw, 1rem)',
-                  paddingRight: 'clamp(0.875rem, 4.1vw, 1rem)'
+                  marginBottom: 'clamp(0.5rem, 1.9vh, 1rem)',
+                  paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
+                  paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)'
                 }}>
                 <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
                   style={{
-                    marginRight: 'clamp(0.375rem, 2.05vw, 0.5rem)',
-                    fontSize: 'clamp(1rem, 5.13vw, 1.25rem)'
+                    marginRight: 'clamp(0.25rem, 2.05vw, 0.5rem)',
+                    fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)'
                   }}>
                   추천 장소
                 </h2>
                 <p className="font-medium lg:hidden text-[#887563] dark:text-gray-400"
                   style={{
-                    fontSize: 'clamp(0.875rem, 4.1vw, 1rem)'
+                    fontSize: 'clamp(0.8125rem, 4.1vw, 1rem)'
                   }}>
                   {currentPlaceName}
                 </p>

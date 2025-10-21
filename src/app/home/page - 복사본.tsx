@@ -21,7 +21,7 @@ import Header from '../components/Header'; // 1. Header 컴포넌트 임포트
 
 // --- 샘플 데이터 ---
 const notificationsData = [
-  { id: 1, title: '예약 확정', message: '요청하신 \'아트 스페이스 광교\' 예약이 확정되었습니다.', time: '방금 전' },
+  { id: 1, title: '예약 확정', message: '요청하신 \'아트 스페이스 \' 예약이 확정되었습니다.', time: '방금 전' },
   { id: 2, title: '새로운 메시지', message: '\'김작가\'님으로부터 새로운 메시지가 도착했습니다.', time: '15분 전' },
 ];
 
