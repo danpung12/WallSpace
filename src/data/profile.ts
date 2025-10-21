@@ -11,4 +11,7 @@ export interface UserProfile {
     exhibitions: boolean;
     messages: boolean;
   };
+  userSettings: {
+    darkMode: boolean;
+  };
 }

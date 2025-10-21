@@ -1,6 +1,9 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 @import "tailwindcss";
 
+/* Tailwind v4: dark mode variant 활성화 */
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -15,6 +18,19 @@
   --text-color: #3D2C1D;
   --border-radius: 12px;
   --error-color: #e74c3c;
+}
+
+/* Dark mode styles - controlled by .dark class */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --primary-color: #E5D5C3;
+  --accent-color: #D2B48C;
+  --background-color: #1F2937;
+  --surface-color: #374151;
+  --border-color: #4B5563;
+  --subtle-text-color: #9CA3AF;
+  --text-color: #F3F4F6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -56,5 +72,29 @@ html, body {
 .scrollbar-hide {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+/* Custom thin scrollbar with theme colors */
+.custom-scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.custom-scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--accent-color);
+  border-radius: 10px;
+}
+
+.custom-scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--subtle-text-color);
+}
+
+.custom-scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-color) transparent;
 }
 

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useRef, ChangeEvent, KeyboardEvent, useEffect } from 'react';
+import React, { useState, useRef, ChangeEvent, KeyboardEvent, useEffect, Suspense } from 'react';
 import Head from 'next/head';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { useBottomNav } from '@/app/context/BottomNavContext';
 
@@ -12,8 +12,12 @@ declare global {
   }
 }
 
-export default function AddStorePrototypePage() {
+function AddStoreContent() {
     const { setIsNavVisible } = useBottomNav();
+    const searchParams = useSearchParams();
+    const mode = searchParams.get('mode'); // 'new' or 'edit'
+    const storeName = searchParams.get('name');
+    const storeLocation = searchParams.get('location');
 
     useEffect(() => {
         setIsNavVisible(false);
@@ -22,12 +26,16 @@ export default function AddStorePrototypePage() {
         };
     }, [setIsNavVisible]);
 
-    const [activeScreen, setActiveScreen] = useState('screen-start');
-    const [progress, setProgress] = useState(0);
+    // mode가 'edit'이면 screen-step1부터 시작, 나머지는 screen-start
+    const initialScreen = mode === 'edit' ? 'screen-step1' : 'screen-start';
+    const initialProgress = mode === 'edit' ? 25 : 0;
+    
+    const [activeScreen, setActiveScreen] = useState(initialScreen);
+    const [progress, setProgress] = useState(initialProgress);
   const [formData, setFormData] = useState({
-    storeName: '',
+    storeName: mode === 'edit' && storeName ? storeName : '',
         storeCategory: 'cafe',
-    address: '',
+    address: mode === 'edit' && storeLocation ? storeLocation : '',
     addressDetail: '',
         phone: '',
         snsUrls: [''],
@@ -46,6 +54,7 @@ export default function AddStorePrototypePage() {
             name: string;
             width: string;
             height: string;
+            price: string;
             imageFile: File | null,
             imagePreview: string
         }[],
@@ -60,6 +69,7 @@ export default function AddStorePrototypePage() {
         name: string;
         width: string;
         height: string;
+        price: string;
         imageFile: File | null,
         imagePreview: string
     } | null>(null);
@@ -133,44 +143,48 @@ export default function AddStorePrototypePage() {
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
-            const totalFiles = formData.imageFiles.length + newFiles.length;
+      const totalFiles = formData.imageFiles.length + newFiles.length;
 
-            if (totalFiles > 4) {
-                alert('사진은 최대 4장까지 업로드할 수 있습니다.');
-                return;
-            }
-            
-            const newImageFiles = [...formData.imageFiles, ...newFiles];
-            const newImagePreviews = newImageFiles.map(file => URL.createObjectURL(file));
+      if (totalFiles > 4) {
+        alert("사진은 최대 4장까지 업로드할 수 있습니다.");
+        return;
+      }
 
-            // Clean up old previews before setting new ones
-            formData.imagePreviews.forEach(url => URL.revokeObjectURL(url));
+      const newImageFiles = [...formData.imageFiles, ...newFiles];
 
-            setFormData(prev => ({
-                ...prev,
-                imageFiles: newImageFiles,
-                imagePreviews: newImagePreviews
-            }));
-        }
-    };
-
-    const removeImage = (indexToRemove: number) => {
-        const newImageFiles = formData.imageFiles.filter((_, index) => index !== indexToRemove);
-        
-        // Clean up all old previews
-        formData.imagePreviews.forEach(url => URL.revokeObjectURL(url));
-        
-        const newImagePreviews = newImageFiles.map(file => URL.createObjectURL(file));
-
+      // Promise.all을 사용하여 모든 파일에 대한 데이터 URL을 비동기적으로 생성합니다.
+      Promise.all(
+        newImageFiles.map(file => {
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        }),
+      ).then(newImagePreviews => {
         setFormData(prev => ({
-            ...prev,
-            imageFiles: newImageFiles,
-            imagePreviews: newImagePreviews
+          ...prev,
+          imageFiles: newImageFiles,
+          imagePreviews: newImagePreviews,
         }));
-    };
+      });
+    }
+  };
 
-    // Effect for cleaning up URLs on unmount
-    React.useEffect(() => {
+  const removeImage = (indexToRemove: number) => {
+    const newImageFiles = formData.imageFiles.filter((_, index) => index !== indexToRemove);
+    const newImagePreviews = formData.imagePreviews.filter((_, index) => index !== indexToRemove);
+
+    setFormData(prev => ({
+      ...prev,
+      imageFiles: newImageFiles,
+      imagePreviews: newImagePreviews,
+    }));
+  };
+
+  // Effect for cleaning up URLs on unmount
+  React.useEffect(() => {
         return () => {
             formData.imagePreviews.forEach(fileUrl => URL.revokeObjectURL(fileUrl));
         };
@@ -187,7 +201,7 @@ export default function AddStorePrototypePage() {
     };
 
     // --- Space Management Handlers ---
-    const openSpaceEditor = (space: { id: number; name: string; width: string; height: string; imageFile: File | null, imagePreview: string } | null = null) => {
+    const openSpaceEditor = (space: { id: number; name: string; width: string; height: string; price: string; imageFile: File | null, imagePreview: string } | null = null) => {
         if (space) {
             setCurrentSpace({ ...space });
         } else {
@@ -196,6 +210,7 @@ export default function AddStorePrototypePage() {
                 name: '',
                 width: '',
                 height: '',
+                price: '',
                 imageFile: null,
                 imagePreview: ''
             });
@@ -211,26 +226,25 @@ export default function AddStorePrototypePage() {
     const handleSpaceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!currentSpace) return;
         const { name, value } = e.target;
-        setCurrentSpace(prev => prev ? { ...prev, [name]: value } : null);
+        setCurrentSpace(prev => (prev ? { ...prev, [name]: value } : null));
     };
 
     const handleSpaceFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0] && currentSpace) {
             const file = e.target.files[0];
-            const previewUrl = URL.createObjectURL(file);
 
-            // Clean up old preview if it exists
-            if (currentSpace.imagePreview) {
-                URL.revokeObjectURL(currentSpace.imagePreview);
-            }
-
-            setCurrentSpace(prev => prev ? { ...prev, imageFile: file, imagePreview: previewUrl } : null);
+            // FileReader를 사용하여 데이터 URL 생성
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setCurrentSpace(prev => (prev ? { ...prev, imageFile: file, imagePreview: reader.result as string } : null));
+            };
+            reader.readAsDataURL(file);
         }
     };
     
     const saveSpace = () => {
-        if (!currentSpace || !currentSpace.name || !currentSpace.width || !currentSpace.height) {
-            alert('공간 이름과 가로, 세로 크기를 모두 입력해주세요.');
+        if (!currentSpace || !currentSpace.name || !currentSpace.width || !currentSpace.height || !currentSpace.price) {
+            alert('공간 이름, 가로, 세로 크기, 하루 당 비용을 모두 입력해주세요.');
             return;
         }
 
@@ -265,7 +279,7 @@ export default function AddStorePrototypePage() {
   return (
     <>
       <Head>
-                <title>가게 등록</title>
+                <title>{mode === 'edit' ? '가게 수정' : '가게 등록'}</title>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
       </Head>
       <Script
@@ -942,13 +956,14 @@ export default function AddStorePrototypePage() {
                     }
                     #screen-start .screen-content-wrapper {
                         justify-content: center;
-                        padding-top: 0;
+                        padding-top: 10vh;
                     }
                     #screen-start h1 { 
                         font-size: 2.5rem; 
                     }
                     #screen-start .btn-container {
                         justify-content: center;
+                        border-top: none;
                     }
                     #screen-start .btn {
                         max-width: 300px;
@@ -1013,7 +1028,7 @@ export default function AddStorePrototypePage() {
             <div className="prototype-body">
                 <div className="mobile-container">
                     <div className="pc-sidebar">
-                        <h1>가게 등록</h1>
+                        <h1>{mode === 'edit' ? '가게 수정' : '가게 등록'}</h1>
                         <div
                             className={`pc-step ${activeScreen.includes('step1') ? 'active' : ''} ${progress >= 50 ? 'completed' : ''}`}
                             onClick={() => showScreen('screen-step1', 25)}
@@ -1049,11 +1064,11 @@ export default function AddStorePrototypePage() {
                         <div id="screen-start" className={`screen ${activeScreen === 'screen-start' ? 'active' : ''}`}>
                             <div className="screen-content-wrapper">
                                 <img className="start-icon" src="https://em-content.zobj.net/source/apple/391/party-popper_1f389.png" alt="Party Popper Icon" />
-                                <h1>가게 등록, 시작해볼까요?</h1>
+                                <h1>{mode === 'edit' ? '가게 정보를 수정하세요' : '가게 등록, 시작해볼까요?'}</h1>
                                 <p>몇 가지 정보만 입력하면<br/>사장님의 가게를 더 많은 고객에게<br/>알릴 수 있습니다!</p>
                             </div>
                             <div className="btn-container">
-                                <button className="btn btn-primary" onClick={() => showScreen('screen-step1', 25)}>가게 등록 시작하기</button>
+                                <button className="btn btn-primary" onClick={() => showScreen('screen-step1', 25)}>{mode === 'edit' ? '정보 수정 시작하기' : '가게 등록 시작하기'}</button>
                             </div>
                         </div>
 
@@ -1231,6 +1246,7 @@ export default function AddStorePrototypePage() {
                                             <div className="space-card-details">
                                                 <div className="space-card-name">{space.name}</div>
                                                 <div className="space-card-size">가로 {space.width}cm x 세로 {space.height}cm</div>
+                                                <div className="space-card-size" style={{color: 'var(--accent-color)', fontWeight: '600'}}>{parseInt(space.price).toLocaleString()}원/일</div>
                                             </div>
                                             <div className="space-card-actions">
                                                 <button onClick={() => openSpaceEditor(space)}>수정</button>
@@ -1274,6 +1290,10 @@ export default function AddStorePrototypePage() {
                                             <span>x</span>
                                             <input type="number" name="height" value={currentSpace.height} onChange={handleSpaceChange} placeholder="세로" />
                                         </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label htmlFor="spacePrice">하루 당 비용 (원)</label>
+                                        <input type="number" id="spacePrice" name="price" value={currentSpace.price} onChange={handleSpaceChange} placeholder="예) 250000" />
                                     </div>
                                     <div className="btn-container" style={{ position: 'static', padding: 0, background: 'none' }}>
                                         <button className="btn btn-secondary" onClick={closeSpaceEditor}>취소</button>
@@ -1322,7 +1342,7 @@ export default function AddStorePrototypePage() {
                             </div>
                             <div className="btn-container">
                                 <button className="btn btn-secondary" onClick={() => showScreen('screen-step4', 100)}>이전</button>
-                                <button className="btn btn-primary" onClick={() => alert('가게 등록이 완료되었습니다!')}>제출하고 등록 완료하기</button>
+                                <button className="btn btn-primary" onClick={() => alert(mode === 'edit' ? '가게 정보가 수정되었습니다!' : '가게 등록이 완료되었습니다!')}>{mode === 'edit' ? '수정 완료하기' : '제출하고 등록 완료하기'}</button>
                                 </div>
                         </div>
                     </div>
@@ -1330,4 +1350,12 @@ export default function AddStorePrototypePage() {
             </div>
     </>
   );
+}
+
+export default function AddStorePrototypePage() {
+    return (
+        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>}>
+            <AddStoreContent />
+        </Suspense>
+    );
 }

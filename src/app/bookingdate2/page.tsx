@@ -193,7 +193,7 @@ export default function ExplorePlacesPage() {
       <div className="w-full max-w-md mx-auto bg-[var(--background-color)]">
         {/* 헤더 */}
         <header className="flex items-center p-4 pb-2 justify-between bg-[#FDFBF8] border-[#EAEAEA]">
-          <Link href="/profile">
+          <Link href="/profile" >
             <button className="text-[var(--text-primary)] cursor-pointer" aria-label="뒤로 가기">
               <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="24">
                 <path d="m15 18-6-6 6-6"></path>
@@ -232,7 +232,7 @@ export default function ExplorePlacesPage() {
                     <Link
                       href={{ pathname: "/bookingdate", query: { place: p.id } }}
                       className="block text-left bg-white rounded-2xl p-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)] border-2 border-transparent hover:border-[var(--primary-color)] hover:shadow-[0_6px_14px_rgba(197,127,57,0.25)] transition"
-                    >
+                      >
                       <div className={`w-full h-32 rounded-xl overflow-hidden bg-[var(--accent-color)] ${isActive ? "" : "blur-[1px]"}`}>
                         {p.img ? <Image src={p.img} alt={p.name} className="w-full h-full object-cover" width={360} height={128} /> : null}
                       </div>
@@ -278,7 +278,7 @@ export default function ExplorePlacesPage() {
                   key={p.id}
                   href={{ pathname: "/bookingdate", query: { place: p.id } }}
                   className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden flex items-center p-3 border-2 border-transparent transition hover:border-[var(--primary-color)] hover:shadow-[0_6px_14px_rgba(197,127,57,0.25)]"
-                >
+                  >
                   <div className="w-24 h-24 rounded-xl bg-[var(--accent-color)] overflow-hidden shrink-0">
                     {p.img ? <Image src={p.img} alt={p.name} className="w-full h-full object-cover" width={96} height={96} /> : null}
                   </div>
@@ -299,7 +299,6 @@ export default function ExplorePlacesPage() {
           </section>
         </main>
       </div>
-
       {/* 하단 고정 지도 (카카오 고정) */}
       <BottomSheetPortal>
         <DraggableMapSheet
@@ -311,7 +310,6 @@ export default function ExplorePlacesPage() {
           onHeightChange={setMapHeight}
         />
       </BottomSheetPortal>
-
       {/* 글로벌 스타일 */}
       <style jsx global>{`
         :root {

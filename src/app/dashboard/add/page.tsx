@@ -2,10 +2,19 @@
 
 import Head from 'next/head';
 import { useRouter } from 'next/navigation';
-import { FormEvent } from 'react';
+import { FormEvent, useEffect } from 'react';
+import { useBottomNav } from '@/app/context/BottomNavContext';
 
 export default function AddArtworkPage() {
   const router = useRouter();
+  const { setIsNavVisible } = useBottomNav();
+
+  useEffect(() => {
+    setIsNavVisible(false);
+    return () => {
+      setIsNavVisible(true);
+    };
+  }, [setIsNavVisible]);
 
   const handleBack = () => router.back();
 
@@ -20,6 +29,11 @@ export default function AddArtworkPage() {
       <Head>
         <title>작품 추가</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        {/* Google Fonts: Material Symbols Outlined */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        />
       </Head>
 
       <div className="relative flex min-h-screen flex-col overflow-x-hidden">
@@ -72,7 +86,7 @@ export default function AddArtworkPage() {
         `}</style>
 
         {/* 헤더 */}
-        <header className="sticky top-0 z-10 bg-[var(--background-color)]/80 backdrop-blur-sm">
+        <header className="fixed top-0 left-0 right-0 z-10 bg-[var(--background-color)]/80 backdrop-blur-sm">
           <div className="flex items-center justify-between p-4">
             <button
               className="text-[var(--text-primary)] active:scale-95 transition"
@@ -101,7 +115,7 @@ export default function AddArtworkPage() {
 
         {/* 본문 */}
         <main
-          className="flex-1 p-4 space-y-6"
+          className="flex-1 p-4 pt-16 space-y-6"
           style={{
             // BottomNav + iOS 하단 안전영역만큼 여백
             paddingBottom: 'calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + 16px)',
@@ -164,24 +178,13 @@ export default function AddArtworkPage() {
               </div>
             </div>
 
-            {/* 설명 */}
-            <div>
-              <label className="input-label" htmlFor="description">작품 설명</label>
-              <textarea id="description" rows={5} className="input-field" placeholder="갤러리에 전시되는 것처럼 작품을 소개해 주세요…" />
-            </div>
-
             {/* 안내 박스 */}
             <div className="bg-[var(--accent-color)] p-4 rounded-lg">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg aria-hidden="true" className="h-5 w-5 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M8.22 1.754a.75.75 0 0 1 1.56 0l.313 1.05a4.5 4.5 0 0 1 4.186 3.125l.835 2.503a.75.75 0 1 1-1.48.494l-.835-2.503a3 3 0 0 0-2.79-2.083l-.313-1.05a2.25 2.25 0 0 0-4.329 0l-.313 1.05a3 3 0 0 0-2.79 2.083l-.835 2.503a.75.75 0 1 1-1.48-.494l.835-2.503A4.5 4.5 0 0 1 7.07 3.805l.313-1.05a2.25 2.25 0 0 1 .838-1.001zM11.5 9.5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0V10.25a.75.75 0 0 1 .75-.75z"
-                    />
-                    <path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM1.5 10a8.5 8.5 0 1 1 17 0 8.5 8.5 0 0 1-17 0z" />
-                  </svg>
+                  <span className="material-symbols-outlined text-[var(--text-secondary)]">
+                    info
+                  </span>
                 </div>
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-[var(--text-primary)]">참고</h3>
@@ -190,6 +193,12 @@ export default function AddArtworkPage() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* 설명 */}
+            <div>
+              <label className="input-label" htmlFor="description">작품 설명</label>
+              <textarea id="description" rows={5} className="input-field" placeholder="갤러리에 전시되는 것처럼 작품을 소개해 주세요…" />
             </div>
 
             {/* 하단 저장 버튼 */}

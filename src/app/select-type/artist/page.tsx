@@ -43,23 +43,25 @@ export default function ArtistOwnerSignUpPage() {
 
   // 1번(Guest)과 동일 팔레트/변수
   const cssVars = {
-    "--primary-color": "#c5a987",
-    "--secondary-color": "#f9f6f3",
-    "--background-color": "#fdfaf7",
-    "--text-primary": "#181411",
-    "--text-secondary": "#a8998c",
-    "--border-color": "#e5e0dc",
-    "--accent-color": "#d1bfae",
-    "--shadow-color": "rgba(197, 169, 135, 0.1)",
-    "--input-bg-color": "#f4f0ec",
-    "--button-bg-color": "#f4f0ec",
-    "--button-border-color": "#e0d9d3",
+    "--primary-color": "#D2B48C",
+    "--primary-light": "#F5F1EC",
+    "--primary-dark": "#2C2C2C",
+    "--secondary-color": "#F5F1EC",
+    "--background-color": "#F5F1EC",
+    "--card-background-color": "#FFFFFF",
+    "--text-primary": "#2C2C2C",
+    "--text-secondary": "#887563",
+    "--border-color": "#E5E0DC",
+    "--accent-color": "#C9A67B",
+    "--shadow-color": "rgba(210, 180, 140, 0.1)",
+    "--shadow-color-light": "rgba(210, 180, 140, 0.08)",
+    "--shadow-color-medium": "rgba(210, 180, 140, 0.12)",
+    "--glow-color": "rgba(210, 180, 140, 0.25)",
+    "--input-bg-color": "#F5F1EC",
+    "--button-bg-color": "#F5F1EC",
+    "--button-border-color": "#E5E0DC",
   } as React.CSSProperties;
 
-  const bgPattern = {
-    backgroundImage:
-      "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f4f2f0' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-  } as React.CSSProperties;
 
   const handleRequestCode = () => {
     setError(null);
@@ -108,69 +110,65 @@ export default function ArtistOwnerSignUpPage() {
           font-size: 24px;
           line-height: 1;
           display: inline-block;
+          text-transform: none;
           letter-spacing: normal;
           white-space: nowrap;
-          direction: ltr;
           font-feature-settings: "liga";
           -webkit-font-feature-settings: "liga";
-          -webkit-font-smoothing: antialiased;
           font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24;
-          transition: opacity .3s, transform .3s, color .3s;
         }
-        .soft-shadow { box-shadow: 0 2px 6px 0 rgba(197,169,135,0.1); }
-        .input-container { transition: all .3s ease; }
+        .soft-shadow {
+          box-shadow: 0 4px 16px 0 var(--shadow-color-light);
+        }
         .input-container:focus-within {
           border-color: var(--primary-color);
-          box-shadow: 0 0 0 3px rgba(197,169,135,0.25);
-          background: #fff;
+          box-shadow: 0 0 0 3px var(--glow-color);
         }
       `}</style>
 
-      <div style={cssVars} className="bg-[var(--background-color)] min-h-screen">
-        <div className="relative flex min-h-screen flex-col justify-between" style={bgPattern}>
+      <div style={cssVars} className="bg-[var(--background-color)] min-h-screen font-['Pretendard']">
+        <div className="max-w-md mx-auto">
+          <div className="bg-[var(--card-background-color)] min-h-screen flex flex-col">
           {/* Header */}
-          <header className="flex items-center p-6 sticky top-0 z-10 bg-[var(--background-color)]/85 backdrop-blur">
+          <header className="relative flex items-center justify-center p-4 border-b border-[var(--border-color)]">
             <button
               type="button"
               aria-label="Go back"
-              className="text-[var(--text-primary)]"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--primary-dark)] p-2 rounded-full hover:bg-[var(--primary-light)] transition-colors"
               onClick={handleBack}
             >
               <svg fill="currentColor" height="24" viewBox="0 0 256 256" width="24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path>
               </svg>
             </button>
-            <h1 className="flex-1 text-center text-xl font-bold pr-6">예술가/사장님 회원가입</h1>
+            <h1 className="text-lg font-bold text-[var(--primary-dark)]">예술가/사장님 회원가입</h1>
           </header>
 
-          {/* Form (1번 디자인 적용: p-6/space-y-6/고정버튼 대비 pb) */}
-          <main className="flex-grow">
-            <div className="p-6 space-y-6 pb-[calc(96px+env(safe-area-inset-bottom))]">
+          {/* Main Content: Form */}
+          <main className="flex-grow p-6 space-y-6 pb-28">
               {/* User ID */}
               <div>
                 <label htmlFor="user-id" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">아이디</label>
                 <div className="flex items-center gap-3">
-                  <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
+                  <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container transition-all duration-300">
                     <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">person</span>
                     <input
                       id="user-id" type="text" placeholder="아이디를 입력하세요."
-                      className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
+                      className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--primary-dark)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                     />
                   </div>
-                  <button type="button" className="flex-shrink-0 rounded-xl h-14 px-5 bg-[var(--accent-color)] text-white text-sm font-bold hover:bg-opacity-90 transition-colors soft-shadow">
-                    중복확인
-                  </button>
+                  <button type="button" className="flex-shrink-0 rounded-xl h-14 px-5 bg-[var(--accent-color)] text-white text-sm font-bold hover:opacity-90 transition-opacity">중복확인</button>
                 </div>
               </div>
 
               {/* Password */}
               <div>
                 <label htmlFor="password" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">비밀번호</label>
-                <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
+                <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container transition-all duration-300">
                   <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">lock</span>
                   <input
                     id="password" type="password" placeholder="비밀번호를 입력하세요."
-                    className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
+                    className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--primary-dark)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                   />
                 </div>
               </div>
@@ -178,11 +176,11 @@ export default function ArtistOwnerSignUpPage() {
               {/* Confirm Password */}
               <div>
                 <label htmlFor="confirm-password" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">비밀번호 확인</label>
-                <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
+                <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container transition-all duration-300">
                   <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">lock</span>
                   <input
                     id="confirm-password" type="password" placeholder="비밀번호를 다시 입력하세요."
-                    className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
+                    className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--primary-dark)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                   />
                 </div>
               </div>
@@ -190,27 +188,27 @@ export default function ArtistOwnerSignUpPage() {
               {/* Date of Birth */}
               <div>
                 <label htmlFor="dob" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">생년월일</label>
-                <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
+                <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container transition-all duration-300">
                   <span onClick={openDatePicker} className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] cursor-pointer">calendar_month</span>
                   <input
                     ref={dobRef} id="dob" type="date" placeholder="YYYY-MM-DD"
-                    className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
+                    className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--primary-dark)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                   />
                 </div>
               </div>
 
-              {/* Gender (원래 구조 유지 + 높이만 1번과 동일 h-14) */}
+              {/* Gender */}
               <div>
-                <p className="text-base font-medium pb-3 text-[var(--text-primary)]">성별</p>
-                <div className="flex flex-wrap gap-3">
-                  <label className="flex items-center justify-center rounded-xl border border-[var(--button-border-color)] bg-[var(--button-bg-color)] px-4 h-14 text-[var(--text-primary)] has-[:checked]:border-2 has-[:checked]:border-[var(--primary-color)] has-[:checked]:bg-[#fdf5ed] has-[:checked]:text-[var(--primary-color)] cursor-pointer flex-1 text-sm font-medium transition-all duration-200 has-[:checked]:soft-shadow">
+                <p className="text-sm font-medium pb-2 text-[var(--text-primary)]">성별</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="flex items-center justify-center rounded-xl border-2 border-[var(--primary-light)] bg-white px-4 h-14 has-[:checked]:bg-[var(--primary-color)] has-[:checked]:text-white has-[:checked]:border-[var(--primary-color)] has-[:checked]:font-bold cursor-pointer text-sm font-medium transition-all duration-200">
                     <input defaultChecked className="sr-only" name="gender" type="radio" value="male" />
-                    <span className="ms-artist-signup mr-2">male</span>
+                    <span className="ms-artist-signup mr-2 text-[20px]">male</span>
                     <span>남성</span>
                   </label>
-                  <label className="flex items-center justify-center rounded-xl border border-[var(--button-border-color)] bg-[var(--button-bg-color)] px-4 h-14 text-[var(--text-primary)] has-[:checked]:border-2 has-[:checked]:border-[var(--primary-color)] has-[:checked]:bg-[#fdf5ed] has-[:checked]:text-[var(--primary-color)] cursor-pointer flex-1 text-sm font-medium transition-all duration-200 has-[:checked]:soft-shadow">
+                  <label className="flex items-center justify-center rounded-xl border-2 border-[var(--primary-light)] bg-white px-4 h-14 has-[:checked]:bg-[var(--primary-color)] has-[:checked]:text-white has-[:checked]:border-[var(--primary-color)] has-[:checked]:font-bold cursor-pointer text-sm font-medium transition-all duration-200">
                     <input className="sr-only" name="gender" type="radio" value="female" />
-                    <span className="ms-artist-signup mr-2">female</span>
+                    <span className="ms-artist-signup mr-2 text-[20px]">female</span>
                     <span>여성</span>
                   </label>
                 </div>
@@ -223,11 +221,11 @@ export default function ArtistOwnerSignUpPage() {
                 {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
 
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
+                  <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container transition-all duration-300">
                     <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">phone_android</span>
                     <input
                       id="phone" type="tel" placeholder="휴대폰 번호를 입력하세요."
-                      className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
+                      className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--primary-dark)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       disabled={isCodeSent || isVerified || isRequestingCode}
@@ -236,8 +234,8 @@ export default function ArtistOwnerSignUpPage() {
                   <button
                     type="button"
                     onClick={handleRequestCode}
-                    disabled={isRequestingCode || isCodeSent || isVerified || phoneNumber.length < 10} // 최소 길이 제한
-                    className="flex-shrink-0 rounded-xl h-14 px-5 bg-[var(--accent-color)] text-white text-sm font-bold hover:bg-opacity-90 transition-colors soft-shadow"
+                    disabled={isRequestingCode || isCodeSent || isVerified || phoneNumber.length < 10}
+                    className="flex-shrink-0 rounded-xl h-14 px-5 bg-[var(--accent-color)] text-white text-sm font-bold hover:opacity-90 transition-opacity"
                   >
                     {isRequestingCode ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -251,11 +249,11 @@ export default function ArtistOwnerSignUpPage() {
 
                 {isCodeSent && !isVerified && (
                   <div className="flex items-center gap-3">
-                    <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
+                    <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container transition-all duration-300">
                       <span className="ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">lock_open</span>
                       <input
                         id="verification-code" type="text" placeholder="인증 번호를 입력하세요."
-                        className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
+                        className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--primary-dark)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                         value={verificationCode}
                         onChange={(e) => setVerificationCode(e.target.value)}
                         disabled={isVerifying || isVerified}
@@ -264,8 +262,8 @@ export default function ArtistOwnerSignUpPage() {
                     <button
                       type="button"
                       onClick={handleVerifyCode}
-                      disabled={isVerifying || isVerified || verificationCode.length !== 6} // 6자리 코드 예상
-                      className="flex-shrink-0 rounded-xl h-14 px-5 bg-[var(--accent-color)] text-white text-sm font-bold hover:bg-opacity-90 transition-colors soft-shadow"
+                      disabled={isVerifying || isVerified || verificationCode.length !== 6}
+                      className="flex-shrink-0 rounded-xl h-14 px-5 bg-[var(--accent-color)] text-white text-sm font-bold hover:opacity-90 transition-opacity"
                     >
                       {isVerifying ? (
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -280,7 +278,7 @@ export default function ArtistOwnerSignUpPage() {
               {/* SNS Account Link (아이콘 컬러 동적 유지) */}
               <div>
                 <label htmlFor="sns-link" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">SNS 계정 링크</label>
-                <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container">
+                <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container transition-all duration-300">
                   <span
                     key={getSnsIconName(snsLink)}
                     className={`ms-artist-signup absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none ${getSnsIconName(snsLink) === 'link' ? 'text-[var(--text-secondary)]' : 'text-[var(--primary-color)]'}`}
@@ -290,25 +288,22 @@ export default function ArtistOwnerSignUpPage() {
                   <input
                     id="sns-link" type="text" value={snsLink} onChange={(e) => setSnsLink(e.target.value)}
                     placeholder="SNS 계정 링크를 입력하세요."
-                    className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
+                    className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--primary-dark)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                   />
                 </div>
               </div>
-            </div>
           </main>
 
-          {/* Footer: 1번 디자인과 동일한 고정 버튼 */}
-          <footer className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border-color)] bg-[var(--background-color)]/85 backdrop-blur">
-            <div className="max-w-md mx-auto px-6 py-3">
-              <button
-                type="button"
-                className="w-full rounded-xl h-14 px-5 bg-[var(--primary-color)] text-white text-base font-bold hover:bg-opacity-90 transition-colors soft-shadow"
-              >
-                가입하기
-              </button>
-              <div className="h-[env(safe-area-inset-bottom)]" />
-            </div>
+          {/* Sticky Footer */}
+          <footer className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white p-4 pt-3 border-t border-[var(--border-color)]">
+            <button
+              type="button"
+              className="w-full rounded-xl h-14 px-5 bg-[var(--primary-color)] text-white text-base font-bold transition-all duration-300 soft-shadow hover:shadow-[0_6px_20px_0_var(--shadow-color-medium)] hover:-translate-y-1"
+            >
+              가입하기
+            </button>
           </footer>
+          </div>
         </div>
       </div>
     </>

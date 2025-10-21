@@ -59,6 +59,10 @@ interface MapContextType {
     setOptionsMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
     parkingFilter: boolean;
     setParkingFilter: React.Dispatch<React.SetStateAction<boolean>>;
+    open24HoursFilter: boolean;
+    setOpen24HoursFilter: React.Dispatch<React.SetStateAction<boolean>>;
+    petsAllowedFilter: boolean;
+    setPetsAllowedFilter: React.Dispatch<React.SetStateAction<boolean>>;
     cells: { date: Date; inMonth: boolean }[];
     hasRange: boolean;
     filterButtons: string[];
@@ -95,6 +99,8 @@ export function MapProvider({ children }: { children: ReactNode }) {
     const [isSearchModalOpen, setSearchModalOpen] = useState(false);
     const [isOptionsMenuOpen, setOptionsMenuOpen] = useState(false);
     const [parkingFilter, setParkingFilter] = useState(false);
+    const [open24HoursFilter, setOpen24HoursFilter] = useState(false);
+    const [petsAllowedFilter, setPetsAllowedFilter] = useState(false);
 
     // Derived State
     const filterButtons = ['작품 선택', '카페', '갤러리', '문화회관'];
@@ -139,13 +145,20 @@ export function MapProvider({ children }: { children: ReactNode }) {
     React.useEffect(() => {
         markersRef.current.forEach(({ marker, overlay, place }) => {
             const isCategoryMatch = !activeFilter || place.category === activeFilter;
-            const isParkingMatch = !parkingFilter || place.hasParking;
-            const isVisible = isCategoryMatch && isParkingMatch;
+            const isParkingMatch = !parkingFilter || place.options.parking;
+            const isOpen24HoursMatch =
+              !open24HoursFilter || place.options.twentyFourHours;
+            const arePetsAllowedMatch = !petsAllowedFilter || place.options.pets;
+            const isVisible =
+              isCategoryMatch &&
+              isParkingMatch &&
+              isOpen24HoursMatch &&
+              arePetsAllowedMatch;
             
             marker.setVisible(isVisible);
             overlay.setVisible(isVisible);
         });
-    }, [activeFilter, parkingFilter]);
+    }, [activeFilter, parkingFilter, open24HoursFilter, petsAllowedFilter]);
 
 
     const initializeMap = useCallback((container: HTMLElement) => {
@@ -186,10 +199,12 @@ export function MapProvider({ children }: { children: ReactNode }) {
     const onClickDay = useCallback((cell: Date) => {
         if (isDisabled(cell)) return;
         const c = toYMD(cell);
-        if (!startDate || hasRange) { 
+        if (!startDate || (startDate && endDate && !isSameDay(startDate, endDate))) { 
+            // 시작일이 없거나, 이미 범위가 선택된 경우 -> 새로 시작
             setStartDate(c); 
             setEndDate(c); 
         } else { 
+            // 시작일만 있는 경우 -> 종료일 설정
             if (c < startDate) {
                 setEndDate(startDate);
                 setStartDate(c);
@@ -197,7 +212,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
                 setEndDate(c);
             }
         }
-    }, [startDate, hasRange, isDisabled]);
+    }, [startDate, endDate, isDisabled]);
 
     const getDayClass = useCallback((cell: Date, inMonth: boolean) => {
         if (isDisabled(cell)) return "date-picker-day date-picker-day-disabled";
@@ -228,6 +243,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
         isDetailPageVisible, setDetailPageVisible, isDatePickerOpen, setDatePickerOpen, viewDate, startDate, endDate,
         activeFilter, selectedArtwork, setSelectedArtwork, isArtworkModalOpen, setArtworkModalOpen, isArtworkSelectorVisible,
         isSearchModalOpen, setSearchModalOpen, isOptionsMenuOpen, setOptionsMenuOpen, parkingFilter, setParkingFilter,
+        open24HoursFilter, setOpen24HoursFilter, petsAllowedFilter, setPetsAllowedFilter,
         cells, hasRange, filterButtons, headerLabel,
         handlePlaceSelect, gotoMonth, isDisabled, onClickDay, getDayClass, handleFilterClick,
     };

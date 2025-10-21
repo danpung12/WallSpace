@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from "react";
+import Image from 'next/image';
 import SelectTypeModal from './SelectTypeModal';
 import ArtistSignUpModal from './ArtistSignUpModal';
 import GuestSignUpModal from './GuestSignUpModal';
@@ -11,6 +12,21 @@ export default function LoginClient() {
   const router = useRouter();
   const [modalState, setModalState] = useState<'none' | 'selectType' | 'artistSignUp' | 'guestSignUp' | 'findPassword'>('none');
   const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    // TransitionProvider의 배경색을 투명하게 만들어 이미지가 보이게 함
+    const transitionElement = document.querySelector('[data-is-present]') as HTMLElement;
+    if (transitionElement) {
+      transitionElement.style.backgroundColor = 'transparent';
+    }
+    
+    // 컴포넌트가 언마운트될 때 원래 배경색으로 복원
+    return () => {
+      if (transitionElement) {
+        transitionElement.style.backgroundColor = ''; // 기본값으로 되돌림
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -56,12 +72,17 @@ export default function LoginClient() {
 
   return (
     <>
-       <div 
-          className={`fixed inset-0 -z-10 bg-cover bg-center transition-all duration-300 ${isModalOpen ? 'blur-sm' : ''}`}
+      <div className={`fixed inset-0 -z-10 transition-all duration-300 ${isModalOpen ? 'blur-sm' : ''}`}>
+        <Image
+          alt="Login background"
+          src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=2047&auto=format&fit=crop&v=1"
+          priority
+          fill
           style={{
-            backgroundImage: "url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=2047&auto=format&fit=crop')",
+            objectFit: "cover",
           }}
         />
+      </div>
       <style jsx global>{`
         .input-field {
           width: 100%; height: 3rem; background: #ffffff; border-radius: 0.5rem; color: #3d2b1f;

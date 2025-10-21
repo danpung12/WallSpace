@@ -26,14 +26,14 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
   
   const InputField = ({ id, label, type = 'text', placeholder, icon, ...props }: any) => (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium pb-2 text-gray-600">{label}</label>
-      <div className="relative flex items-center bg-gray-100 rounded-xl border-2 border-transparent focus-within:border-[#A89587] focus-within:bg-white transition-all duration-300">
-        <span className="material-symbols-outlined absolute left-4 text-gray-500 pointer-events-none">{icon}</span>
+      <label htmlFor={id} className="block text-sm font-medium pb-2 text-[#2C2C2C]">{label}</label>
+      <div className="relative flex items-center bg-white rounded-xl border-2 border-[#E5E0DC] focus-within:border-[#D2B48C] focus-within:shadow-[0_0_0_3px_rgba(210,180,140,0.25)] transition-all duration-300">
+        <span className="material-symbols-outlined absolute left-4 text-[#887563] pointer-events-none">{icon}</span>
         <input
           id={id}
           type={type}
           placeholder={placeholder}
-          className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none"
+          className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[#2C2C2C] placeholder:text-[#887563] focus:outline-none"
           {...props}
         />
       </div>
@@ -43,16 +43,17 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
   return (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ease-out ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
       onClick={onClose}
     >
       <div
-        className={`relative w-full max-w-lg md:max-w-xl max-h-[90vh] p-6 sm:p-8 md:p-10 rounded-2xl shadow-xl border border-gray-200 bg-white text-gray-800 flex flex-col transform transition-all duration-300 ease-out ${isOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'}`}
+        className={`relative w-full max-w-lg md:max-w-xl max-h-[90vh] p-6 sm:p-8 md:p-10 rounded-2xl shadow-2xl border border-[#D2B48C]/20 bg-[#F5F1EC] flex flex-col transform transition-all duration-300 ease-out ${isOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">손님으로 가입</h1>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-900 transition-colors">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#2C2C2C]">손님으로 가입</h1>
+          <button onClick={onClose} className="text-[#887563] hover:text-[#2C2C2C] transition-colors">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -74,15 +75,15 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
             
             {/* Gender Selection */}
             <div>
-              <p className="text-sm font-medium pb-2 text-gray-600">성별</p>
-              <div className="grid grid-cols-2 gap-4">
-                <label className="flex items-center justify-center rounded-xl border border-gray-200 bg-gray-100 text-gray-700 h-14 cursor-pointer has-[:checked]:bg-[#fdf5ed] has-[:checked]:border-[#A89587] has-[:checked]:text-[#A89587] has-[:checked]:font-semibold transition-all">
+              <p className="text-sm font-medium pb-2 text-[#2C2C2C]">성별</p>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex items-center justify-center rounded-xl border-2 border-[#E5E0DC] bg-white px-4 h-14 has-[:checked]:bg-[#E5D7C6] has-[:checked]:text-[#2C2C2C] has-[:checked]:border-[#D2B48C] has-[:checked]:font-bold cursor-pointer text-sm font-medium transition-all duration-200">
                   <input type="radio" name="gender" value="male" className="sr-only" defaultChecked />
-                  <span className="material-symbols-outlined mr-2">male</span> 남성
+                  <span className="material-symbols-outlined mr-2 text-[20px]">male</span> 남성
                 </label>
-                <label className="flex items-center justify-center rounded-xl border border-gray-200 bg-gray-100 text-gray-700 h-14 cursor-pointer has-[:checked]:bg-[#fdf5ed] has-[:checked]:border-[#A89587] has-[:checked]:text-[#A89587] has-[:checked]:font-semibold transition-all">
+                <label className="flex items-center justify-center rounded-xl border-2 border-[#E5E0DC] bg-white px-4 h-14 has-[:checked]:bg-[#E5D7C6] has-[:checked]:text-[#2C2C2C] has-[:checked]:border-[#D2B48C] has-[:checked]:font-bold cursor-pointer text-sm font-medium transition-all duration-200">
                   <input type="radio" name="gender" value="female" className="sr-only" />
-                  <span className="material-symbols-outlined mr-2">female</span> 여성
+                  <span className="material-symbols-outlined mr-2 text-[20px]">female</span> 여성
                 </label>
               </div>
             </div>
@@ -90,12 +91,12 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
         
         {/* Footer */}
         <div className="flex-shrink-0 mt-8 space-y-4">
-            <button className="w-full rounded-xl h-14 text-lg bg-[#3E352F] text-white font-bold hover:bg-opacity-90 transition-colors">
+            <button className="w-full rounded-xl h-14 text-base bg-[#D2B48C] text-white font-bold hover:shadow-[0_6px_20px_0_rgba(210,180,140,0.12)] hover:-translate-y-1 transition-all duration-300">
               가입하기
             </button>
              <button 
                 onClick={onSwitchToArtist}
-                className="w-full text-center text-sm text-gray-500 hover:text-gray-800 hover:underline"
+                className="w-full text-center text-sm text-[#887563] hover:text-[#D2B48C] hover:underline transition-colors"
             >
                 예술가/사장님으로 가입하시나요?
             </button>

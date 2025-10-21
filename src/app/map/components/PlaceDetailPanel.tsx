@@ -38,10 +38,40 @@ export default function PlaceDetailPanel({
           width={800}
           height={400}
         />
-        <h2 className="text-2xl font-bold text-theme-brown-darkest mb-2">
-          {place.name}
-        </h2>
-        <p className="text-theme-brown-dark mb-4 text-sm leading-relaxed">
+        <div className="flex items-baseline gap-2 mb-1">
+          <h2 className="text-2xl font-bold text-theme-brown-darkest">
+            {place.name}
+          </h2>
+          <span className="font-medium text-theme-brown-dark">{place.category}</span>
+        </div>
+
+        <div className="flex items-center gap-3 text-sm text-theme-brown-dark mb-3 flex-wrap">
+          {place.options?.parking && (
+            <div className="flex items-center gap-1">
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>local_parking</span>
+              <span className="font-medium">주차</span>
+            </div>
+          )}
+          {place.options?.pets && (
+            <div className="flex items-center gap-1">
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>pets</span>
+              <span className="font-medium">반려동물</span>
+            </div>
+          )}
+          {place.options?.twentyFourHours && (
+            <div className="flex items-center gap-1">
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>schedule</span>
+              <span className="font-medium">24시간</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-start gap-1.5 text-sm text-theme-brown-dark mb-3">
+          <span className="material-symbols-outlined mt-px" style={{ fontSize: '18px' }}>location_on</span>
+          <span className="truncate">{place.address}</span>
+        </div>
+        
+        <p className="text-theme-brown-dark mb-4 text-sm leading-relaxed truncate">
           {place.description}
         </p>
         <div className="border-t border-theme-brown-light pt-3">

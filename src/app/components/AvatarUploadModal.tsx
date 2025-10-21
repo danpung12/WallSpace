@@ -30,19 +30,17 @@ export default function AvatarUploadModal({
 
   // 파일이 변경될 때마다 미리보기 URL 생성
   useEffect(() => {
-    let objectUrl: string | null = null;
     if (selectedFile) {
-      objectUrl = URL.createObjectURL(selectedFile);
-      setPreviewUrl(objectUrl);
+      // FileReader를 사용하여 파일을 Data URL로 변환
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(selectedFile);
+    } else {
+      setPreviewUrl(currentAvatarUrl);
     }
-
-    // cleanup 함수: 컴포넌트가 unmount되거나 파일이 바뀔 때 이전 object URL 해제
-    return () => {
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, [selectedFile]);
+  }, [selectedFile, currentAvatarUrl]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {

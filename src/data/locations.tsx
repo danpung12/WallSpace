@@ -5,6 +5,9 @@ export interface Space {
     name: string;
     imageUrl: string;
     isReserved: boolean;
+    width: number;
+    height: number;
+    price: number; // 하루 당 비용
 }
 
 // 후기 데이터 타입을 정의합니다.
@@ -21,6 +24,15 @@ export interface Location {
     category: string; // 카테고리 필드 추가
     lat: number;
     lng: number;
+    address: string;
+    phone: string;
+    snsUrls: string[];
+    options: {
+        parking: boolean;
+        pets: boolean;
+        twentyFourHours: boolean;
+    };
+    tags: string[];
     statusText: string;
     statusColor: string;
     images: string[]; // 여러 이미지를 위한 배열
@@ -40,6 +52,15 @@ export const locations: Location[] = [
         category: '갤러리',
         lat: 37.2842,
         lng: 127.0543,
+        address: '수원시 영통구 광교중앙로 140',
+        phone: '031-228-3800',
+        snsUrls: ['https://www.instagram.com/suwon_art_space/'],
+        options: {
+            parking: true,
+            pets: false,
+            twentyFourHours: false,
+        },
+        tags: ['따뜻한', '자연스러운', '모던한', '친근한'],
         statusText: '예약 가능',
         statusColor: '#3B82F6',
         images: [
@@ -49,9 +70,9 @@ export const locations: Location[] = [
         ],
         description: '호수공원 옆에 위치한 현대적인 건축물로, 자연과 예술이 어우러진 공간입니다. 다양한 기획 전시와 문화 프로그램을 즐길 수 있습니다.',
         spaces: [
-            { name: '제 1 전시실', imageUrl: 'https://picsum.photos/id/101/400/300', isReserved: false },
-            { name: '멀티룸 A', imageUrl: 'https://picsum.photos/id/102/400/300', isReserved: false },
-            { name: '야외 조각 공원', imageUrl: 'https://picsum.photos/id/103/400/300', isReserved: true },
+            { name: '제 1 전시실', imageUrl: 'https://picsum.photos/id/101/400/300', isReserved: false, width: 1000, height: 500, price: 250000 },
+            { name: '멀티룸 A', imageUrl: 'https://picsum.photos/id/102/400/300', isReserved: false, width: 500, height: 300, price: 150000 },
+            { name: '야외 조각 공원', imageUrl: 'https://picsum.photos/id/103/400/300', isReserved: true, width: 2000, height: 2000, price: 500000 },
         ],
         reviews: [
             {
@@ -75,6 +96,15 @@ export const locations: Location[] = [
         category: '갤러리',
         lat: 37.5656,
         lng: 126.9753,
+        address: '서울 중구 덕수궁길 61',
+        phone: '02-2124-8800',
+        snsUrls: ['https://www.instagram.com/seoulmuseumofart/'],
+        options: {
+            parking: true,
+            pets: false,
+            twentyFourHours: false,
+        },
+        tags: ['우아한', '클래식한', '고급스러운', '로맨틱한'],
         statusText: '문의 필요',
         statusColor: '#F97316',
         images: [
@@ -83,8 +113,8 @@ export const locations: Location[] = [
         ],
         description: '덕수궁 돌담길에 위치한 서울의 대표 미술관입니다. 한국 근현대 미술의 흐름을 한눈에 볼 수 있는 상설 전시가 특징입니다.',
         spaces: [
-            { name: '본관 전시실', imageUrl: 'https://picsum.photos/id/201/400/300', isReserved: false },
-            { name: '프로젝트 갤러리', imageUrl: 'https://picsum.photos/id/202/400/300', isReserved: true },
+            { name: '본관 전시실', imageUrl: 'https://picsum.photos/id/201/400/300', isReserved: false, width: 1200, height: 600, price: 300000 },
+            { name: '프로젝트 갤러리', imageUrl: 'https://picsum.photos/id/202/400/300', isReserved: true, width: 400, height: 400, price: 180000 },
         ],
         reviews: [
              {
@@ -103,6 +133,15 @@ export const locations: Location[] = [
         category: '갤러리',
         lat: 37.5729,
         lng: 126.9852,
+        address: '서울 종로구 율곡로 83',
+        phone: '02-736-5700',
+        snsUrls: ['https://www.instagram.com/arariomuseum/'],
+        options: {
+            parking: false,
+            pets: false,
+            twentyFourHours: false,
+        },
+        tags: ['독특한', '힙한', '감각적인', '트렌디한'],
         statusText: '예약 가능',
         statusColor: '#3B82F6',
         images: [
@@ -113,9 +152,9 @@ export const locations: Location[] = [
         ],
         description: '오래된 공간을 개조하여 만든 독특한 분위기의 현대미술 갤러리입니다. 국내외 유명 작가들의 실험적인 작품들을 만나볼 수 있습니다.',
         spaces: [
-            { name: '1F 갤러리', imageUrl: 'https://picsum.photos/id/301/400/300', isReserved: false },
-            { name: '4F 루프탑', imageUrl: 'https://picsum.photos/id/302/400/300', isReserved: false },
-            { name: '지하 상영관', imageUrl: 'https://picsum.photos/id/303/400/300', isReserved: false },
+            { name: '1F 갤러리', imageUrl: 'https://picsum.photos/id/301/400/300', isReserved: false, width: 600, height: 400, price: 200000 },
+            { name: '4F 루프탑', imageUrl: 'https://picsum.photos/id/302/400/300', isReserved: false, width: 700, height: 500, price: 280000 },
+            { name: '지하 상영관', imageUrl: 'https://picsum.photos/id/303/400/300', isReserved: false, width: 300, height: 200, price: 120000 },
         ],
         reviews: [
             {
@@ -134,6 +173,15 @@ export const locations: Location[] = [
         category: '갤러리',
         lat: 37.5383,
         lng: 127.0125,
+        address: '서울 성동구 왕십리로 83-21',
+        phone: '070-5097-0020',
+        snsUrls: ['https://www.instagram.com/dmuseum.seoul/'],
+        options: {
+            parking: true,
+            pets: false,
+            twentyFourHours: false,
+        },
+        tags: ['젊은', '활기찬', '트렌디한', '감각적인'],
         statusText: '예약 불가',
         statusColor: '#EF4444',
         images: [
@@ -142,8 +190,8 @@ export const locations: Location[] = [
         ],
         description: '젊고 감각적인 전시로 유명한 미술관입니다. 사진, 디자인, 패션 등 다양한 장르의 예술을 경험할 수 있어 많은 사랑을 받고 있습니다.',
         spaces: [
-            { name: '스튜디오', imageUrl: 'https://picsum.photos/id/401/400/300', isReserved: true },
-            { name: '라운지', imageUrl: 'https://picsum.photos/id/402/400/300', isReserved: true },
+            { name: '스튜디오', imageUrl: 'https://picsum.photos/id/401/400/300', isReserved: true, width: 800, height: 500, price: 350000 },
+            { name: '라운지', imageUrl: 'https://picsum.photos/id/402/400/300', isReserved: true, width: 500, height: 500, price: 220000 },
         ],
         reviews: [
             {
@@ -167,6 +215,15 @@ export const locations: Location[] = [
         category: '문화회관',
         lat: 37.5796,
         lng: 126.9804,
+        address: '서울 종로구 삼청로 30',
+        phone: '02-3701-9500',
+        snsUrls: ['https://www.instagram.com/mmca.seoul/'],
+        options: {
+            parking: true,
+            pets: false,
+            twentyFourHours: false,
+        },
+        tags: ['웅장한', '정중한', '전문적인', '안정적인'],
         statusText: '예약 가능',
         statusColor: '#3B82F6',
         images: [
@@ -176,8 +233,8 @@ export const locations: Location[] = [
         ],
         description: '서울의 중심에 위치한 국립현대미술관은 한국 현대미술의 현재와 미래를 조망하는 다양한 전시를 선보입니다.',
         spaces: [
-             { name: '제 1 전시실', imageUrl: 'https://picsum.photos/id/501/400/300', isReserved: false },
-             { name: '디지털 라이브러리', imageUrl: 'https://picsum.photos/id/502/400/300', isReserved: false },
+             { name: '제 1 전시실', imageUrl: 'https://picsum.photos/id/501/400/300', isReserved: false, width: 1500, height: 800, price: 400000 },
+             { name: '디지털 라이브러리', imageUrl: 'https://picsum.photos/id/502/400/300', isReserved: false, width: 700, height: 400, price: 250000 },
         ],
         reviews: [
             {
@@ -196,6 +253,15 @@ export const locations: Location[] = [
         category: '카페',
         lat: 37.5495,
         lng: 126.9209,
+        address: '서울 마포구 월드컵로14길 10',
+        phone: '02-3144-0726',
+        snsUrls: ['https://www.instagram.com/pages_by.pages/'],
+        options: {
+            parking: false,
+            pets: true,
+            twentyFourHours: false,
+        },
+        tags: ['아늑한', '따뜻한', '편안한', '친근한'],
         statusText: '문의 필요',
         statusColor: '#F97316',
         images: [
@@ -205,7 +271,7 @@ export const locations: Location[] = [
         ],
         description: '아늑한 분위기의 북카페로, 독립 서적과 함께 맛있는 커피를 즐길 수 있는 특별한 공간입니다.',
         spaces: [
-            { name: '메인 홀', imageUrl: 'https://picsum.photos/id/601/400/300', isReserved: false },
+            { name: '메인 홀', imageUrl: 'https://picsum.photos/id/601/400/300', isReserved: false, width: 300, height: 250, price: 100000 },
         ],
         reviews: [
             {

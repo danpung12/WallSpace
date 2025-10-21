@@ -2,9 +2,11 @@
 
 import React, { useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 import { useBottomNav } from '../context/BottomNavContext';
 import { useMap, isSameDay, fmtKoreanDate } from '@/context/MapContext';
 import { userArtworks } from '@/data/artworks';
+import { locations } from '@/data/locations';
 import Header from '../components/Header';
 
 // --- OptionsMenu Component Definition ---
@@ -14,10 +16,25 @@ interface OptionsMenuProps {
 }
 
 function OptionsMenu({ isOpen, onClose }: OptionsMenuProps) {
-  const { parkingFilter, setParkingFilter } = useMap();
+  const {
+    parkingFilter,
+    setParkingFilter,
+    open24HoursFilter,
+    setOpen24HoursFilter,
+    petsAllowedFilter,
+    setPetsAllowedFilter,
+  } = useMap();
 
   const handleParkingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setParkingFilter(e.target.checked);
+  };
+
+  const handleOpen24HoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setOpen24HoursFilter(e.target.checked);
+  };
+
+  const handlePetsAllowedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPetsAllowedFilter(e.target.checked);
   };
 
   return (
@@ -30,7 +47,7 @@ function OptionsMenu({ isOpen, onClose }: OptionsMenuProps) {
         <div className="options-menu-body">
           <div className="option-item">
             <label htmlFor="parking-checkbox" className="option-label">
-              주차장 유무
+              주차 가능
             </label>
             <label className="switch">
               <input
@@ -38,6 +55,34 @@ function OptionsMenu({ isOpen, onClose }: OptionsMenuProps) {
                 type="checkbox"
                 checked={parkingFilter}
                 onChange={handleParkingChange}
+              />
+              <span className="slider round"></span>
+            </label>
+          </div>
+          <div className="option-item">
+            <label htmlFor="24-hours-checkbox" className="option-label">
+              24시간 운영
+            </label>
+            <label className="switch">
+              <input
+                id="24-hours-checkbox"
+                type="checkbox"
+                checked={open24HoursFilter}
+                onChange={handleOpen24HoursChange}
+              />
+              <span className="slider round"></span>
+            </label>
+          </div>
+          <div className="option-item">
+            <label htmlFor="pets-allowed-checkbox" className="option-label">
+              반려동물 허용
+            </label>
+            <label className="switch">
+              <input
+                id="pets-allowed-checkbox"
+                type="checkbox"
+                checked={petsAllowedFilter}
+                onChange={handlePetsAllowedChange}
               />
               <span className="slider round"></span>
             </label>
@@ -84,6 +129,17 @@ export default function MapPage() {
         isOptionsMenuOpen, setOptionsMenuOpen,
         handlePlaceSelect, gotoMonth, isDisabled, onClickDay, getDayClass, handleFilterClick,
     } = useMap();
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        const placeId = searchParams.get('placeId');
+        if (placeId) {
+            const place = locations.find((p) => p.id === placeId);
+            if (place) {
+                setSelectedPlace(place);
+            }
+        }
+    }, [searchParams, setSelectedPlace]);
 
     // 작품 추가/수정 관련 핸들러
     const handleSaveArtwork = (artworkData: any) => {

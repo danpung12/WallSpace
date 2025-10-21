@@ -29,7 +29,10 @@ function NavLinks() {
   return (
     <>
       {navItems.map(item => (
-        <Link key={item.href} className={linkCls(item.href)} href={item.href}>
+        <Link
+          key={item.href}
+          href={item.href}
+          className={linkCls(item.href)}>
           {item.icon}
           <p className={textCls(item.href)}>{item.label}</p>
         </Link>

@@ -47,21 +47,21 @@ export default function GuestSignUpPage() {
 
   // Refined CSS variables for a cohesive design system
   const cssVars = {
-    "--primary-color": "#A89587", // Main brand brown
-    "--primary-light": "#F5F3F0", // Brand cream for inputs
-    "--primary-dark": "#3E352F",  // Dark brown for text
-    "--text-primary": "#181411", // Original text primary for compatibility
-    "--text-secondary": "#a8998c", // Secondary text color for icons/placeholders
-    "--accent-color": "#B8A698", // Softer accent
-    "--background-color": "#F4F1EE", // Slightly darker background for contrast
+    "--primary-color": "#D2B48C", // Main brand brown
+    "--primary-light": "#F5F1EC", // Brand cream for inputs
+    "--primary-dark": "#2C2C2C",  // Dark brown for text
+    "--text-primary": "#2C2C2C", // Original text primary for compatibility
+    "--text-secondary": "#887563", // Secondary text color for icons/placeholders
+    "--accent-color": "#C9A67B", // Softer accent
+    "--background-color": "#F5F1EC", // Slightly darker background for contrast
     "--card-background-color": "#FFFFFF", // White card for the form
-    "--border-color": "#EAE5E1",
-    "--input-bg-color": "#F5F3F0",
-    "--button-bg-color": "#F5F3F0",
-    "--button-border-color": "#EAE5E1",
-    "--shadow-color-light": "rgba(168, 149, 135, 0.08)",
-    "--shadow-color-medium": "rgba(168, 149, 135, 0.12)",
-    "--glow-color": "rgba(168, 149, 135, 0.25)",
+    "--border-color": "#E5E0DC",
+    "--input-bg-color": "#F5F1EC",
+    "--button-bg-color": "#F5F1EC",
+    "--button-border-color": "#E5E0DC",
+    "--shadow-color-light": "rgba(210, 180, 140, 0.08)",
+    "--shadow-color-medium": "rgba(210, 180, 140, 0.12)",
+    "--glow-color": "rgba(210, 180, 140, 0.25)",
   } as React.CSSProperties;
 
   const handleSubmit = async (e: React.FormEvent) => {

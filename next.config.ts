@@ -39,6 +39,21 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // 모든 이미지 경로에 대해 Content-Disposition 헤더를 제거합니다.
+  async headers() {
+    return [
+      {
+        source: '/_next/image(.*)',
+        headers: [
+          {
+            key: 'Content-Disposition',
+            value: 'inline', // 'attachment' 대신 'inline'으로 설정하여 브라우저에서 바로 표시되도록 합니다.
+          },
+        ],
+      },
+    ]
+  },
+
   // 개발 중에 나타나는 Next.js 로고(N) 비활성화
   devIndicators: {
     buildActivity: false
