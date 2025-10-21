@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { useBottomNav } from '../context/BottomNavContext';
@@ -109,7 +109,7 @@ import ArtworkSelector from './components/ArtworkSelector';
 import PlaceDetailPanel from './components/PlaceDetailPanel';
 
 // --- 메인 페이지 컴포넌트 ---
-export default function MapPage() {
+function MapPageContent() {
     const { setIsNavVisible } = useBottomNav();
     const {
         mapInstance, // mapInstance 추가
@@ -332,5 +332,13 @@ export default function MapPage() {
                 {isDetailPageVisible && selectedPlace && (<LocationDetailPage place={selectedPlace} onClose={() => setDetailPageVisible(false)} />)}
             </div>
         </div>
+    );
+}
+
+export default function MapPage() {
+    return (
+        <Suspense fallback={<LoadingScreen />}>
+            <MapPageContent />
+        </Suspense>
     );
 }
