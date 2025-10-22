@@ -8,7 +8,7 @@ import { UserModeProvider } from "./context/UserModeContext"; // 1. UserModeProv
 import Script from "next/script"; // ✨ 2. Next.js의 Script 컴포넌트를 임포트합니다.
 
 export const metadata: Metadata = {
-  title: "Stitch Design",
+  title: "WallSpace",
   description: "WallSpace",
 };
 

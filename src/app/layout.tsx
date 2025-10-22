@@ -7,7 +7,7 @@ import Script from "next/script"; // ✨ 2. Next.js의 Script 컴포넌트를 �
 import { DarkModeProvider } from "./context/DarkModeContext";
 
 export const metadata: Metadata = {
-  title: "Stitch Design",
+  title: "WallSpace",
   description: "WallSpace",
 };
 
