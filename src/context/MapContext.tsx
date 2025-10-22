@@ -1,19 +1,16 @@
 'use client';
 
-import React, { createContext, useContext, useRef, useState, useCallback, useMemo, ReactNode } from 'react';
-import { locations, Location, Space } from '@/data/locations';
+import React, { createContext, useContext, useRef, useState, useCallback, useMemo, ReactNode, useEffect } from 'react';
 import { KakaoPlace, KakaoMap, KakaoLatLng, KakaoGeocoderResult, KakaoGeocoderStatus } from '@/types/kakao';
+import { LocationDetail, Space, Artwork } from '@/types/database';
+import { getLocations, getSpaces } from '@/lib/api/locations';
+import { getArtworks } from '@/lib/api/artworks';
 
 // --- 타입 정의 ---
-export interface Artwork { id: number; title: string; artist: string; dimensions: string; price: number; imageUrl: string; alt: string; }
-export type { Location as LocationType, Space };
+export type { LocationDetail as LocationType, Space, Artwork };
 
 // --- 데이터 및 유틸 함수 ---
-export const artworksData: Artwork[] = [
-    { id: 1, title: 'Vibrance', artist: 'Alexia Ray', dimensions: '120cm x 80cm', price: 15, imageUrl: 'https://picsum.photos/id/1018/200/200', alt: 'Vibrance artwork' },
-    { id: 2, title: 'Solitude', artist: 'Clara Monet', dimensions: '50cm x 70cm', price: 10, imageUrl: 'https://picsum.photos/id/1015/200/200', alt: 'Solitude artwork' },
-    { id: 3, title: 'The Vase', artist: 'Mark Chen', dimensions: '100cm x 100cm', price: 20, imageUrl: 'https://picsum.photos/id/1025/200/200', alt: 'The Vase artwork' },
-];
+// artworksData는 이제 Supabase에서 가져옴
 export const disabledDaysData = [28];
 export const toYMD = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 export const isSameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -36,9 +33,15 @@ interface MapContextType {
     mapInstance: React.RefObject<KakaoMap | null>;
     isMapLoading: boolean;
     locationInfo: { city: string };
-    selectedPlace: Location | null;
-    setSelectedPlace: React.Dispatch<React.SetStateAction<Location | null>>;
+    selectedPlace: LocationDetail | null;
+    setSelectedPlace: React.Dispatch<React.SetStateAction<LocationDetail | null>>;
     initializeMap: (container: HTMLElement) => void;
+    
+    // Supabase 데이터
+    locations: LocationDetail[];
+    artworks: Artwork[];
+    loading: boolean;
+    error: string | null;
     
     isDetailPageVisible: boolean;
     setDetailPageVisible: React.Dispatch<React.SetStateAction<boolean>>;
@@ -83,8 +86,14 @@ export function MapProvider({ children }: { children: ReactNode }) {
     const markersRef = useRef<any[]>([]); // Ref to store markers
     const [isMapLoading, setMapLoading] = useState(true);
     const [locationInfo, setLocationInfo] = useState({ city: '위치 찾는 중...' });
-    const [selectedPlace, setSelectedPlace] = useState<Location | null>(null);
+    const [selectedPlace, setSelectedPlace] = useState<LocationDetail | null>(null);
     const isMapInitialized = useRef(false);
+    
+    // Supabase 데이터 상태
+    const [locations, setLocations] = useState<LocationDetail[]>([]);
+    const [artworks, setArtworks] = useState<Artwork[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     // UI State
     const [isDetailPageVisible, setDetailPageVisible] = useState(false);
@@ -93,7 +102,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
-    const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(artworksData[0] || null);
+    const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
     const [isArtworkModalOpen, setArtworkModalOpen] = useState(false);
     const [isArtworkSelectorVisible, setArtworkSelectorVisible] = useState(false);
     const [isSearchModalOpen, setSearchModalOpen] = useState(false);
@@ -101,6 +110,36 @@ export function MapProvider({ children }: { children: ReactNode }) {
     const [parkingFilter, setParkingFilter] = useState(false);
     const [open24HoursFilter, setOpen24HoursFilter] = useState(false);
     const [petsAllowedFilter, setPetsAllowedFilter] = useState(false);
+
+    // Supabase 데이터 로드
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                
+                const [locationsData, artworksData] = await Promise.all([
+                    getLocations(),
+                    getArtworks()
+                ]);
+                
+                setLocations(locationsData);
+                setArtworks(artworksData);
+                
+                // 첫 번째 작품을 기본 선택으로 설정
+                if (artworksData.length > 0) {
+                    setSelectedArtwork(artworksData[0]);
+                }
+            } catch (err) {
+                console.error('Error loading data:', err);
+                setError('데이터를 불러오는 중 오류가 발생했습니다.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        loadData();
+    }, []);
 
     // Derived State
     const filterButtons = ['작품 선택', '카페', '갤러리', '문화회관'];
@@ -112,7 +151,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
 
     const loadMarkers = useCallback((map: KakaoMap) => {
         const { kakao } = window;
-        if (!kakao) return;
+        if (!kakao || locations.length === 0) return;
         
         // Clear existing markers from ref
         markersRef.current = [];
@@ -131,7 +170,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
             
             const contentNode = document.createElement('div');
             contentNode.className = 'custom-overlay-style';
-            contentNode.innerHTML = `<div class="font-bold">${place.name}</div><div style="color:${place.statusColor};" class="text-xs mt-0.5">${place.statusText}</div>`;
+            contentNode.innerHTML = `<div class="font-bold">${place.name}</div><div style="color:${place.status_color || '#3B82F6'};" class="text-xs mt-0.5">${place.status_text || '예약 가능'}</div>`;
             contentNode.onclick = handleClick;
             
             const overlay = new kakao.maps.CustomOverlay({ map, position: placePosition, content: contentNode, yAnchor: 2.2 });
@@ -139,16 +178,15 @@ export function MapProvider({ children }: { children: ReactNode }) {
             // Store marker and its associated data
             markersRef.current.push({ marker, overlay, place });
         });
-    }, []);
+    }, [locations]);
 
     // Effect to filter markers based on activeFilter or parkingFilter
     React.useEffect(() => {
         markersRef.current.forEach(({ marker, overlay, place }) => {
-            const isCategoryMatch = !activeFilter || place.category === activeFilter;
-            const isParkingMatch = !parkingFilter || place.options.parking;
-            const isOpen24HoursMatch =
-              !open24HoursFilter || place.options.twentyFourHours;
-            const arePetsAllowedMatch = !petsAllowedFilter || place.options.pets;
+            const isCategoryMatch = !activeFilter || place.category_name === activeFilter;
+            const isParkingMatch = !parkingFilter || place.parking;
+            const isOpen24HoursMatch = !open24HoursFilter || place.twenty_four_hours;
+            const arePetsAllowedMatch = !petsAllowedFilter || place.pets;
             const isVisible =
               isCategoryMatch &&
               isParkingMatch &&
@@ -246,6 +284,8 @@ export function MapProvider({ children }: { children: ReactNode }) {
         open24HoursFilter, setOpen24HoursFilter, petsAllowedFilter, setPetsAllowedFilter,
         cells, hasRange, filterButtons, headerLabel,
         handlePlaceSelect, gotoMonth, isDisabled, onClickDay, getDayClass, handleFilterClick,
+        // Supabase 데이터
+        locations, artworks, loading, error,
     };
 
     return <MapContext.Provider value={value}>{children}</MapContext.Provider>;

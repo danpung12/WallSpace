@@ -19,7 +19,18 @@
           "--project-ref=gnhwzbvlaqdnkahurlbv"
         ],
         "env": {
-          "SUPABASE_ACCESS_TOKEN": "sb_publishable_8hRhcIHmbeqGL7mh8bm0GQ_pnBrpnAc"
+          "SUPABASE_ACCESS_TOKEN": "sbp_37fb0f891359b403549be16468b7b9da363daa7b"
+        }
+      },
+      "supabase_jkkeul": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@supabase/mcp-server-supabase@latest",
+          "--project-ref=gnhwzbvlaqdnkahurlbv"
+        ],
+        "env": {
+          "SUPABASE_ACCESS_TOKEN": "sbp_37fb0f891359b403549be16468b7b9da363daa7b"
         }
       },
       "playwright": {

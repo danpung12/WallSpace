@@ -7,11 +7,14 @@ import SelectTypeModal from './SelectTypeModal';
 import ArtistSignUpModal from './ArtistSignUpModal';
 import GuestSignUpModal from './GuestSignUpModal';
 import FindPasswordModal from './FindPasswordModal';
+import { loginUser } from '@/lib/api/auth';
 
 export default function LoginClient() {
   const router = useRouter();
   const [modalState, setModalState] = useState<'none' | 'selectType' | 'artistSignUp' | 'guestSignUp' | 'findPassword'>('none');
   const [isDesktop, setIsDesktop] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     // TransitionProvider의 배경색을 투명하게 만들어 이미지가 보이게 함
@@ -39,9 +42,32 @@ export default function LoginClient() {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    router.push('/home');
+    setIsLoading(true);
+    setLoginError(null);
+    
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    
+    try {
+      const { user, profile, error } = await loginUser(email, password);
+      
+      if (error) {
+        setLoginError('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
+        return;
+      }
+      
+      if (user && profile) {
+        router.push('/home');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setLoginError('로그인 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSignup = () => {
@@ -144,20 +170,56 @@ export default function LoginClient() {
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight" style={{ color: '#3d2b1f' }}>로그인</h2>
           </div>
           <form className="space-y-4" onSubmit={handleLogin}>
+            {loginError && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+                {loginError}
+              </div>
+            )}
             <div>
               <label className="sr-only" htmlFor="login-email">Email / ID</label>
-              <input className="input-field" id="login-email" placeholder="아이디" type="email" autoComplete="username" />
+              <input 
+                className="input-field" 
+                id="login-email" 
+                name="email"
+                placeholder="이메일" 
+                type="email" 
+                autoComplete="username" 
+                required
+                disabled={isLoading}
+              />
             </div>
             <div>
               <label className="sr-only" htmlFor="login-password">Password</label>
-              <input className="input-field" id="login-password" placeholder="비밀번호" type="password" autoComplete="current-password" />
+              <input 
+                className="input-field" 
+                id="login-password" 
+                name="password"
+                placeholder="비밀번호" 
+                type="password" 
+                autoComplete="current-password" 
+                required
+                disabled={isLoading}
+              />
             </div>
             <div className="text-right py-1">
               <a className="text-[12px] sm:text-[13px] hover:underline" style={{ color: '#7a5c52' }} href="/find-password" onClick={handleFindPasswordClick}>비밀번호를 잊으셨나요?</a>
             </div>
             <div className="space-y-3">
-              <button className="primary-button" type="submit"><span>로그인</span></button>
-              <button className="secondary-button" type="button" onClick={handleSignup}>회원가입</button>
+              <button 
+                className="primary-button" 
+                type="submit" 
+                disabled={isLoading}
+              >
+                <span>{isLoading ? '로그인 중...' : '로그인'}</span>
+              </button>
+              <button 
+                className="secondary-button" 
+                type="button" 
+                onClick={handleSignup}
+                disabled={isLoading}
+              >
+                회원가입
+              </button>
             </div>
           </form>
           <div className="mt-8 flex items-center">

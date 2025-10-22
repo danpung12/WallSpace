@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { registerUser } from '@/lib/api/auth';
 
 interface GuestSignUpModalProps {
   isOpen: boolean;
@@ -10,6 +11,16 @@ interface GuestSignUpModalProps {
 
 const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, onSwitchToArtist }) => {
   const [shouldRender, setShouldRender] = useState(isOpen);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    name: '',
+    nickname: '',
+    phone: ''
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -23,6 +34,54 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
   if (!shouldRender) {
     return null;
   }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    // 비밀번호 확인
+    if (formData.password !== formData.confirmPassword) {
+      setError('비밀번호가 일치하지 않습니다.');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { user, profile, error } = await registerUser(
+        formData.email,
+        formData.password,
+        {
+          full_name: formData.name,
+          nickname: formData.nickname,
+          user_type: 'guest',
+          phone: formData.phone || undefined
+        }
+      );
+
+      if (error) {
+        setError('회원가입에 실패했습니다. 다시 시도해주세요.');
+        return;
+      }
+
+      if (user) {
+        // 성공 시 모달 닫기
+        onClose();
+        // 페이지 새로고침 또는 리다이렉트
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error('Registration error:', err);
+      setError('회원가입 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   const InputField = ({ id, label, type = 'text', placeholder, icon, ...props }: any) => (
     <div>
@@ -59,10 +118,81 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
         </div>
 
         {/* Form Body - Scrollable */}
-        <div className="flex-grow overflow-y-auto space-y-6 scrollbar-hide">
-            <InputField id="user-id" label="아이디" placeholder="아이디를 입력하세요" icon="person" />
-            <InputField id="password" label="비밀번호" type="password" placeholder="비밀번호를 입력하세요" icon="lock" />
-            <InputField id="confirm-password" label="비밀번호 확인" type="password" placeholder="비밀번호를 다시 입력하세요" icon="lock" />
+        <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto space-y-6 scrollbar-hide">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+                {error}
+              </div>
+            )}
+            <InputField 
+              id="email" 
+              name="email"
+              label="이메일" 
+              type="email"
+              placeholder="이메일을 입력하세요" 
+              icon="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              required
+              disabled={isLoading}
+            />
+            <InputField 
+              id="name" 
+              name="name"
+              label="이름" 
+              placeholder="이름을 입력하세요" 
+              icon="person"
+              value={formData.name}
+              onChange={handleInputChange}
+              required
+              disabled={isLoading}
+            />
+            <InputField 
+              id="nickname" 
+              name="nickname"
+              label="닉네임" 
+              placeholder="닉네임을 입력하세요" 
+              icon="badge"
+              value={formData.nickname}
+              onChange={handleInputChange}
+              required
+              disabled={isLoading}
+            />
+            <InputField 
+              id="password" 
+              name="password"
+              label="비밀번호" 
+              type="password" 
+              placeholder="비밀번호를 입력하세요" 
+              icon="lock"
+              value={formData.password}
+              onChange={handleInputChange}
+              required
+              disabled={isLoading}
+            />
+            <InputField 
+              id="confirmPassword" 
+              name="confirmPassword"
+              label="비밀번호 확인" 
+              type="password" 
+              placeholder="비밀번호를 다시 입력하세요" 
+              icon="lock"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              required
+              disabled={isLoading}
+            />
+            <InputField 
+              id="phone" 
+              name="phone"
+              label="전화번호" 
+              type="tel"
+              placeholder="전화번호를 입력하세요" 
+              icon="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              disabled={isLoading}
+            />
             <InputField 
               id="dob" 
               label="생년월일" 
@@ -87,16 +217,22 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
                 </label>
               </div>
             </div>
-        </div>
+        </form>
         
         {/* Footer */}
         <div className="flex-shrink-0 mt-8 space-y-4">
-            <button className="w-full rounded-xl h-14 text-base bg-[#D2B48C] text-white font-bold hover:shadow-[0_6px_20px_0_rgba(210,180,140,0.12)] hover:-translate-y-1 transition-all duration-300">
-              가입하기
+            <button 
+              type="submit"
+              disabled={isLoading}
+              className="w-full rounded-xl h-14 text-base bg-[#D2B48C] text-white font-bold hover:shadow-[0_6px_20px_0_rgba(210,180,140,0.12)] hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? '가입 중...' : '가입하기'}
             </button>
              <button 
+                type="button"
                 onClick={onSwitchToArtist}
                 className="w-full text-center text-sm text-[#887563] hover:text-[#D2B48C] hover:underline transition-colors"
+                disabled={isLoading}
             >
                 예술가/사장님으로 가입하시나요?
             </button>
