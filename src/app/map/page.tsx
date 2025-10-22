@@ -226,7 +226,6 @@ function MapPageContent() {
                 .map-page-container > header:hover ~ .page-container .top-search-bar {
                   top: 4rem; /* h-16 (Header height) */
                 }
-                .top-search-bar-inner { max-width: 22rem; } /* PC에서 너비 줄이기 */
               }
 
               :root { --theme-brown-lightest:#F5F3F0; --theme-brown-light:#E9E4DD; --theme-brown-medium:#D4C8B8; --theme-brown-dark:#A18F79; --theme-brown-darkest:#4D4337; --white:#ffffff; }
@@ -278,6 +277,52 @@ function MapPageContent() {
               .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
               input:checked + .slider { background-color: var(--theme-brown-darkest); }
               input:checked + .slider:before { transform: translateX(22px); }
+
+              /* PC 버전 검색바 크기 조정 */
+              @media (min-width: 1024px) {
+                .top-search-bar { 
+                  padding: 0.75rem !important; 
+                }
+                .top-search-bar-inner { 
+                  max-width: 22rem !important; 
+                  padding: 0.5rem !important;
+                  border-radius: 0.875rem !important;
+                }
+                .top-search-bar-inner > div { 
+                  padding: 0.5rem 0.75rem !important;
+                }
+                .search-input-card { 
+                  padding: 0.3rem 0.875rem !important; 
+                  margin: 0 0.75rem !important;
+                }
+                .search-input-card .main-text { 
+                  font-size: 0.95rem !important;
+                }
+                .search-input-card .sub-text { 
+                  font-size: 0.75rem !important; 
+                }
+                .filter-button { 
+                  padding: 0.35rem 0.65rem !important; 
+                  font-size: 0.775rem !important; 
+                }
+                .filter-buttons { 
+                  gap: 0.3rem !important; 
+                  padding: 0.45rem 0.65rem !important; 
+                }
+                .top-search-bar .material-symbols-outlined { 
+                  font-size: 25px !important; 
+                }
+                .top-search-bar-inner hr {
+                  margin: 0.3rem 0 !important;
+                }
+                .search-divider {
+                  height: 1.5rem !important;
+                  margin: 0 0.5rem 0 0 !important;
+                }
+                .filter-button .material-symbols-outlined {
+                  font-size: 16px !important;
+                }
+              }
             `}</style>
 
             <div className={`page-container`}>
@@ -293,7 +338,7 @@ function MapPageContent() {
                                   <p className="main-text">{locationInfo.city}</p>
                                   <p className="sub-text">{hasRange ? (isSameDay(startDate!, endDate!) ? fmtKoreanDate(startDate!) : `${fmtKoreanDate(startDate!)} - ${fmtKoreanDate(endDate!)}`) : '날짜를 선택하세요'}</p>
                               </div>
-                              <div style={{ width: '1px', height: '1.5rem', backgroundColor: 'var(--theme-brown-light)', margin: '0 0.5rem 0 0' }}></div>
+                              <div className="search-divider" style={{ width: '1px', height: '1.5rem', backgroundColor: 'var(--theme-brown-light)', margin: '0 0.5rem 0 0' }}></div>
                               <span className="material-symbols-outlined cursor-pointer" style={{ color: 'var(--theme-brown-darkest)' }} onClick={() => setOptionsMenuOpen(true)}>tune</span>
                           </div>
                           <hr style={{ borderTop: '1px solid var(--theme-brown-light)' }} />

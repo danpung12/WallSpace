@@ -60,7 +60,7 @@ export default function BookingModalPC({
         aria-label="Close"
       />
 
-      <div className="relative flex h-[90vh] max-h-[700px] w-full max-w-4xl rounded-2xl bg-white shadow-2xl">
+      <div className="relative flex h-[92vh] max-h-[820px] w-full max-w-5xl rounded-2xl bg-white shadow-2xl">
         {/* Left Panel (Location Info) */}
         <div className="relative hidden h-full w-1/2 flex-col overflow-y-auto rounded-l-2xl bg-[#FDFBF8] lg:flex">
            <div className="sticky top-0 z-10">
@@ -114,7 +114,7 @@ export default function BookingModalPC({
                     <span className="material-symbols-outlined">close</span>
                 </button>
              </div>
-             <div className="flex-1 overflow-y-auto p-6">
+             <div className="flex-1 overflow-y-auto p-6 custom-scrollbar-thin">
                 {step === 'date' && (
                     <DateBooking
                     location={place}

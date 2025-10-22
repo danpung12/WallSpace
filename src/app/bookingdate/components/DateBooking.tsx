@@ -100,6 +100,7 @@ export default function DateBooking({
   const hasRange = !!(startDate && endDate);
   const hasSpace = !!selectedSpaceName;
   const canBook = hasRange && hasSpace;
+  const canProceedInModal = isModal ? hasRange : canBook;
   const durationDays = hasRange
     ? daysDiffInclusive(startDate!, endDate!)
     : 0;
@@ -523,10 +524,14 @@ export default function DateBooking({
                 <div className="p-4 bg-white">
                      <button
                         onClick={handleBooking}
-                        className="button_primary h-[48px] w-full cursor-pointer"
-                        disabled={!canBook}
+                        className={`h-[48px] w-full rounded-lg font-bold text-base transition-colors duration-200 ${
+                          hasRange 
+                            ? 'bg-[#d49554] text-white cursor-pointer hover:bg-[#c57f39]' 
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                        disabled={!hasRange}
                     >
-                        날짜 선택 완료
+                        {hasRange ? '날짜 선택 완료' : '날짜를 선택해주세요'}
                     </button>
                 </div>
             )}
