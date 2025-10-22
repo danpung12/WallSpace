@@ -9,6 +9,11 @@ import { DarkModeProvider } from "./context/DarkModeContext";
 export const metadata: Metadata = {
   title: "WallSpace",
   description: "WallSpace",
+  openGraph: {
+    title: "WallSpace",
+    description: "작가와 공간을 잇는 플랫폼",
+    siteName: "WallSpace",
+  },
 };
 
 export default function RootLayout({
