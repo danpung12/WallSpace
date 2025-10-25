@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useReservations } from '@/context/ReservationContext';
 import { Reservation } from '@/data/reservations';
 import Header from '../components/Header';
 
-export default function ManagerBookingApprovalPage() {
+function ManagerBookingApprovalContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reservationId = searchParams.get('id');
@@ -502,6 +502,24 @@ export default function ManagerBookingApprovalPage() {
         </div>
       )}
     </>
+  );
+}
+
+export default function ManagerBookingApprovalPage() {
+  return (
+    <Suspense fallback={
+      <>
+        <Header />
+        <div className="min-h-screen bg-[#e8e3da] dark:bg-[#1a1a1a] flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#D2B48C] border-t-transparent mb-4"></div>
+            <div className="text-lg text-[#2C2C2C] dark:text-gray-100">로딩 중...</div>
+          </div>
+        </div>
+      </>
+    }>
+      <ManagerBookingApprovalContent />
+    </Suspense>
   );
 }
 
