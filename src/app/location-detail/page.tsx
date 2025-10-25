@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
@@ -56,7 +56,7 @@ interface Location {
   sns: Array<{ platform: string; url: string }>;
 }
 
-export default function LocationDetailPage() {
+function LocationDetailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const locationId = searchParams.get('id');
@@ -1383,5 +1383,23 @@ export default function LocationDetailPage() {
         </div>
       )}
     </>
+  );
+}
+
+export default function LocationDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-[#FAF8F5] to-[#F5F1EC] dark:from-gray-900 dark:to-gray-800">
+        <Header />
+        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#D2B48C] border-t-transparent mb-4"></div>
+            <div className="text-lg text-gray-600 dark:text-gray-300">로딩 중...</div>
+          </div>
+        </div>
+      </div>
+    }>
+      <LocationDetailContent />
+    </Suspense>
   );
 }
