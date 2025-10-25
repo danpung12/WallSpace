@@ -8,6 +8,8 @@ import ArtistSignUpModal from './ArtistSignUpModal';
 import GuestSignUpModal from './GuestSignUpModal';
 import FindPasswordModal from './FindPasswordModal';
 import { loginUser } from '@/lib/api/auth';
+import { createClient } from '@/lib/supabase/client';
+import AlertModal from './AlertModal';
 
 export default function LoginClient() {
   const router = useRouter();
@@ -15,19 +17,35 @@ export default function LoginClient() {
   const [isDesktop, setIsDesktop] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
 
   useEffect(() => {
     // TransitionProvider의 배경색을 투명하게 만들어 이미지가 보이게 함
-    const transitionElement = document.querySelector('[data-is-present]') as HTMLElement;
-    if (transitionElement) {
-      transitionElement.style.backgroundColor = 'transparent';
-    }
+    const setTransparentBackground = () => {
+      const transitionElement = document.querySelector('[data-is-present]') as HTMLElement;
+      if (transitionElement) {
+        transitionElement.style.backgroundColor = 'transparent';
+      }
+      
+      // body 배경색도 투명하게 설정
+      document.body.style.backgroundColor = 'transparent';
+    };
+    
+    // 초기 설정
+    setTransparentBackground();
+    
+    // 라우터 변경 후에도 다시 설정 (약간의 지연 후)
+    const timer = setTimeout(setTransparentBackground, 50);
     
     // 컴포넌트가 언마운트될 때 원래 배경색으로 복원
     return () => {
+      clearTimeout(timer);
+      const transitionElement = document.querySelector('[data-is-present]') as HTMLElement;
       if (transitionElement) {
-        transitionElement.style.backgroundColor = ''; // 기본값으로 되돌림
+        transitionElement.style.backgroundColor = '';
       }
+      document.body.style.backgroundColor = '';
     };
   }, []);
 
@@ -60,7 +78,12 @@ export default function LoginClient() {
       }
       
       if (user && profile) {
-        router.push('/home');
+        // user_type에 따라 다른 페이지로 리다이렉트
+        if (profile.user_type === 'guest') {
+          router.push('/guest');
+        } else {
+          router.push('/');
+        }
       }
     } catch (err) {
       console.error('Login error:', err);
@@ -84,6 +107,43 @@ export default function LoginClient() {
       openModal('findPassword');
     }
     // 모바일에서는 a 태그의 기본 동작(href로 이동)을 따릅니다.
+  };
+
+  // 소셜 로그인 핸들러
+  const handleSocialLogin = async (provider: 'google' | 'kakao' | 'naver') => {
+    // 네이버, 카카오는 준비 중 안내
+    if (provider === 'kakao' || provider === 'naver') {
+      setAlertMessage('구글 외 타 간편로그인 기능은 심사 중으로\n정식 출시를 기다려 주세요.');
+      setShowAlertModal(true);
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+      
+      // 각 제공자별 추가 정보 요청 설정
+      const scopes: Record<string, string> = {
+        kakao: 'profile_nickname,profile_image,account_email,gender,age_range',
+        naver: 'name,email,profile_image,gender,age',
+        google: 'email,profile',
+      };
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: provider,
+        options: {
+          redirectTo: `${window.location.origin}/onboarding`,
+          scopes: scopes[provider],
+        },
+      });
+
+      if (error) {
+        console.error(`${provider} login error:`, error);
+        setLoginError(`${provider} 로그인에 실패했습니다.`);
+      }
+    } catch (err) {
+      console.error('Social login error:', err);
+      setLoginError('소셜 로그인 중 오류가 발생했습니다.');
+    }
   };
 
   const openModal = (modalName: 'selectType' | 'artistSignUp' | 'guestSignUp' | 'findPassword') => {
@@ -229,17 +289,38 @@ export default function LoginClient() {
           </div>
           <div className="mt-6 sm:mt-8 social-login-horizontal">
             <div className="social-icon-wrapper">
-              <button className="social-icon-btn" style={{ backgroundColor: '#03c75a' }} aria-label="네이버로 로그인">
+              <button 
+                className="social-icon-btn" 
+                style={{ backgroundColor: '#03c75a' }} 
+                aria-label="네이버로 로그인"
+                onClick={() => handleSocialLogin('naver')}
+                disabled={isLoading}
+                type="button"
+              >
                 <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M15.9 12.825L9.15 3H3v18h6.15V11.175L15.9 21H21V3h-5.1v9.825z" /></svg>
               </button>
             </div>
             <div className="social-icon-wrapper">
-              <button className="social-icon-btn" style={{ backgroundColor: '#FEE500' }} aria-label="카카오로 로그인">
+              <button 
+                className="social-icon-btn" 
+                style={{ backgroundColor: '#FEE500' }} 
+                aria-label="카카오로 로그인"
+                onClick={() => handleSocialLogin('kakao')}
+                disabled={isLoading}
+                type="button"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#181600"><path d="M12 2C6.477 2 2 5.82 2 10.5C2 13.533 3.808 16.202 6.48 17.539L6 22l4.33-2.598C10.896 19.46 11.442 19.5 12 19.5c5.523 0 10-3.82 10-9S17.523 2 12 2z" /></svg>
               </button>
             </div>
             <div className="social-icon-wrapper">
-              <button className="social-icon-btn" style={{ backgroundColor: '#ffffff', border: '1px solid #e0e0e0' }} aria-label="구글로 로그인">
+              <button 
+                className="social-icon-btn" 
+                style={{ backgroundColor: '#ffffff', border: '1px solid #e0e0e0' }} 
+                aria-label="구글로 로그인"
+                onClick={() => handleSocialLogin('google')}
+                disabled={isLoading}
+                type="button"
+              >
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -270,6 +351,11 @@ export default function LoginClient() {
       <FindPasswordModal
         isOpen={modalState === 'findPassword'}
         onClose={closeModal}
+      />
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        message={alertMessage}
       />
     </>
   );

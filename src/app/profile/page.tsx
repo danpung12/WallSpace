@@ -9,10 +9,13 @@ import NotificationSettingsModal from "../components/NotificationSettingsModal";
 import UserSettingsModal from "../components/UserSettingsModal"; // ✅ 추가
 import AvatarUploadModal from "../components/AvatarUploadModal"; // ✅ 추가
 import LogoutConfirmationModal from "../components/LogoutConfirmationModal"; // ✅ 로그아웃 모달 추가
+import AlertModal from "../components/AlertModal"; // ✅ 알림 모달 추가
+import NotificationListModal from "../components/NotificationListModal";
 import { UserProfile } from "@/data/profile";
 import EditProfileModal from "../components/EditProfileModal";
 import { useDarkMode } from "../context/DarkModeContext"; // ✅ 다크모드 훅 추가
 import { useRouter } from "next/navigation"; // ✅ 라우터 추가
+import { logoutUser } from "@/lib/api/auth"; // ✅ 로그아웃 함수 추가
 
 export default function ProfilePage() {
   const router = useRouter(); // ✅ 라우터 초기화
@@ -26,6 +29,10 @@ export default function ProfilePage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSocialLogin, setIsSocialLogin] = useState(false); // SNS 로그인 여부
+  const [showAlertModal, setShowAlertModal] = useState(false); // 알림 모달
+  const [showNotificationList, setShowNotificationList] = useState(false);
+  const [hasNotifications, setHasNotifications] = useState(false);
 
   // 프로필 데이터 가져오기
   useEffect(() => {
@@ -41,6 +48,17 @@ export default function ProfilePage() {
         if (data.userSettings?.darkMode !== undefined) {
           setDarkMode(data.userSettings.darkMode);
         }
+
+        // SNS 로그인 여부 확인
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          // provider가 email이 아니면 소셜 로그인
+          const provider = user.app_metadata?.provider || 'email';
+          setIsSocialLogin(provider !== 'email');
+        }
       } catch (err: any) {
         setError(err.message || "Failed to fetch profile");
         console.error("Error fetching profile:", err);
@@ -50,6 +68,23 @@ export default function ProfilePage() {
     };
     fetchProfile();
   }, [setDarkMode]);
+
+  // 알림 확인 (읽지 않은 알림만 카운트)
+  useEffect(() => {
+    const checkNotifications = async () => {
+      try {
+        // 읽은 알림 자동 삭제하고 확인
+        const response = await fetch('/api/notifications?cleanupRead=true');
+        if (response.ok) {
+          const data = await response.json();
+          setHasNotifications(data.length > 0);
+        }
+      } catch (error) {
+        console.error('Failed to check notifications:', error);
+      }
+    };
+    checkNotifications();
+  }, []);
 
   // 프로필 데이터 업데이트 (PUT 요청)
   const updateProfile = async (updatedData: Partial<UserProfile>): Promise<boolean> => {
@@ -108,11 +143,25 @@ export default function ProfilePage() {
   };
 
   // ✅ 로그아웃 핸들러 함수 추가
-  const handleLogout = () => {
+  const handleLogout = async () => {
     console.log("로그아웃 처리");
-    // 여기에 실제 로그아웃 로직 추가 (예: 세션 클리어, 토큰 삭제 등)
-    setShowLogoutModal(false);
-    router.push('/'); // 홈으로 이동
+    
+    try {
+      // Supabase 로그아웃 실행
+      const { error } = await logoutUser();
+      
+      if (error) {
+        console.error('로그아웃 실패:', error);
+        alert('로그아웃에 실패했습니다. 다시 시도해주세요.');
+        return;
+      }
+      
+      setShowLogoutModal(false);
+      router.push('/'); // 홈으로 이동
+    } catch (err) {
+      console.error('로그아웃 중 오류:', err);
+      alert('로그아웃 중 오류가 발생했습니다.');
+    }
   };
 
 
@@ -164,9 +213,13 @@ export default function ProfilePage() {
         <section className="text-center lg:text-left lg:flex lg:items-center lg:space-x-10 lg:bg-white dark:lg:bg-gray-800 lg:p-10 lg:rounded-3xl lg:shadow-md lg:border lg:border-gray-100 dark:lg:border-gray-700 lg:hover:shadow-lg lg:transition-all lg:duration-300">
           <div className="relative inline-block group">
             <img
-              src={userProfile.avatarUrl || '/default-profile.svg'} // ✅ 동적 데이터로 변경
+              src={userProfile.avatarUrl || '/default-profile.svg'}
               alt="User profile picture"
               className="object-cover w-28 h-28 rounded-full shadow-lg lg:w-40 lg:h-40 ring-4 ring-white dark:ring-gray-700 transition-all duration-300 group-hover:ring-[#D2B48C]/30"
+              onError={(e) => {
+                // 이미지 로드 실패 시 기본 이미지로 대체
+                e.currentTarget.src = '/default-profile.svg';
+              }}
             />
             <button
               onClick={() => setShowAvatarModal(true)} // ✅ 추가
@@ -181,7 +234,7 @@ export default function ProfilePage() {
             </button>
           </div>
           <div className="mt-5 lg:mt-0">
-            <h2 className="text-3xl font-bold lg:text-4xl text-[#2C2C2C] dark:text-gray-100">{userProfile.nickname}</h2>
+            <h2 className="text-3xl font-bold lg:text-4xl text-[#2C2C2C] dark:text-gray-100">{userProfile.nickname || '무명'}</h2>
             <p className="text-lg lg:text-xl mt-2 text-[#887563] dark:text-gray-400">{userProfile.name}</p>
           </div>
         </section>
@@ -215,7 +268,7 @@ export default function ProfilePage() {
             </div>
             <div className="flex-1 ml-3 lg:ml-4">
               <p className="block text-[11px] font-bold mb-1 uppercase tracking-widest text-[#887563] dark:text-gray-400">필명</p>
-              <p className="text-sm lg:text-base font-bold text-[#2C2C2C] dark:text-gray-100">{userProfile.nickname}</p>
+              <p className="text-sm lg:text-base font-bold text-[#2C2C2C] dark:text-gray-100">{userProfile.nickname || '무명'}</p>
             </div>
           </div>
 
@@ -273,7 +326,13 @@ export default function ProfilePage() {
                     {/* 비밀번호 변경 */}
             <button
               type="button"
-              onClick={() => setShowChangePw(true)}
+              onClick={() => {
+                if (isSocialLogin) {
+                  setShowAlertModal(true);
+                  return;
+                }
+                setShowChangePw(true);
+              }}
               className="group flex items-center p-4 lg:p-5 rounded-xl hover:bg-gradient-to-r hover:from-[#F5F3EC] hover:to-[#FAF8F5] dark:hover:from-gray-700 dark:hover:to-gray-700 transition-all duration-200 w-full hover:shadow-sm hover:scale-[1.01]"
             >
               <div className="p-2.5 lg:p-3 bg-gradient-to-br from-[#D2B48C]/20 to-[#D2B48C]/10 rounded-xl transition-all duration-200 group-hover:from-[#D2B48C]/30 group-hover:to-[#D2B48C]/20 group-active:scale-95">
@@ -431,6 +490,28 @@ export default function ProfilePage() {
         onConfirm={handleLogout}
         title="로그아웃"
         message="정말 로그아웃 하시겠습니까?"
+      />
+      {/* ✅ SNS 계정 알림 모달 추가 */}
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        message="SNS 로그인 계정입니다."
+      />
+
+      {/* 알림 목록 모달 */}
+      <NotificationListModal 
+        open={showNotificationList} 
+        onClose={() => {
+          setShowNotificationList(false);
+          // 알림 목록을 닫을 때 다시 확인
+          fetch('/api/notifications?cleanupRead=true').then(res => {
+            if (res.ok) {
+              res.json().then(data => {
+                setHasNotifications(data.length > 0);
+              });
+            }
+          });
+        }} 
       />
     </div>
   );

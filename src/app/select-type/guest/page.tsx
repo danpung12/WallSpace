@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from "react";
+import { useRouter } from 'next/navigation';
 import { createClient } from "@supabase/supabase-js";
 
 /**
@@ -22,6 +23,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function GuestSignUpPage() {
+  const router = useRouter();
   type DateInputWithPicker = HTMLInputElement & { showPicker?: () => void };
 
   const dobRef = useRef<HTMLInputElement>(null);
@@ -44,6 +46,14 @@ export default function GuestSignUpPage() {
   const [gender, setGender] = useState("male");
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [userIdAvailability, setUserIdAvailability] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/');
+    }
+  };
 
   // Refined CSS variables for a cohesive design system
   const cssVars = {
@@ -169,6 +179,7 @@ export default function GuestSignUpPage() {
                 <button
                   type="button"
                   aria-label="Go back"
+                  onClick={handleBack}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--primary-dark)] p-2 rounded-full hover:bg-[var(--primary-light)] transition-colors"
                 >
                   <svg fill="currentColor" height="24" viewBox="0 0 256 256" width="24" xmlns="http://www.w3.org/2000/svg">

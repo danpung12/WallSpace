@@ -3,7 +3,22 @@
 // Note: Removed 'next/head' and 'next/link' imports as they are specific to a Next.js environment
 // and were causing compilation errors. Standard HTML elements will be used instead.
 
+import React from 'react';
+import Link from 'next/link';
+
 export default function SelectUserType() {
+  // body 스타일을 정리하는 useEffect 추가
+  React.useEffect(() => {
+    // body 배경색 설정
+    const originalBodyBg = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = '#F5F3F0';
+    
+    // 컴포넌트 언마운트 시 원래대로 복원
+    return () => {
+      document.body.style.backgroundColor = originalBodyBg || '';
+    };
+  }, []);
+
   const handleBack = () => {
     try {
       if (typeof window !== 'undefined') {
@@ -35,11 +50,6 @@ export default function SelectUserType() {
         /* It's good practice to ensure the font is loaded in the main HTML file */
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
-        
-        body {
-          font-family: 'Pretendard', sans-serif;
-          background-color: var(--brand-cream);
-        }
         .material-symbols-outlined {
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
         }
@@ -84,7 +94,7 @@ export default function SelectUserType() {
 
           <main className="flex flex-col flex-grow justify-center gap-6">
             {/* Artist/Owner Card - Replaced Next's <Link> with a standard <a> tag */}
-            <a
+            <Link
               href="/select-type/artist"
               className="group flex flex-grow flex-col items-center justify-center p-8 bg-gradient-to-br from-[var(--brand-brown)] to-[#9a8679] text-white rounded-3xl shadow-lg shadow-black/15 border border-white/20 transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 ease-in-out no-underline"
             >
@@ -95,10 +105,10 @@ export default function SelectUserType() {
                 <h2 className="text-2xl font-bold">예술가 / 사장님</h2>
                 <p className="text-base opacity-80 mt-1">공간을 등록하고 작품을 알려보세요.</p>
               </div>
-            </a>
+            </Link>
 
             {/* Guest Card - Replaced Next's <Link> with a standard <a> tag */}
-            <a
+            <Link
               href="/select-type/guest"
               className="group flex flex-grow flex-col items-center justify-center p-8 bg-white/90 backdrop-blur-sm text-[var(--brand-dark-brown)] rounded-3xl shadow-lg shadow-black/15 border border-[var(--brand-brown)]/20 transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 ease-in-out no-underline"
             >
@@ -111,7 +121,7 @@ export default function SelectUserType() {
                   예술 작품을 둘러보고 카페를 즐겨보세요.
                 </p>
               </div>
-            </a>
+            </Link>
           </main>
         </div>
       </div>

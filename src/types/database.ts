@@ -121,6 +121,8 @@ export interface Database {
           images: string[] | null
           amenities: string[] | null
           is_reserved: boolean
+          max_artworks: number
+          current_reservations: number
           created_at: string
           updated_at: string
         }
@@ -134,6 +136,8 @@ export interface Database {
           images?: string[] | null
           amenities?: string[] | null
           is_reserved?: boolean
+          max_artworks?: number
+          current_reservations?: number
           created_at?: string
           updated_at?: string
         }
@@ -147,6 +151,8 @@ export interface Database {
           images?: string[] | null
           amenities?: string[] | null
           is_reserved?: boolean
+          max_artworks?: number
+          current_reservations?: number
           created_at?: string
           updated_at?: string
         }

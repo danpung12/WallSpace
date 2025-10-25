@@ -7,6 +7,8 @@ import DateBooking from '@/app/bookingdate/components/DateBooking';
 import BookingConfirmation from '@/app/confirm-booking/components/BookingConfirmation';
 import BookingSuccess from '@/app/booking/components/BookingSuccess'; // Import BookingSuccess
 import { useRouter } from 'next/navigation';
+import { useMap } from '@/context/MapContext';
+import { useReservations } from '@/context/ReservationContext';
 
 
 interface BookingModalPCProps {
@@ -30,7 +32,10 @@ export default function BookingModalPC({
 }: BookingModalPCProps) {
   const [step, setStep] = useState<BookingStep>('date');
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
+  const [reservationId, setReservationId] = useState<string | null>(null);
   const router = useRouter();
+  const { refreshLocations } = useMap();
+  const { refreshReservations } = useReservations();
 
 
   const handleDateBookingComplete = (details: BookingDetails) => {
@@ -42,12 +47,22 @@ export default function BookingModalPC({
     setStep('date');
   };
 
-  const handleBookingConfirmed = () => {
+  const handleBookingConfirmed = async (id: string) => {
+    setReservationId(id);
     setStep('success');
+    // 예약 완료 후 locations 데이터와 reservations 데이터 새로고침
+    await Promise.all([
+      refreshLocations(),
+      refreshReservations()
+    ]);
   };
 
   const handleViewBooking = () => {
-    router.push('/bookingdetail'); // Navigate to booking detail page
+    if (reservationId) {
+      router.push(`/bookingdetail?id=${encodeURIComponent(reservationId)}`);
+    } else {
+      router.push('/dashboard');
+    }
     onClose(); // Close the modal
   };
 
@@ -77,7 +92,7 @@ export default function BookingModalPC({
               {place.name}
             </h2>
             <p className="mb-4 text-xl font-medium text-theme-brown-dark">
-              {place.category}
+              {typeof place.category === 'string' ? place.category : place.category?.name || '기타'}
             </p>
             <p className="leading-relaxed text-theme-brown-dark">
               {place.description}
@@ -136,6 +151,7 @@ export default function BookingModalPC({
                         isModal={true}
                         onClose={onClose}
                         onViewBooking={handleViewBooking}
+                        reservationId={reservationId || undefined}
                     />
                 )}
              </div>

@@ -6,9 +6,11 @@ import { useUserMode } from '../context/UserModeContext';
 import { useEffect, useState } from 'react';
 import { UserProfile } from '@/data/profile';
 import LogoutConfirmationModal from './LogoutConfirmationModal';
+import { createClient } from '@/lib/supabase/client';
 
 function NavLinks() {
   const pathname = usePathname();
+  const isGuestMode = pathname.startsWith('/guest');
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
   const linkCls = (href: string) =>
@@ -18,12 +20,18 @@ function NavLinks() {
         : 'text-gray-500 hover:text-gray-700'
     }`;
 
-  const navItems = [
-    { href: '/home', label: '홈' },
-    { href: '/map', label: '예약' },
-    { href: '/dashboard', label: '대시보드' },
-    { href: '/profile', label: '내 정보' },
-  ];
+  const navItems = isGuestMode
+    ? [
+        { href: '/guest/home', label: '홈' },
+        { href: '/guest/map', label: '지도' },
+        { href: '/guest/profile', label: '내 정보' },
+      ]
+    : [
+        { href: '/', label: '홈' },
+        { href: '/map', label: '예약' },
+        { href: '/dashboard', label: '대시보드' },
+        { href: '/profile', label: '내 정보' },
+      ];
 
   return (
     <div className="flex items-center space-x-6">
@@ -45,7 +53,8 @@ function Header() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const pathname = usePathname();
-  const isHomePage = pathname === '/home';
+  const isHomePage = pathname === '/' || pathname === '/guest/home';
+  const isGuestMode = pathname.startsWith('/guest');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -66,14 +75,50 @@ function Header() {
     setShowConfirm(true);
   };
 
-  const handleConfirmLogout = () => {
-    // 로그아웃 로직 (실제로는 Supabase 로그아웃을 구현해야 함)
+  const handleConfirmLogout = async () => {
+    // Supabase 로그아웃
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    
     setShowConfirm(false);
-    router.push('/');
+    router.push('/login');
   };
 
   const handleCloseModal = () => {
     setShowConfirm(false);
+  };
+
+  // user_type을 데이터베이스에 업데이트하는 함수
+  const handleUserModeChange = async (mode: 'artist' | 'manager') => {
+    try {
+      // 로컬 상태 먼저 업데이트 (즉각적인 UI 반응)
+      setUserMode(mode);
+
+      // 데이터베이스에 user_type 업데이트
+      const response = await fetch('/api/profile/user-type', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_type: mode }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update user type');
+      }
+
+      const result = await response.json();
+      console.log('✅ User type updated:', result);
+
+      // 성공 알림 (선택사항)
+      // alert(mode === 'artist' ? '작가 모드로 전환되었습니다' : '사장님 모드로 전환되었습니다');
+      
+    } catch (error) {
+      console.error('Error updating user type:', error);
+      // 에러 발생 시 원래 모드로 되돌리기 (선택사항)
+      // setUserMode(userMode);
+      // alert('모드 전환에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
   return (
@@ -86,42 +131,44 @@ function Header() {
         >
           <div className="flex items-center justify-between h-16">
             <div className="flex-shrink-0">
-              <Link href="/home" className="text-2xl font-bold text-[#3D2C1D]">
+              <Link href={isGuestMode ? "/guest/home" : "/"} className="text-2xl font-bold text-[#3D2C1D]">
                 WallSpace
               </Link>
             </div>
             <div className="hidden lg:flex items-center space-x-6">
               <NavLinks />
-              <div className="flex items-center text-xs font-semibold p-1 rounded-lg bg-[#EAE5DE] ml-6">
-                <button
-                  type="button"
-                  onClick={() => setUserMode('artist')}
-                  className={`px-3 py-1 rounded-md transition-all duration-300 ${
-                    userMode === 'artist'
-                      ? 'bg-white shadow-sm text-[#3D2C1D]'
-                      : 'text-[#8C7853]'
-                  }`}
-                >
-                  작가
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setUserMode('manager')}
-                  className={`px-3 py-1 rounded-md transition-all duration-300 ${
-                    userMode === 'manager'
-                      ? 'bg-white shadow-sm text-[#3D2C1D]'
-                      : 'text-[#8C7853]'
-                  }`}
-                >
-                  사장님
-                </button>
-              </div>
+              {!isGuestMode && (
+                <div className="flex items-center text-xs font-semibold p-1 rounded-lg bg-[#EAE5DE] ml-6">
+                  <button
+                    type="button"
+                    onClick={() => handleUserModeChange('artist')}
+                    className={`px-3 py-1 rounded-md transition-all duration-300 ${
+                      userMode === 'artist'
+                        ? 'bg-white shadow-sm text-[#3D2C1D]'
+                        : 'text-[#8C7853]'
+                    }`}
+                  >
+                    작가
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleUserModeChange('manager')}
+                    className={`px-3 py-1 rounded-md transition-all duration-300 ${
+                      userMode === 'manager'
+                        ? 'bg-white shadow-sm text-[#3D2C1D]'
+                        : 'text-[#8C7853]'
+                    }`}
+                  >
+                    사장님
+                  </button>
+                </div>
+              )}
               {userProfile && (
                 <div className="flex items-center space-x-4 ml-4 pl-4 border-l border-gray-300">
                   <Link
                     href="/profile"
                     className="text-sm font-medium text-[#3D2C1D] hover:text-[#5D4C3D] transition-colors">
-                    {userProfile.nickname}
+                    {userProfile.nickname || userProfile.name || userProfile.full_name || '사용자'} 님
                   </Link>
                   <button
                     onClick={handleLogout}

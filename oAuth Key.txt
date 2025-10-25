@@ -1,0 +1,5 @@
+oAuth Key
+
+Google:
+	ID: 65051491178-ua441e16ej45fba3dii786du88ugnhaa.apps.googleusercontent.com
+	Password: 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

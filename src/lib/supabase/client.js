@@ -18,7 +18,12 @@ export const signUp = async (email, password, userData) => {
     email,
     password,
     options: {
-      data: userData
+      data: {
+        ...userData,
+        // Supabase Auth의 Display name으로 표시될 필드
+        full_name: userData.full_name,
+        name: userData.full_name, // 일부 Supabase 버전은 'name'을 사용
+      }
     }
   })
   return { data, error }

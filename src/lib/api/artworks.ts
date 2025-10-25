@@ -1,201 +1,236 @@
 // src/lib/api/artworks.ts
-// 작품 관련 API 서비스
+import { createClient } from '@/lib/supabase/client';
+import type { Artwork, ArtworkInsert, ArtworkUpdate } from '@/types/database';
 
-import { createClient } from '@/lib/supabase/client'
-import { 
-  Artwork, 
-  ArtworkInsert, 
-  ArtworkUpdate,
-  ArtistArtworkStats
-} from '@/types/database'
+/**
+ * 모든 작품 가져오기 (공개된 작품)
+ */
+export async function getArtworks(): Promise<Artwork[]> {
+  const supabase = createClient();
 
-// 모든 작품 조회
-export const getArtworks = async (): Promise<Artwork[]> => {
-  const supabase = createClient()
   const { data, error } = await supabase
     .from('artworks')
     .select('*')
-    .order('created_at', { ascending: false })
-  
+    .order('created_at', { ascending: false });
+
   if (error) {
-    console.error('Error fetching artworks:', error)
-    return []
+    console.error('Error fetching artworks:', error);
+    throw error;
   }
-  
-  return data
+
+  return data || [];
 }
 
-// 특정 작품 조회
-export const getArtwork = async (artworkId: string): Promise<Artwork | null> => {
-  const supabase = createClient()
+/**
+ * 현재 로그인한 사용자의 작품 목록 가져오기
+ */
+export async function getUserArtworks(): Promise<Artwork[]> {
+  const supabase = createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
   const { data, error } = await supabase
     .from('artworks')
     .select('*')
-    .eq('id', artworkId)
-    .single()
-  
+    .eq('artist_id', user.id)
+    .order('created_at', { ascending: false });
+
   if (error) {
-    console.error('Error fetching artwork:', error)
-    return null
+    console.error('Error fetching artworks:', error);
+    throw error;
   }
-  
-  return data
+
+  return data || [];
 }
 
-// 작가별 작품 조회
-export const getArtworksByArtist = async (artistId: string): Promise<Artwork[]> => {
-  const supabase = createClient()
+/**
+ * 작품 ID로 단일 작품 가져오기
+ */
+export async function getArtworkById(id: string): Promise<Artwork | null> {
+  const supabase = createClient();
+
   const { data, error } = await supabase
     .from('artworks')
     .select('*')
-    .eq('artist_id', artistId)
-    .order('created_at', { ascending: false })
-  
+    .eq('id', id)
+    .single();
+
   if (error) {
-    console.error('Error fetching artist artworks:', error)
-    return []
+    console.error('Error fetching artwork:', error);
+    throw error;
   }
-  
-  return data
+
+  return data;
 }
 
-// 작품 생성
-export const createArtwork = async (artwork: ArtworkInsert): Promise<Artwork | null> => {
-  const supabase = createClient()
+/**
+ * 이미지 파일을 Supabase Storage에 업로드
+ */
+export async function uploadArtworkImage(file: File, artistId: string): Promise<string> {
+  const supabase = createClient();
+
+  // 파일명을 고유하게 만들기 (타임스탬프 + 원본 파일명)
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${artistId}/${Date.now()}.${fileExt}`;
+
+  const { data, error } = await supabase.storage
+    .from('artworks')
+    .upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+
+  if (error) {
+    console.error('Error uploading image:', error);
+    throw error;
+  }
+
+  // Public URL 가져오기
+  const { data: { publicUrl } } = supabase.storage
+    .from('artworks')
+    .getPublicUrl(fileName);
+
+  return publicUrl;
+}
+
+/**
+ * 새 작품 추가
+ */
+export async function createArtwork(artwork: {
+  title: string;
+  dimensions: string;
+  price: number;
+  description: string;
+  file: File;
+}): Promise<Artwork> {
+  const supabase = createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  // 1. 이미지 업로드
+  const imageUrl = await uploadArtworkImage(artwork.file, user.id);
+
+  // 2. 작품 데이터 삽입
+  const artworkData: ArtworkInsert = {
+    artist_id: user.id,
+    title: artwork.title,
+    dimensions: artwork.dimensions,
+    price: artwork.price,
+    description: artwork.description,
+    image_url: imageUrl,
+    alt_text: artwork.title,
+  };
+
   const { data, error } = await supabase
     .from('artworks')
-    .insert(artwork)
+    .insert(artworkData)
     .select()
-    .single()
-  
+    .single();
+
   if (error) {
-    console.error('Error creating artwork:', error)
-    return null
+    console.error('Error creating artwork:', error);
+    throw error;
   }
-  
-  return data
+
+  return data;
 }
 
-// 작품 업데이트
-export const updateArtwork = async (artworkId: string, updates: ArtworkUpdate): Promise<Artwork | null> => {
-  const supabase = createClient()
+/**
+ * 작품 수정
+ */
+export async function updateArtwork(
+  id: string,
+  artwork: {
+    title: string;
+    dimensions: string;
+    price: number;
+    description: string;
+    file?: File | null;
+  }
+): Promise<Artwork> {
+  const supabase = createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  let imageUrl: string | undefined;
+
+  // 새 이미지가 있으면 업로드
+  if (artwork.file) {
+    imageUrl = await uploadArtworkImage(artwork.file, user.id);
+  }
+
+  // 작품 데이터 업데이트
+  const updateData: ArtworkUpdate = {
+    title: artwork.title,
+    dimensions: artwork.dimensions,
+    price: artwork.price,
+    description: artwork.description,
+    ...(imageUrl && { image_url: imageUrl, alt_text: artwork.title }),
+  };
+
   const { data, error } = await supabase
     .from('artworks')
-    .update(updates)
-    .eq('id', artworkId)
+    .update(updateData)
+    .eq('id', id)
+    .eq('artist_id', user.id)
     .select()
-    .single()
-  
+    .single();
+
   if (error) {
-    console.error('Error updating artwork:', error)
-    return null
+    console.error('Error updating artwork:', error);
+    throw error;
   }
-  
-  return data
+
+  return data;
 }
 
-// 작품 삭제
-export const deleteArtwork = async (artworkId: string): Promise<boolean> => {
-  const supabase = createClient()
+/**
+ * 작품 삭제
+ */
+export async function deleteArtwork(id: string): Promise<void> {
+  const supabase = createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  // 1. 먼저 작품 정보 가져오기 (이미지 URL 확인용)
+  const { data: artwork } = await supabase
+    .from('artworks')
+    .select('image_url')
+    .eq('id', id)
+    .eq('artist_id', user.id)
+    .single();
+
+  // 2. Storage에서 이미지 삭제 (선택적)
+  if (artwork?.image_url) {
+    const pathMatch = artwork.image_url.match(/artworks\/(.+)/);
+    if (pathMatch) {
+      await supabase.storage
+        .from('artworks')
+        .remove([pathMatch[1]]);
+    }
+  }
+
+  // 3. 작품 데이터 삭제
   const { error } = await supabase
     .from('artworks')
     .delete()
-    .eq('id', artworkId)
-  
-  if (error) {
-    console.error('Error deleting artwork:', error)
-    return false
-  }
-  
-  return true
-}
+    .eq('id', id)
+    .eq('artist_id', user.id);
 
-// 작가별 작품 통계 조회
-export const getArtistArtworkStats = async (artistId: string): Promise<ArtistArtworkStats | null> => {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('artist_artwork_stats')
-    .select('*')
-    .eq('artist_id', artistId)
-    .single()
-  
   if (error) {
-    console.error('Error fetching artist artwork stats:', error)
-    return null
+    console.error('Error deleting artwork:', error);
+    throw error;
   }
-  
-  return data
-}
-
-// 카테고리별 작품 조회
-export const getArtworksByCategory = async (category: string): Promise<Artwork[]> => {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('artworks')
-    .select('*')
-    .eq('category', category)
-    .order('created_at', { ascending: false })
-  
-  if (error) {
-    console.error('Error fetching artworks by category:', error)
-    return []
-  }
-  
-  return data
-}
-
-// 가격 범위별 작품 조회
-export const getArtworksByPriceRange = async (minPrice: number, maxPrice: number): Promise<Artwork[]> => {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('artworks')
-    .select('*')
-    .gte('price', minPrice)
-    .lte('price', maxPrice)
-    .order('price', { ascending: true })
-  
-  if (error) {
-    console.error('Error fetching artworks by price range:', error)
-    return []
-  }
-  
-  return data
-}
-
-// 작품 검색
-export const searchArtworks = async (query: string): Promise<Artwork[]> => {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('artworks')
-    .select('*')
-    .or(`title.ilike.%${query}%,description.ilike.%${query}%,category.ilike.%${query}%`)
-    .order('created_at', { ascending: false })
-  
-  if (error) {
-    console.error('Error searching artworks:', error)
-    return []
-  }
-  
-  return data
-}
-
-// 작품 가용성 업데이트
-export const updateArtworkAvailability = async (artworkId: string, isAvailable: boolean): Promise<Artwork | null> => {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('artworks')
-    .update({ 
-      // artworks 테이블에 is_available 컬럼이 없다면 다른 방법으로 처리
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', artworkId)
-    .select()
-    .single()
-  
-  if (error) {
-    console.error('Error updating artwork availability:', error)
-    return null
-  }
-  
-  return data
 }

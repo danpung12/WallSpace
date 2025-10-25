@@ -11,18 +11,20 @@ import {
 
 // 모든 예약 조회 (상세 정보 포함)
 export const getBookings = async (): Promise<BookingDetail[]> => {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('booking_details')
-    .select('*')
-    .order('created_at', { ascending: false })
-  
-  if (error) {
-    console.error('Error fetching bookings:', error)
-    return []
+  try {
+    const response = await fetch('/api/reservations');
+    
+    if (!response.ok) {
+      console.error('Failed to fetch reservations:', response.statusText);
+      return [];
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching bookings:', error);
+    return [];
   }
-  
-  return data
 }
 
 // 특정 예약 조회
@@ -44,36 +46,40 @@ export const getBooking = async (bookingId: string): Promise<BookingDetail | nul
 
 // 사용자별 예약 조회
 export const getBookingsByUser = async (userId: string): Promise<BookingDetail[]> => {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('booking_details')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-  
-  if (error) {
-    console.error('Error fetching user bookings:', error)
-    return []
+  try {
+    console.log('🔍 Fetching user reservations via API...');
+    const response = await fetch('/api/reservations');
+    
+    if (!response.ok) {
+      console.error('❌ Failed to fetch reservations:', response.statusText);
+      return [];
+    }
+    
+    const data = await response.json();
+    console.log('✅ Reservations fetched:', data.length);
+    return data;
+  } catch (error) {
+    console.error('Error fetching user bookings:', error);
+    return [];
   }
-  
-  return data
 }
 
 // 공간별 예약 조회
 export const getBookingsByLocation = async (locationId: string): Promise<BookingDetail[]> => {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('booking_details')
-    .select('*')
-    .eq('location_id', locationId)
-    .order('start_date', { ascending: true })
-  
-  if (error) {
-    console.error('Error fetching location bookings:', error)
-    return []
+  try {
+    const response = await fetch(`/api/reservations?location_id=${locationId}`);
+    
+    if (!response.ok) {
+      console.error('Failed to fetch location reservations:', response.statusText);
+      return [];
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching location bookings:', error);
+    return [];
   }
-  
-  return data
 }
 
 // 예약 생성
@@ -114,38 +120,63 @@ export const updateBooking = async (bookingId: string, updates: BookingUpdate): 
 // 예약 상태 업데이트
 export const updateBookingStatus = async (
   bookingId: string, 
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed'
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed',
+  rejectionReason?: string
 ): Promise<Booking | null> => {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('bookings')
-    .update({ status })
-    .eq('id', bookingId)
-    .select()
-    .single()
-  
-  if (error) {
-    console.error('Error updating booking status:', error)
-    return null
+  try {
+    console.log('📞 API CALL - updateBookingStatus:', { bookingId, status, rejectionReason });
+    console.trace('📍 Call stack');
+    
+    const body: any = {
+      reservation_id: bookingId,
+      status,
+    };
+    
+    // 거절 사유가 있으면 추가
+    if (rejectionReason) {
+      body.rejection_reason = rejectionReason;
+    }
+    
+    console.log('📤 Sending request body:', body);
+    
+    const response = await fetch('/api/reservations', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to update booking status:', response.statusText);
+      return null;
+    }
+    
+    const result = await response.json();
+    return result.reservation || null;
+  } catch (error) {
+    console.error('Error updating booking status:', error);
+    return null;
   }
-  
-  return data
 }
 
-// 예약 삭제
+// 예약 삭제 (실제로는 취소 상태로 변경)
 export const deleteBooking = async (bookingId: string): Promise<boolean> => {
-  const supabase = createClient()
-  const { error } = await supabase
-    .from('bookings')
-    .delete()
-    .eq('id', bookingId)
-  
-  if (error) {
-    console.error('Error deleting booking:', error)
-    return false
+  try {
+    const response = await fetch('/api/reservations', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reservation_id: bookingId, status: 'cancelled' }),
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to cancel booking:', response.statusText);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error deleting booking:', error);
+    return false;
   }
-  
-  return true
 }
 
 // 날짜 범위별 예약 조회

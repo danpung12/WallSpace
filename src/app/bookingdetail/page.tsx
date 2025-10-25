@@ -29,17 +29,44 @@ function BookingDetailContent() {
 
   useEffect(() => {
     const id = searchParams.get('id');
+    console.log('🔍 Loading reservation:', id);
     if (id) {
       const foundReservation = getReservationById(id);
-      setReservation(foundReservation || null);
+      console.log('📦 Found reservation:', foundReservation);
+      
+      if (foundReservation) {
+        // API 데이터를 UI가 기대하는 형식으로 변환
+        const transformed = {
+          ...(foundReservation as any),
+          // 기존 필드 유지하면서 추가
+          artworkTitle: (foundReservation as any).artwork?.title || '',
+          artistName: (foundReservation as any).artist?.nickname || (foundReservation as any).artist?.name || '', // 필명 우선, 없으면 이름
+          storeName: (foundReservation as any).location?.name || '',
+          image: (foundReservation as any).artwork?.image_url || (foundReservation as any).artwork?.images?.[0] || '',
+          locationImage: (foundReservation as any).location?.images?.[0] || (foundReservation as any).location?.image_url || '',
+          startDate: (foundReservation as any).start_date || (foundReservation as any).startDate,
+          endDate: (foundReservation as any).end_date || (foundReservation as any).endDate,
+          price: (foundReservation as any).space?.price || (foundReservation as any).price || 0,
+        };
+        console.log('✅ Transformed reservation:', transformed);
+        console.log('🖼️ Images:', { 
+          artwork: transformed.image, 
+          location: transformed.locationImage 
+        });
+        setReservation(transformed as any);
+      } else {
+        console.warn('⚠️ Reservation not found');
+        setReservation(null);
+      }
     }
   }, [searchParams, getReservationById]);
 
   // --- Start of Original UI Logic ---
   const durationDays = useMemo(() => {
     if (!reservation) return 0;
-    const start = new Date(reservation.startDate);
-    const end = new Date(reservation.endDate);
+    if (!(reservation as any).startDate || !(reservation as any).endDate) return 0;
+    const start = new Date((reservation as any).startDate);
+    const end = new Date((reservation as any).endDate);
     // Add 1 for inclusive day counting
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
@@ -48,15 +75,18 @@ function BookingDetailContent() {
 
   const totalCost = useMemo(() => {
     if (!reservation) return 0;
-    return durationDays * reservation.price;
+    const totalPrice = (reservation as any).total_price;
+    if (totalPrice) return totalPrice;
+    return durationDays * ((reservation as any).price || 0);
   }, [reservation, durationDays]);
 
   const formattedPeriod = useMemo(() => {
     if (!reservation) return "";
+    if (!(reservation as any).startDate || !(reservation as any).endDate) return "";
     const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-    const startDate = new Date(reservation.startDate).toLocaleDateString('ko-KR', options);
-    const endDate = new Date(reservation.endDate).toLocaleDateString('ko-KR', options);
-    return `${startDate} ~ ${endDate}`;
+    const startFormatted = new Date((reservation as any).startDate).toLocaleDateString('ko-KR', options);
+    const endFormatted = new Date((reservation as any).endDate).toLocaleDateString('ko-KR', options);
+    return `${startFormatted} ~ ${endFormatted}`;
   }, [reservation]);
   // --- End of Original UI Logic ---
 
@@ -124,7 +154,7 @@ function BookingDetailContent() {
               <section className="bg-white rounded-xl shadow-sm p-5 lg:p-8 lg:flex lg:justify-between lg:items-center">
                 <h1 className="text-xl font-bold">예약 상세정보</h1>
                 <div className="flex items-center gap-4 mt-4 lg:mt-0">
-                  <p className="text-sm font-medium text-[var(--text-secondary)]">예약 ID: {reservation.id}</p>
+                  <p className="text-sm font-medium text-[var(--text-secondary)]">예약 ID: {reservation.short_id || reservation.id}</p>
                   <span className={`text-xs font-semibold py-1 px-3 rounded-full ${
                     reservation.status === "confirmed" ? "text-green-600 bg-green-100" 
                     : reservation.status === "pending" ? "text-yellow-600 bg-yellow-100"
@@ -150,7 +180,7 @@ function BookingDetailContent() {
                     <div className="bg-white rounded-xl shadow-sm p-5 lg:p-8 hover:shadow-md transition-shadow">
                       <h3 className="text-lg font-bold mb-4">예약 장소</h3>
                       <div className="flex items-center gap-4">
-                         <div className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0" style={{ backgroundImage: `url("https://picsum.photos/id/200/400/300")` }} />
+                         <div className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0" style={{ backgroundImage: `url("${(reservation as any).locationImage || 'https://picsum.photos/200/200'}")` }} />
                          <div className="flex-1 space-y-1">
                            <p className="text-base font-semibold">{reservation.storeName}</p>
                          </div>

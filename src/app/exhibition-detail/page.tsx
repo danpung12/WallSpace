@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Header from "@/app/components/Header";
 import { useBottomNav } from '@/app/context/BottomNavContext';
+import { useReservations } from '@/context/ReservationContext';
+import { getCurrentUser } from '@/lib/supabase/client';
+import { createLocationReview, checkUserReviewExists } from '@/lib/api/location-reviews';
 import Footer from '@/app/components/Footer';
 
 // Mock 전시 데이터 (dashboard에서 가져올 데이터)
@@ -140,6 +143,15 @@ function ExhibitionDetailContent() {
   const [exhibition, setExhibition] = useState<typeof EXHIBITIONS_DATA[0] | null>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const { setIsNavVisible } = useBottomNav();
+  const { getReservationById } = useReservations();
+  
+  // 리뷰 관련 상태
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [hasSubmittedReview, setHasSubmittedReview] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [locationId, setLocationId] = useState<string | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   useEffect(() => {
     setIsNavVisible(false);
@@ -148,13 +160,128 @@ function ExhibitionDetailContent() {
     };
   }, [setIsNavVisible]);
 
+  // 현재 사용자 정보 가져오기
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { user } = await getCurrentUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    fetchUser();
+  }, []);
+
   useEffect(() => {
     const id = searchParams.get('id');
     if (id) {
-      const foundExhibition = EXHIBITIONS_DATA.find(ex => ex.id === id);
-      setExhibition(foundExhibition || null);
+      // 먼저 실제 예약 데이터 확인
+      const reservation = getReservationById(id);
+      
+      if (reservation) {
+        // 예약 데이터를 exhibition 형식으로 변환
+        const today = new Date();
+        const endDate = new Date(reservation.end_date);
+        const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+        
+        const artworkImage = reservation.artwork?.image_url || reservation.artwork?.images?.[0] || 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=400&h=300&fit=crop';
+        const storeImage = reservation.location?.images?.[0] || 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=400&h=300&fit=crop';
+        
+        // location_id 저장
+        if (reservation.location_id) {
+          setLocationId(reservation.location_id);
+        }
+        
+        const exhibitionData = {
+          id: reservation.id,
+          short_id: reservation.short_id || reservation.id,
+          title: reservation.artwork?.title || '작품명 없음',
+          artworkTitle: reservation.artwork?.title || '작품명 없음',
+          artworkImage: artworkImage,
+          artist: reservation.artist?.nickname || reservation.artist?.name || '작가 정보 없음',
+          location: reservation.location?.name || '장소 정보 없음',
+          storeName: reservation.location?.name || '장소 정보 없음',
+          storeLocation: reservation.location?.address || '',
+          storeImage: storeImage,
+          address: reservation.location?.address || '',
+          startDate: reservation.start_date,
+          endDate: reservation.end_date,
+          description: reservation.artwork?.description || '작품 설명이 없습니다.',
+          daysLeft: daysLeft,
+          images: [artworkImage, storeImage].filter(Boolean),
+          // Mock stats data (실제로는 DB에서 가져와야 함)
+          stats: {
+            totalVisitors: 0,
+            likes: 0,
+            comments: 0,
+            gender: { male: 0, female: 0 },
+            ageGroups: [
+              { range: '10대', count: 0, percentage: 0 },
+              { range: '20대', count: 0, percentage: 0 },
+              { range: '30대', count: 0, percentage: 0 },
+              { range: '40대', count: 0, percentage: 0 },
+              { range: '50대 이상', count: 0, percentage: 0 }
+            ],
+            dailyVisitors: []
+          },
+          reviews: []
+        };
+        setExhibition(exhibitionData as any);
+      } else {
+        // fallback to mock data
+        const foundExhibition = EXHIBITIONS_DATA.find(ex => ex.id === id);
+        setExhibition(foundExhibition || null);
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, getReservationById]);
+
+  // 사용자가 이미 리뷰를 남겼는지 확인
+  useEffect(() => {
+    const checkReview = async () => {
+      if (locationId && currentUserId) {
+        const exists = await checkUserReviewExists(locationId, currentUserId);
+        setHasSubmittedReview(exists);
+      }
+    };
+    checkReview();
+  }, [locationId, currentUserId]);
+
+  // 리뷰 제출 핸들러
+  const handleSubmitReview = async () => {
+    if (!reviewComment.trim()) {
+      alert('리뷰 내용을 입력해주세요.');
+      return;
+    }
+
+    if (!locationId || !currentUserId) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    
+    try {
+      const result = await createLocationReview({
+        location_id: locationId,
+        artist_id: currentUserId,
+        reservation_id: exhibition?.id || null,
+        comment: reviewComment
+      });
+
+      if (result) {
+        alert('리뷰가 등록되었습니다!');
+        setHasSubmittedReview(true);
+        setReviewComment('');
+        setIsReviewModalOpen(false); // 모달 닫기
+      } else {
+        alert('리뷰 등록에 실패했습니다. 이미 리뷰를 작성하셨을 수 있습니다.');
+      }
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      alert('리뷰 등록 중 오류가 발생했습니다.');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   const formattedPeriod = useMemo(() => {
     if (!exhibition) return "";
@@ -165,7 +292,7 @@ function ExhibitionDetailContent() {
   }, [exhibition]);
 
   const maxDailyVisitors = useMemo(() => {
-    if (!exhibition) return 0;
+    if (!exhibition || !exhibition.stats?.dailyVisitors || exhibition.stats.dailyVisitors.length === 0) return 0;
     return Math.max(...exhibition.stats.dailyVisitors.map(d => d.count));
   }, [exhibition]);
 
@@ -179,8 +306,12 @@ function ExhibitionDetailContent() {
     );
   }
 
-  const malePercentage = Math.round((exhibition.stats.gender.male / exhibition.stats.totalVisitors) * 100);
-  const femalePercentage = Math.round((exhibition.stats.gender.female / exhibition.stats.totalVisitors) * 100);
+  const malePercentage = exhibition.stats?.totalVisitors > 0 
+    ? Math.round((exhibition.stats.gender.male / exhibition.stats.totalVisitors) * 100) 
+    : 0;
+  const femalePercentage = exhibition.stats?.totalVisitors > 0 
+    ? Math.round((exhibition.stats.gender.female / exhibition.stats.totalVisitors) * 100) 
+    : 0;
 
   return (
     <>
@@ -221,12 +352,12 @@ function ExhibitionDetailContent() {
           </div>
         </header>
         
-        <main className="flex-grow p-4 lg:py-8 lg:px-40">
-          <div className="pt-4 lg:pt-8">
+        <main className="flex-grow p-4 lg:py-8 lg:px-8">
+          <div className="pt-4 lg:pt-8 max-w-[1400px] mx-auto">
             <section className="bg-white rounded-xl shadow-sm p-5 lg:p-8 lg:flex lg:justify-between lg:items-center">
               <h1 className="text-xl font-bold">전시 상세정보</h1>
               <div className="flex items-center gap-4 mt-4 lg:mt-0">
-                <p className="text-sm font-medium text-[var(--text-secondary)]">예약 ID: {exhibition.id}</p>
+                <p className="text-sm font-medium text-[var(--text-secondary)]">예약 ID: {exhibition.short_id || exhibition.id}</p>
                 <span className="text-xs font-semibold py-1 px-3 rounded-full bg-green-100 text-green-600">
                   D-{exhibition.daysLeft}
                 </span>
@@ -268,10 +399,10 @@ function ExhibitionDetailContent() {
               <section className="bg-white rounded-xl shadow-sm p-5 lg:p-8">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold">관람객 한 줄 평</h3>
-                  <span className="text-sm text-[var(--text-secondary)]">{exhibition.reviews.length}개</span>
+                  <span className="text-sm text-[var(--text-secondary)]">{exhibition.reviews?.length || 0}개</span>
                 </div>
                 <div className="space-y-4">
-                  {exhibition.reviews.map((review) => (
+                  {(exhibition.reviews || []).map((review) => (
                     <div key={review.id} className="flex gap-3 p-4 bg-gray-50 rounded-lg hover:shadow-md transition-shadow">
                       <div className="w-12 h-12 rounded-full bg-center bg-cover bg-no-repeat flex-shrink-0" style={{ backgroundImage: `url("${review.profileImage}")` }} />
                       <div className="flex-1">
@@ -288,7 +419,7 @@ function ExhibitionDetailContent() {
               </div>
 
               {/* 통계 카드 */}
-              <div className="lg:col-span-1 order-2 lg:order-none">
+              <div className="lg:col-span-1 order-2 lg:order-none space-y-6">
                 <section className="bg-white rounded-xl shadow-sm p-5 lg:p-8">
                   <h3 className="text-lg font-bold mb-4">통계</h3>
                   <div className="text-center py-4">
@@ -303,6 +434,28 @@ function ExhibitionDetailContent() {
                     상세 통계 보기
                   </button>
                 </section>
+
+                {/* 장소 리뷰 남기기 버튼 */}
+                <section className="bg-white rounded-xl shadow-sm p-5 lg:p-8">
+                  <h3 className="text-lg font-bold mb-4">장소 리뷰</h3>
+                  {hasSubmittedReview ? (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-green-600 mb-2">
+                        ✓ 리뷰를 작성해주셔서 감사합니다!
+                      </p>
+                      <p className="text-xs text-[var(--text-secondary)]">
+                        리뷰는 1회만 작성 가능합니다.
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setIsReviewModalOpen(true)}
+                      className="w-full bg-[var(--primary-color)] text-white py-3 px-6 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+                    >
+                      장소 리뷰 남기기
+                    </button>
+                  )}
+                </section>
               </div>
             </div>
           </div>
@@ -310,6 +463,71 @@ function ExhibitionDetailContent() {
 
         <Footer />
       </div>
+
+      {/* 리뷰 작성 모달 */}
+      {isReviewModalOpen && (
+        <div
+          className="fixed inset-0 flex justify-center items-center z-50 p-4 bg-black/50"
+          onClick={() => setIsReviewModalOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 pt-6 pb-4">
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">장소 리뷰 남기기</h2>
+              <button 
+                onClick={() => setIsReviewModalOpen(false)} 
+                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+                  이 장소에 대한 한 줄 평을 남겨주세요
+                </label>
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="장소의 분위기, 시설, 위치 등에 대한 솔직한 평가를 남겨주세요."
+                  className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]"
+                  rows={4}
+                  maxLength={200}
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-xs text-[var(--text-secondary)]">
+                    {reviewComment.length}/200자
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setIsReviewModalOpen(false);
+                    setReviewComment('');
+                  }}
+                  className="flex-1 px-4 py-3 bg-gray-200 text-[var(--text-primary)] rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSubmitReview}
+                  disabled={isSubmittingReview || !reviewComment.trim()}
+                  className="flex-1 px-4 py-3 bg-[var(--primary-color)] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {isSubmittingReview ? '등록 중...' : '등록하기'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 통계 모달 */}
       {isStatsModalOpen && (
@@ -377,7 +595,7 @@ function ExhibitionDetailContent() {
               <section>
                 <h3 className="text-lg font-bold mb-4 text-[var(--text-primary)]">연령대 통계</h3>
                 <div className="space-y-3">
-                  {exhibition.stats.ageGroups.map((age, idx) => (
+                  {(exhibition.stats?.ageGroups || []).map((age, idx) => (
                     <div key={idx}>
                       <div className="flex justify-between mb-2">
                         <span className="text-sm font-medium">{age.range}</span>
@@ -399,7 +617,7 @@ function ExhibitionDetailContent() {
               <section>
                 <h3 className="text-lg font-bold mb-4 text-[var(--text-primary)]">날짜별 관람인 수 (최근 7일)</h3>
                 <div className="space-y-3">
-                  {exhibition.stats.dailyVisitors.map((day, idx) => {
+                  {(exhibition.stats?.dailyVisitors || []).map((day, idx) => {
                     const colors = [
                       '#d2b48c', '#daa520', '#cd853f', '#b8860b', '#d2691e', '#c19a6b', '#e6c896',
                     ];

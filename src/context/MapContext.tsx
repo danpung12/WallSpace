@@ -77,6 +77,7 @@ interface MapContextType {
     onClickDay: (cell: Date) => void;
     getDayClass: (cell: Date, inMonth: boolean) => string;
     handleFilterClick: (label: string) => void;
+    refreshLocations: () => Promise<void>;
 }
 
 const MapContext = createContext<MapContextType | null>(null);
@@ -94,6 +95,8 @@ export function MapProvider({ children }: { children: ReactNode }) {
     const [artworks, setArtworks] = useState<Artwork[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [retryCount, setRetryCount] = useState(0);
+    const MAX_RETRY_COUNT = 3;
 
     // UI State
     const [isDetailPageVisible, setDetailPageVisible] = useState(false);
@@ -111,35 +114,67 @@ export function MapProvider({ children }: { children: ReactNode }) {
     const [open24HoursFilter, setOpen24HoursFilter] = useState(false);
     const [petsAllowedFilter, setPetsAllowedFilter] = useState(false);
 
-    // Supabase 데이터 로드
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                
-                const [locationsData, artworksData] = await Promise.all([
-                    getLocations(),
-                    getArtworks()
-                ]);
-                
-                setLocations(locationsData);
-                setArtworks(artworksData);
-                
-                // 첫 번째 작품을 기본 선택으로 설정
-                if (artworksData.length > 0) {
-                    setSelectedArtwork(artworksData[0]);
-                }
-            } catch (err) {
-                console.error('Error loading data:', err);
-                setError('데이터를 불러오는 중 오류가 발생했습니다.');
-            } finally {
-                setLoading(false);
+    // Supabase 데이터 로드 함수
+    const loadData = useCallback(async (isRetry = false) => {
+        try {
+            if (isRetry) {
+                console.log(`🔄 Retrying to load locations (attempt ${retryCount + 1}/${MAX_RETRY_COUNT})...`);
+            } else {
+                console.log('📍 Loading locations...');
             }
-        };
-        
+            setLoading(true);
+            setError(null);
+            
+            // API routes를 통해 데이터 가져오기
+            const [locationsResponse, artworksData] = await Promise.all([
+                fetch('/api/locations'),
+                getArtworks()
+            ]);
+            
+            if (!locationsResponse.ok) {
+                throw new Error('Failed to fetch locations');
+            }
+            
+            const locationsData = await locationsResponse.json();
+            
+            console.log('✅ Locations loaded:', locationsData.length);
+            setLocations(locationsData);
+            setArtworks(artworksData);
+            setRetryCount(0); // 성공하면 재시도 카운트 리셋
+            
+            // 첫 번째 작품을 기본 선택으로 설정
+            if (artworksData.length > 0) {
+                setSelectedArtwork(artworksData[0]);
+            }
+        } catch (err) {
+            console.error('❌ Error loading data:', err);
+            setError('데이터를 불러오는 중 오류가 발생했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    }, [retryCount]);
+    
+    // 초기 로드
+    useEffect(() => {
         loadData();
-    }, []);
+    }, [loadData]);
+
+    // 자동 재시도 로직: locations가 비어있고 로딩이 완료된 경우
+    useEffect(() => {
+        if (!loading && locations.length === 0 && retryCount < MAX_RETRY_COUNT) {
+            console.warn('⚠️ No locations found after loading. Will retry in 2 seconds...');
+            const timer = setTimeout(() => {
+                setRetryCount(prev => prev + 1);
+                loadData(true);
+            }, 2000); // 2초 후 재시도
+
+            return () => clearTimeout(timer);
+        } else if (!loading && locations.length === 0 && retryCount >= MAX_RETRY_COUNT) {
+            console.error('❌ Max retry attempts reached. Failed to load locations.');
+        } else if (!loading && locations.length > 0) {
+            console.log(`✅ Successfully loaded ${locations.length} locations`);
+        }
+    }, [loading, locations.length, retryCount, loadData]);
 
     // Derived State
     const filterButtons = ['작품 선택', '카페', '갤러리', '문화회관'];
@@ -151,10 +186,21 @@ export function MapProvider({ children }: { children: ReactNode }) {
 
     const loadMarkers = useCallback((map: KakaoMap) => {
         const { kakao } = window;
-        if (!kakao || locations.length === 0) return;
+        if (!kakao) return;
         
         // Clear existing markers from ref
+        markersRef.current.forEach(({ marker, overlay }) => {
+            marker.setMap(null);
+            overlay.setMap(null);
+        });
         markersRef.current = [];
+
+        if (locations.length === 0) {
+            console.log('No locations to display on map');
+            return;
+        }
+
+        console.log('Loading markers for locations:', locations.length);
 
         locations.forEach((place) => {
             const placePosition = new kakao.maps.LatLng(place.lat, place.lng);
@@ -170,7 +216,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
             
             const contentNode = document.createElement('div');
             contentNode.className = 'custom-overlay-style';
-            contentNode.innerHTML = `<div class="font-bold">${place.name}</div><div style="color:${place.status_color || '#3B82F6'};" class="text-xs mt-0.5">${place.status_text || '예약 가능'}</div>`;
+            contentNode.innerHTML = `<div class="font-bold">${place.name}</div><div style="color:${place.statusColor || '#3B82F6'};" class="text-xs mt-0.5">${place.statusText || '예약 가능'}</div>`;
             contentNode.onclick = handleClick;
             
             const overlay = new kakao.maps.CustomOverlay({ map, position: placePosition, content: contentNode, yAnchor: 2.2 });
@@ -180,13 +226,23 @@ export function MapProvider({ children }: { children: ReactNode }) {
         });
     }, [locations]);
 
+    // Effect to reload markers when locations change
+    useEffect(() => {
+        const map = mapInstance.current;
+        if (map && locations.length > 0 && !loading) {
+            console.log('Reloading markers because locations changed');
+            loadMarkers(map);
+        }
+    }, [locations, loading, loadMarkers]);
+
     // Effect to filter markers based on activeFilter or parkingFilter
-    React.useEffect(() => {
+    useEffect(() => {
         markersRef.current.forEach(({ marker, overlay, place }) => {
-            const isCategoryMatch = !activeFilter || place.category_name === activeFilter;
-            const isParkingMatch = !parkingFilter || place.parking;
-            const isOpen24HoursMatch = !open24HoursFilter || place.twenty_four_hours;
-            const arePetsAllowedMatch = !petsAllowedFilter || place.pets;
+            const categoryName = typeof place.category === 'string' ? place.category : place.category?.name;
+            const isCategoryMatch = !activeFilter || categoryName === activeFilter;
+            const isParkingMatch = !parkingFilter || place.options?.parking;
+            const isOpen24HoursMatch = !open24HoursFilter || place.options?.twentyFourHours;
+            const arePetsAllowedMatch = !petsAllowedFilter || place.options?.pets;
             const isVisible =
               isCategoryMatch &&
               isParkingMatch &&
@@ -233,7 +289,18 @@ export function MapProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const gotoMonth = useCallback((offset: number) => setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1)), []);
-    const isDisabled = useCallback((cell: Date) => cell.getMonth() === month && disabledDaysData.includes(cell.getDate()), [month]);
+    const isDisabled = useCallback((cell: Date) => {
+        // 오늘 날짜 (시간 제외)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // cell 날짜 (시간 제외)
+        const cellDate = new Date(cell);
+        cellDate.setHours(0, 0, 0, 0);
+        
+        // 오늘 이전 날짜는 비활성화
+        return cellDate < today;
+    }, []);
     const onClickDay = useCallback((cell: Date) => {
         if (isDisabled(cell)) return;
         const c = toYMD(cell);
@@ -286,6 +353,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
         handlePlaceSelect, gotoMonth, isDisabled, onClickDay, getDayClass, handleFilterClick,
         // Supabase 데이터
         locations, artworks, loading, error,
+        refreshLocations: loadData,
     };
 
     return <MapContext.Provider value={value}>{children}</MapContext.Provider>;

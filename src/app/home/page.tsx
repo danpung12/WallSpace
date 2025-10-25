@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 
 // --- 라이브러리 임포트 ---
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import { IoNotificationsCircle } from 'react-icons/io5';
 import { useMap, LocationType } from '../../context/MapContext'; // ✨ 1. 지도 컨텍스트 훅 및 MapProvider 임포트
-import { locations } from '@/data/locations'; // 전체 장소 데이터 임포트
 import { useRouter } from 'next/navigation'; // 1. useRouter 훅 임포트
 import { Location } from '@/data/locations';
 
@@ -20,11 +19,33 @@ import 'swiper/css/pagination';
 import MapDisplay from '../components/MapDisplay';
 import Header from '../components/Header'; // 1. Header 컴포넌트 임포트
 
-// --- 샘플 데이터 ---
-const notificationsData = [
-  { id: 1, title: '예약 확정', message: '요청하신 \'아트 스페이스\' 예약이 확정되었습니다.', time: '방금 전' },
-  { id: 2, title: '새로운 메시지', message: '\'김작가\'님으로부터 새로운 메시지가 도착했습니다.', time: '15분 전' },
-];
+// --- 타입 정의 ---
+interface Notification {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  related_id: string | null;
+  created_at: string;
+}
+
+// --- 유틸리티 함수 ---
+const getTimeAgo = (dateString: string): string => {
+  const now = new Date();
+  const past = new Date(dateString);
+  const diffMs = now.getTime() - past.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return '방금 전';
+  if (diffMins < 60) return `${diffMins}분 전`;
+  if (diffHours < 24) return `${diffHours}시간 전`;
+  if (diffDays < 7) return `${diffDays}일 전`;
+  return past.toLocaleDateString('ko-KR');
+};
 
 // --- 유틸리티 함수 ---
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -141,47 +162,60 @@ const GlobalSwiperStyles = () => {
 
 // --- 하위 컴포넌트 ---
 interface NotificationItemProps {
-  title: string;
-  message: string;
-  time: string;
+  notification: Notification;
+  onClick: () => void;
 }
 
-const NotificationItem = ({ title, message, time }: NotificationItemProps) => (
-  <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg rounded-2xl flex items-center shadow-lg border border-white/20 dark:border-gray-700/30 cursor-pointer hover:bg-white dark:hover:bg-gray-800 transition-colors duration-200"
-    style={{ 
-      height: 'clamp(4.75rem, 11.37vh, 7rem)',
-      padding: 'clamp(0.5rem, 1.9vh, 1.25rem)',
-      gap: 'clamp(0.375rem, 0.77vw, 0.75rem)'
-    }}>
-    <IoNotificationsCircle 
-      className="flex-shrink-0 text-[#D2B48C] dark:text-[#E8C8A0]"
-      style={{ fontSize: 'clamp(1.75rem, 9.23vw, 2.5rem)' }}
-    />
-    <div className="flex-1 min-w-0">
-      <div className="flex justify-between items-center">
-        <h3 className="font-bold truncate text-[#2C2C2C] dark:text-gray-100"
-          style={{ fontSize: 'clamp(0.8125rem, 4.1vw, 1.125rem)' }}>{title}</h3>
-        <p className="flex-shrink-0 text-[#887563] dark:text-gray-400"
+const NotificationItem = ({ notification, onClick }: NotificationItemProps) => {
+  const timeAgo = getTimeAgo(notification.created_at);
+  
+  return (
+    <div 
+      className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg rounded-2xl flex items-center shadow-lg border border-white/20 dark:border-gray-700/30 cursor-pointer hover:bg-white dark:hover:bg-gray-800 transition-colors duration-200"
+      onClick={onClick}
+      style={{ 
+        height: 'clamp(4.75rem, 11.37vh, 7rem)',
+        padding: 'clamp(0.5rem, 1.9vh, 1.25rem)',
+        gap: 'clamp(0.375rem, 0.77vw, 0.75rem)'
+      }}
+    >
+      <IoNotificationsCircle 
+        className={`flex-shrink-0 ${notification.is_read ? 'text-gray-400' : 'text-[#D2B48C] dark:text-[#E8C8A0]'}`}
+        style={{ fontSize: 'clamp(1.75rem, 9.23vw, 2.5rem)' }}
+      />
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-center">
+          <h3 className={`font-bold truncate ${notification.is_read ? 'text-gray-500' : 'text-[#2C2C2C] dark:text-gray-100'}`}
+            style={{ fontSize: 'clamp(0.8125rem, 4.1vw, 1.125rem)' }}>
+            {notification.title}
+          </h3>
+          <p className="flex-shrink-0 text-[#887563] dark:text-gray-400"
+            style={{ 
+              fontSize: 'clamp(0.625rem, 3.08vw, 0.875rem)',
+              marginLeft: 'clamp(0.25rem, 0.77vw, 0.5rem)'
+            }}>
+            {timeAgo}
+          </p>
+        </div>
+        <p className="text-[#887563] dark:text-gray-400 truncate"
           style={{ 
-            fontSize: 'clamp(0.625rem, 3.08vw, 0.875rem)',
-            marginLeft: 'clamp(0.25rem, 0.77vw, 0.5rem)'
-          }}>{time}</p>
+            fontSize: 'clamp(0.6875rem, 3.59vw, 0.9375rem)',
+            marginTop: 'clamp(0.0625rem, 0.3vh, 0.25rem)'
+          }}>
+          {notification.message}
+        </p>
       </div>
-      <p className="text-[#887563] dark:text-gray-400"
-        style={{ 
-          fontSize: 'clamp(0.6875rem, 3.59vw, 0.9375rem)',
-          marginTop: 'clamp(0.0625rem, 0.3vh, 0.25rem)'
-        }}>{message}</p>
     </div>
-  </div>
-);
+  );
+};
 
 interface RecommendedPlacesProps {
   onSlideChange: (index: number) => void;
   userLocation: { lat: number; lng: number } | null;
+  locations: Location[];
 }
 
-const RecommendedPlaces = ({ onSlideChange, userLocation }: RecommendedPlacesProps) => {
+const RecommendedPlaces = ({ onSlideChange, userLocation, locations }: RecommendedPlacesProps) => {
   const router = useRouter(); // 2. router 인스턴스 생성
 
   const handlePlaceCardClick = (place: Location) => {
@@ -307,7 +341,7 @@ const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
             }}>
             <span className="text-white font-bold" 
               style={{ 
-                textShadow: '0px 1px 4px rgba(0, 0, 0, 0.5)',
+                textShadow: '0px 1px 2px rgba(0, 0, 0, 0.25)',
                 fontSize: 'clamp(1rem, 4.62vw, 1.5rem)'
               }}>
               #{place.tags[0]}
@@ -355,7 +389,9 @@ const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
           <h3 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
             style={{ fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)' }}>{place.name}</h3>
           <p className="text-[#887563] dark:text-gray-400 lg:text-base"
-            style={{ fontSize: 'clamp(0.6875rem, 3.59vw, 0.875rem)' }}>{place.category}</p>
+            style={{ fontSize: 'clamp(0.6875rem, 3.59vw, 0.875rem)' }}>
+            {typeof place.category === 'string' ? place.category : (place.category as any)?.name || '기타'}
+          </p>
         </div>
         <div className="flex items-baseline text-[#887563] dark:text-gray-400 lg:text-base"
           style={{ 
@@ -379,13 +415,109 @@ const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
 
 // --- 메인 페이지 컴포넌트 ---
 export default function MainPage() {
+  const router = useRouter();
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [currentPlaceIndex, setCurrentPlaceIndex] = useState(0);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const currentPlaceName = locations[currentPlaceIndex]?.name;
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showTopFade, setShowTopFade] = useState(false);
   const [showBottomFade, setShowBottomFade] = useState(true);
+
+  // 추천 장소: 사용자 위치 기반 가까운 순으로 4곳
+  const recommendedLocations = useMemo(() => {
+    if (!userLocation || locations.length === 0) {
+      return locations.slice(0, 4);
+    }
+
+    // 거리 계산하여 정렬
+    const locationsWithDistance = locations.map(location => ({
+      ...location,
+      distance: parseFloat(calculateDistance(
+        userLocation.lat,
+        userLocation.lng,
+        location.lat,
+        location.lng
+      ))
+    }));
+
+    // 거리순 정렬 후 상위 4개
+    return locationsWithDistance
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 4);
+  }, [locations, userLocation]);
+
+  // 장소 데이터 로드
+  useEffect(() => {
+    const loadLocations = async () => {
+      try {
+        const response = await fetch('/api/locations');
+        if (response.ok) {
+          const data = await response.json();
+          setLocations(data);
+        } else {
+          console.error('Failed to fetch locations');
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      }
+    };
+    
+    loadLocations();
+  }, []);
+
+  // 알림 데이터 로드
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        const response = await fetch('/api/notifications');
+        if (response.ok) {
+          const data: Notification[] = await response.json();
+          // 최신 3개만 표시
+          setNotifications(data.slice(0, 3));
+        } else {
+          console.error('Failed to fetch notifications');
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
+    
+    loadNotifications();
+    
+    // 30초마다 알림 업데이트
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 알림 클릭 핸들러
+  const handleNotificationClick = async (notification: Notification) => {
+    // 읽음 처리
+    if (!notification.is_read) {
+      try {
+        await fetch(`/api/notifications/${notification.id}`, { method: 'PATCH' });
+        setNotifications(prev => 
+          prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n)
+        );
+      } catch (err) {
+        console.error('Failed to mark notification as read:', err);
+      }
+    }
+
+    // 페이지 이동
+    if (notification.related_id) {
+      let path = '';
+      if (notification.type === 'reservation_request') {
+        path = `/manager-booking-approval?id=${notification.related_id}`;
+      } else if (notification.type === 'reservation_status_update') {
+        path = `/bookingdetail?id=${notification.related_id}`;
+      }
+      if (path) {
+        router.push(path);
+      }
+    }
+  };
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -447,31 +579,37 @@ export default function MainPage() {
           }}>
           <div className="lg:flex lg:h-full lg:gap-8">
             <div className="lg:w-1/3">
-              <section className="sm:px-6 lg:sticky lg:top-12 lg:px-0"
-                style={{
-                  paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
-                  paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)'
-                }}>
-                <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
+              {notifications.length > 0 && (
+                <section className="sm:px-6 lg:sticky lg:top-12 lg:px-0"
                   style={{
-                    marginBottom: 'clamp(0.5rem, 1.9vh, 1rem)',
-                    fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)'
+                    paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
+                    paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)'
                   }}>
-                  새로운 알림
-                </h2>
-                <div style={{ 
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 'clamp(0.5rem, 1.42vh, 0.75rem)'
-                }}>
-                  {notificationsData.map((notification) => (
-                    <NotificationItem key={notification.id} {...notification} />
-                  ))}
-                </div>
-              </section>
+                  <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
+                    style={{
+                      marginBottom: 'clamp(0.5rem, 1.9vh, 1rem)',
+                      fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)'
+                    }}>
+                    새로운 알림
+                  </h2>
+                  <div style={{ 
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 'clamp(0.5rem, 1.42vh, 0.75rem)'
+                  }}>
+                    {notifications.map((notification) => (
+                      <NotificationItem 
+                        key={notification.id} 
+                        notification={notification}
+                        onClick={() => handleNotificationClick(notification)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
             </div>
 
-            <div className="lg:mt-0 lg:flex lg:w-2/3 lg:flex-col"
+            <div className="lg:mt-0 lg:flex lg:flex-col lg:w-2/3"
               style={{
                 marginTop: 'clamp(1rem, 3.79vh, 2rem)'
               }}>
@@ -492,7 +630,7 @@ export default function MainPage() {
                   style={{
                     fontSize: 'clamp(0.8125rem, 4.1vw, 1rem)'
                   }}>
-                  {currentPlaceName}
+                  {recommendedLocations[currentPlaceIndex]?.name}
                 </p>
               </div>
 
@@ -501,6 +639,7 @@ export default function MainPage() {
                   <RecommendedPlaces
                     onSlideChange={setCurrentPlaceIndex}
                     userLocation={userLocation}
+                    locations={recommendedLocations}
                   />
                 </div>
               </div>

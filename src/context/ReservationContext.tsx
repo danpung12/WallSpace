@@ -11,7 +11,7 @@ interface ReservationContextType {
   error: string | null;
   cancelReservation: (id: string) => Promise<boolean>;
   getReservationById: (id: string) => BookingDetail | undefined;
-  updateReservationStatus: (id: string, status: 'pending' | 'confirmed' | 'cancelled' | 'completed') => Promise<boolean>;
+  updateReservationStatus: (id: string, status: 'pending' | 'confirmed' | 'cancelled' | 'completed', rejectionReason?: string) => Promise<boolean>;
   refreshReservations: () => Promise<void>;
 }
 
@@ -35,6 +35,8 @@ export const ReservationProvider = ({ children }: { children: ReactNode }) => {
       }
       
       const userReservations = await getBookingsByUser(user.id);
+      console.log('📦 Loaded reservations:', userReservations);
+      console.log('📊 First reservation sample:', userReservations[0]);
       setReservations(userReservations);
     } catch (err) {
       console.error('Error loading reservations:', err);
@@ -61,9 +63,9 @@ export const ReservationProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const updateReservationStatus = async (id: string, status: 'pending' | 'confirmed' | 'cancelled' | 'completed'): Promise<boolean> => {
+  const updateReservationStatus = async (id: string, status: 'pending' | 'confirmed' | 'cancelled' | 'completed', rejectionReason?: string): Promise<boolean> => {
     try {
-      const updatedBooking = await updateBookingStatus(id, status);
+      const updatedBooking = await updateBookingStatus(id, status, rejectionReason);
       if (updatedBooking) {
         await loadReservations(); // 새로고침
         return true;

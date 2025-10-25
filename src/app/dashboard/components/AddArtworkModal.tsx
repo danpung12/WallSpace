@@ -2,20 +2,14 @@
 
 import React, { useState, useEffect, FormEvent, useRef } from 'react';
 
-// This type should ideally be in a shared types file
-type Artwork = {
-  id: number;
-  title: string;
-  dimensions: string;
-  imageUrl: string;
-};
+import type { Artwork } from '@/types/database';
 
 interface AddArtworkModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (artwork: Omit<Artwork, 'imageUrl' | 'id'> & { id?: number; file: File | null }) => void;
+  onSave: (artwork: { id?: number | string; title: string; dimensions: string; description: string; price: string; file: File | null }) => void;
   artworkToEdit: Artwork | null;
-  onDelete?: (id: number) => void; 
+  onDelete?: (id: number | string) => void; 
 }
 
 const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSave, artworkToEdit, onDelete }) => {
@@ -25,6 +19,7 @@ const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSa
   const [title, setTitle] = useState('');
   const [height, setHeight] = useState('');
   const [width, setWidth] = useState('');
+  const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -38,6 +33,7 @@ const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSa
     title.trim() !== '' &&
     height.trim() !== '' && parseFloat(height) > 0 &&
     width.trim() !== '' && parseFloat(width) > 0 &&
+    price.trim() !== '' && parseFloat(price) >= 0 &&
     description.trim() !== '' &&
     (previewUrl !== null);
 
@@ -46,17 +42,20 @@ const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSa
       setShouldRender(true);
       if (isEditMode && artworkToEdit) {
         setTitle(artworkToEdit.title);
-        const [h, w] = artworkToEdit.dimensions.replace(/cm/g, '').split('x').map(s => s.trim());
+        const dimensionsStr = artworkToEdit.dimensions || '';
+        const [h, w] = dimensionsStr.replace(/cm/g, '').split('x').map(s => s.trim());
         setHeight(h || '');
         setWidth(w || '');
-        setDescription(''); // Assuming description is not part of mock, reset it
-        setPreviewUrl(artworkToEdit.imageUrl);
+        setPrice(artworkToEdit.price ? String(artworkToEdit.price) : '');
+        setDescription(artworkToEdit.description || '');
+        setPreviewUrl(artworkToEdit.image_url || null);
         setSelectedFile(null);
       } else {
         // Reset form for "Add" mode
         setTitle('');
         setHeight('');
         setWidth('');
+        setPrice('');
         setDescription('');
         setSelectedFile(null);
         setPreviewUrl(null);
@@ -74,14 +73,14 @@ const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSa
     if (!isFormValid) return;
     
     const dimensions = `${height}cm x ${width}cm`;
-    const saveData: Omit<Artwork, 'imageUrl' | 'id'> & { id?: number; file: File | null } = {
+    const saveData = {
         title,
         dimensions,
+        description,
+        price,
         file: selectedFile,
+        ...(artworkToEdit && { id: artworkToEdit.id }),
     };
-    if (artworkToEdit) {
-        saveData.id = artworkToEdit.id;
-    }
     
     onSave(saveData);
     onClose();
@@ -115,7 +114,7 @@ const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSa
     }
     
     if (isEditMode && artworkToEdit) {
-        setPreviewUrl(artworkToEdit.imageUrl);
+        setPreviewUrl(artworkToEdit.image_url || null);
     } else {
         setPreviewUrl(null);
     }
@@ -236,6 +235,25 @@ const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSa
             </div>
 
             <div>
+              <label className="input-label" htmlFor="price-modal">작품 금액</label>
+              <div className="relative">
+                <input 
+                  id="price-modal" 
+                  type="number" 
+                  step="1" 
+                  className="input-field pr-16" 
+                  placeholder="0" 
+                  min="0" 
+                  value={price} 
+                  onChange={(e) => setPrice(e.target.value)} 
+                />
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                  <span className="text-gray-500 sm:text-sm">원</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
               <label className="input-label" htmlFor="description-modal">작품 설명</label>
               <textarea id="description-modal" rows={5} className="input-field" placeholder="갤러리에 전시되는 것처럼 작품을 소개해 주세요…" value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
@@ -281,6 +299,15 @@ const AddArtworkModal: React.FC<AddArtworkModalProps> = ({ isOpen, onClose, onSa
         .custom-scrollbar::-webkit-scrollbar-track { background-color: #f1f1f1; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #ccc; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #aaa; }
+        /* Hide number input spinner arrows */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
       `}</style>
     </div>
   );
