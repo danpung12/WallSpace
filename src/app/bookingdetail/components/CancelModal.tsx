@@ -46,13 +46,13 @@ const CancelModal = ({ isOpen, onClose, onConfirm }: CancelModalProps) => {
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="w-full h-12 rounded-xl bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300 transition-colors"
+            className="w-full h-12 rounded-xl bg-[#EAE3D9] text-[#3A2E27] font-semibold hover:bg-[#DDD6CC] transition-colors"
           >
             닫기
           </button>
           <button
             onClick={onConfirm}
-            className="w-full h-12 rounded-xl bg-gray-700 text-white font-semibold hover:bg-gray-800 transition-colors"
+            className="w-full h-12 rounded-xl bg-[#D2B48C] text-white font-semibold hover:bg-[#C19A6B] transition-colors"
           >
             취소 확정
           </button>

@@ -83,6 +83,15 @@ export default function AddArtworkPage() {
             color: var(--text-primary);
             margin-bottom: 0.25rem;
           }
+          /* Hide number input spinner arrows */
+          input[type=number]::-webkit-inner-spin-button,
+          input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+          }
+          input[type=number] {
+            -moz-appearance: textfield;
+          }
         `}</style>
 
         {/* 헤더 */}
@@ -191,6 +200,24 @@ export default function AddArtworkPage() {
                   <div className="mt-2 text-sm text-[var(--text-secondary)]">
                     <p>액자나 케이스가 포함된다면 그 크기까지 포함해 가능한 한 정확한 가로·세로 치수를 입력해 주세요.</p>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 작품 금액 */}
+            <div>
+              <label className="input-label" htmlFor="price">작품 금액</label>
+              <div className="relative">
+                <input 
+                  id="price" 
+                  type="number" 
+                  step="1000" 
+                  className="input-field pr-16" 
+                  placeholder="0" 
+                  min="0" 
+                />
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                  <span className="text-gray-500 sm:text-sm">원</span>
                 </div>
               </div>
             </div>

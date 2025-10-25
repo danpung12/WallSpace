@@ -2,25 +2,77 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 interface BookingSuccessProps {
   isModal?: boolean;
   onClose?: () => void;
   onViewBooking?: () => void;
+  reservationId?: string;
+}
+
+interface ReservationData {
+  id: string;
+  location: {
+    name: string;
+  };
+  space: {
+    name: string;
+  };
+  start_date: string;
+  end_date: string;
+  total_price: number;
+  short_id?: string;
 }
 
 export default function BookingSuccess({
   isModal = false,
   onClose,
   onViewBooking,
+  reservationId,
 }: BookingSuccessProps) {
   const router = useRouter();
+  const [reservation, setReservation] = useState<ReservationData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // 예약 데이터 로드
+  useEffect(() => {
+    const fetchReservation = async () => {
+      if (!reservationId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        console.log('📦 Fetching reservation:', reservationId);
+        const response = await fetch(`/api/reservations?id=${reservationId}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Reservation data:', data);
+          
+          // data가 배열이면 첫 번째 항목 사용, 아니면 그대로 사용
+          const reservationData = Array.isArray(data) ? data[0] : data;
+          setReservation(reservationData);
+        } else {
+          console.error('Failed to fetch reservation');
+        }
+      } catch (error) {
+        console.error('Error fetching reservation:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReservation();
+  }, [reservationId]);
 
   const handleViewBookingClick = () => {
     if (onViewBooking) {
       onViewBooking();
+    } else if (reservationId) {
+      router.push(`/bookingdetail?id=${encodeURIComponent(reservationId)}`);
     } else {
-      router.push('/bookingdetail'); // fallback for mobile page
+      router.push('/dashboard');
     }
   };
 
@@ -30,6 +82,18 @@ export default function BookingSuccess({
     } else {
       router.push('/map'); // fallback for mobile page
     }
+  };
+
+  // 날짜 포맷 함수
+  const formatDateRange = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    const formatDate = (date: Date) => {
+      return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+    };
+    
+    return `${formatDate(start)} ~ ${formatDate(end)}`;
   };
 
   return (
@@ -85,31 +149,55 @@ export default function BookingSuccess({
           <p className="text-base text-[#705D51] mb-8">
             곧 공간에서 당신의 작품을 만나보세요.
           </p>
-          <div
-            className={`text-left ${
-              !isModal ? 'space-y-5 border-t border-[#EAE3D9] pt-8' : 'space-y-3'
-            }`}
-          >
-            {/* Mock data for display, in a real app, you'd pass this as props */}
-            <div className="flex items-center justify-between">
-              <p className="text-base font-medium text-[#705D51]">예약 장소</p>
-              <p className="text-base font-bold text-[#3A2E27]">Wall Space 1</p>
+          
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#D2B48C] mx-auto"></div>
+              <p className="mt-4 text-[#705D51]">예약 정보를 불러오는 중...</p>
             </div>
-            <div className="flex items-center justify-between">
-              <p className="text-base font-medium text-[#705D51]">일시</p>
-              <p className="text-base font-bold text-[#3A2E27]">
-                2025년 8월 15일 ~ 22일
-              </p>
+          ) : reservation ? (
+            <div
+              className={`text-left ${
+                !isModal ? 'space-y-5 border-t border-[#EAE3D9] pt-8' : 'space-y-3'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-base font-medium text-[#705D51]">예약 장소</p>
+                <p className="text-base font-bold text-[#3A2E27]">
+                  {reservation.space?.name || '공간 정보 없음'}
+                </p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-base font-medium text-[#705D51]">일시</p>
+                <p className="text-base font-bold text-[#3A2E27]">
+                  {formatDateRange(reservation.start_date, reservation.end_date)}
+                </p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-base font-medium text-[#705D51]">지불 금액</p>
+                <p className="text-base font-bold text-[#3A2E27]">
+                  ₩ {reservation.total_price?.toLocaleString() || '0'}
+                </p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-base font-medium text-[#705D51]">예약 ID #</p>
+                <p className="text-base font-bold text-[#3A2E27]">
+                  {reservation.short_id || '예약 완료'}
+                </p>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <p className="text-base font-medium text-[#705D51]">지불 금액</p>
-              <p className="text-base font-bold text-[#3A2E27]">₩ 100,000</p>
+          ) : (
+            <div
+              className={`text-left ${
+                !isModal ? 'space-y-5 border-t border-[#EAE3D9] pt-8' : 'space-y-3'
+              }`}
+            >
+              <div className="text-center py-4 text-[#705D51]">
+                <p>예약 정보를 불러올 수 없습니다.</p>
+                <p className="text-sm mt-2">예약은 정상적으로 완료되었습니다.</p>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <p className="text-base font-medium text-[#705D51]">예약 ID #</p>
-              <p className="text-base font-bold text-[#3A2E27]">BK123456789</p>
-            </div>
-          </div>
+          )}
         </div>
 
         <div

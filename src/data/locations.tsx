@@ -2,6 +2,7 @@
 
 // 공간 정보를 위한 새로운 인터페이스
 export interface Space {
+    id?: string; // UUID from database (optional for compatibility)
     name: string;
     imageUrl: string;
     isReserved: boolean;

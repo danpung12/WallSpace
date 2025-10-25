@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { Artwork } from '@/data/artworks';
+import { Artwork } from '@/types/database';
 import Link from 'next/link';
 
 export default function ArtworkSelector({
@@ -49,9 +49,9 @@ export default function ArtworkSelector({
               onClick={() => onSelectArtwork(artwork)}
             >
               <Image
-                alt={artwork.alt}
+                alt={artwork.alt_text || artwork.title}
                 className="h-20 w-20 rounded-lg object-cover"
-                src={artwork.imageUrl}
+                src={artwork.image_url}
                 width={80}
                 height={80}
               />

@@ -5,8 +5,7 @@ import dynamic from 'next/dynamic';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useBottomNav } from '../context/BottomNavContext';
 import { useMap, isSameDay, fmtKoreanDate } from '@/context/MapContext';
-import { userArtworks } from '@/data/artworks';
-import { locations } from '@/data/locations';
+import { Location } from '@/data/locations';
 import Header from '../components/Header';
 
 // --- OptionsMenu Component Definition ---
@@ -128,6 +127,10 @@ function MapPageContent() {
         cells, hasRange, filterButtons, headerLabel,
         isOptionsMenuOpen, setOptionsMenuOpen,
         handlePlaceSelect, gotoMonth, isDisabled, onClickDay, getDayClass, handleFilterClick,
+        // 데이터베이스에서 가져온 데이터
+        locations,
+        artworks,
+        loading,
     } = useMap();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -192,18 +195,13 @@ function MapPageContent() {
             <div className="header-trigger-zone"></div>
             <Header />
             <style>{`
-              /* PC header hover effect */
+              /* PC header always visible */
               @media (min-width: 1024px) {
                 .map-page-container {
                   position: relative;
                 }
                 .header-trigger-zone {
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  right: 0;
-                  height: 2rem; /* 32px, Increased hover area */
-                  z-index: 100;
+                  display: none;
                 }
                 .map-page-container > header {
                   position: absolute;
@@ -211,19 +209,10 @@ function MapPageContent() {
                   left: 0;
                   right: 0;
                   z-index: 50;
-                  transform: translateY(-100%);
-                  transition: transform 0.3s ease-in-out;
+                  transform: translateY(0);
                   border-bottom: 1px solid #e5e7eb;
                 }
-                .header-trigger-zone:hover ~ header,
-                .map-page-container > header:hover {
-                  transform: translateY(0);
-                }
                 .map-page-container .top-search-bar {
-                  transition: top 0.3s ease-in-out;
-                }
-                .header-trigger-zone:hover ~ .page-container .top-search-bar,
-                .map-page-container > header:hover ~ .page-container .top-search-bar {
                   top: 4rem; /* h-16 (Header height) */
                 }
               }
@@ -354,7 +343,7 @@ function MapPageContent() {
                   </div>
                 )}
                 <ArtworkSelector
-                  artworks={userArtworks}
+                  artworks={artworks}
                   selectedArtwork={selectedArtwork}
                   onSelectArtwork={setSelectedArtwork}
                   isVisible={isArtworkSelectorVisible}

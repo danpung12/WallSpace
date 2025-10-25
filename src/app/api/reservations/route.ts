@@ -1,0 +1,512 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+
+/**
+ * GET /api/reservations
+ * 사용자의 예약 목록 조회
+ * Query params:
+ *   - status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
+ *   - location_id: 특정 장소의 예약만 조회
+ */
+export async function GET(request: NextRequest) {
+  try {
+    console.log('🔍 GET /api/reservations - Starting...');
+    const supabase = await createClient();
+    
+    // 현재 로그인한 사용자 확인
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      console.error('❌ Auth error:', authError);
+      return NextResponse.json(
+        { error: 'Unauthorized' }, 
+        { status: 401 }
+      );
+    }
+
+    console.log('✅ User authenticated:', user.id);
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const status = searchParams.get('status');
+    const locationId = searchParams.get('location_id');
+    console.log('📊 Query params:', { id, status, locationId });
+
+    // 특정 예약 ID로 조회
+    if (id) {
+      console.log('🔍 Fetching single reservation:', id);
+      const { data: reservation, error: reservationError } = await supabase
+        .from('reservations')
+        .select(`
+          *,
+          location:locations(*),
+          space:spaces(*),
+          artwork:artworks(*)
+        `)
+        .eq('id', id)
+        .eq('artist_id', user.id)
+        .single();
+
+      if (reservationError) {
+        console.error('❌ Error fetching reservation:', reservationError);
+        return NextResponse.json(
+          { error: 'Failed to fetch reservation', details: reservationError.message },
+          { status: 500 }
+        );
+      }
+
+      console.log('✅ Reservation fetched:', reservation?.id);
+      return NextResponse.json(reservation);
+    }
+
+    // 예약 조회 쿼리 구성 (간단한 버전으로 먼저 시도)
+    console.log('🔍 Fetching reservations...');
+    let query = supabase
+      .from('reservations')
+      .select('*')
+      .eq('artist_id', user.id)
+      .order('created_at', { ascending: false });
+
+    // 필터 적용
+    if (status) {
+      query = query.eq('status', status);
+    }
+    if (locationId) {
+      query = query.eq('location_id', locationId);
+    }
+
+    const { data: reservations, error: reservationsError } = await query;
+
+    if (reservationsError) {
+      console.error('❌ Error fetching reservations:', reservationsError);
+      return NextResponse.json(
+        { error: 'Failed to fetch reservations', details: reservationsError.message },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ Reservations fetched:', reservations?.length || 0);
+
+    // 관련 데이터를 별도로 가져오기
+    if (reservations && reservations.length > 0) {
+      console.log('🔍 Enriching reservations with related data...');
+      for (const reservation of reservations) {
+        // Location 정보 가져오기 (이미지 포함)
+        const { data: location } = await supabase
+          .from('locations')
+          .select(`
+            *,
+            images:location_images(image_url)
+          `)
+          .eq('id', reservation.location_id)
+          .single();
+        
+        // 이미지 URL 배열로 변환
+        if (location && location.images) {
+          (location as any).images = (location.images as any[]).map(img => img.image_url);
+        }
+        
+        // Space 정보 가져오기
+        const { data: space } = await supabase
+          .from('spaces')
+          .select('*')
+          .eq('id', reservation.space_id)
+          .single();
+        
+        // Artwork 정보 가져오기
+        const { data: artwork } = await supabase
+          .from('artworks')
+          .select('*')
+          .eq('id', reservation.artwork_id)
+          .single();
+        
+        // Profile 정보 가져오기 (전화번호, 이메일, 필명 포함)
+        const { data: artist } = await supabase
+          .from('profiles')
+          .select('id, name, nickname, email, phone, avatar_url, user_type')
+          .eq('id', reservation.artist_id)
+          .single();
+        
+        console.log('👤 Artist profile:', artist);
+
+        // 예약 객체에 관련 데이터 추가
+        (reservation as any).location = location;
+        (reservation as any).space = space;
+        (reservation as any).artwork = artwork;
+        (reservation as any).artist = artist;
+      }
+      console.log('✅ Reservations enriched');
+    }
+
+    return NextResponse.json(reservations);
+
+  } catch (error) {
+    console.error('❌ GET /api/reservations error:', error);
+    console.error('Error details:', {
+      message: (error as Error).message,
+      stack: (error as Error).stack,
+    });
+    return NextResponse.json(
+      { error: 'Internal server error', details: (error as Error).message },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/reservations
+ * 새 예약 생성
+ * Body: {
+ *   location_id: string,
+ *   space_id: string,
+ *   artwork_id: string,
+ *   start_date: string (YYYY-MM-DD),
+ *   end_date: string (YYYY-MM-DD)
+ * }
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    
+    // 현재 로그인한 사용자 확인
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' }, 
+        { status: 401 }
+      );
+    }
+
+    // 사용자 타입 확인 (작가 또는 매니저만 예약 가능)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('user_type')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile || !['artist', 'manager'].includes(profile.user_type)) {
+      return NextResponse.json(
+        { error: 'Only artists or managers can make reservations' },
+        { status: 403 }
+      );
+    }
+
+    // 요청 본문 파싱
+    const body = await request.json();
+    console.log('📦 Received reservation data:', body);
+    const { location_id, space_id, artwork_id, start_date, end_date } = body;
+
+    // 필수 필드 검증
+    if (!location_id || !space_id || !artwork_id || !start_date || !end_date) {
+      console.error('❌ Missing fields:', { location_id, space_id, artwork_id, start_date, end_date });
+      return NextResponse.json(
+        { error: 'Missing required fields: location_id, space_id, artwork_id, start_date, end_date' },
+        { status: 400 }
+      );
+    }
+
+    // 날짜 검증
+    const startDate = new Date(start_date);
+    const endDate = new Date(end_date);
+    if (startDate >= endDate) {
+      return NextResponse.json(
+        { error: 'end_date must be after start_date' },
+        { status: 400 }
+      );
+    }
+
+    // 공간 정보 가져오기 (가격 계산용)
+    console.log('🔍 Fetching space:', space_id);
+    const { data: space, error: spaceError } = await supabase
+      .from('spaces')
+      .select('price, is_reserved')
+      .eq('id', space_id)
+      .single();
+
+    if (spaceError || !space) {
+      console.error('❌ Space not found:', spaceError);
+      return NextResponse.json(
+        { error: 'Space not found', details: spaceError?.message },
+        { status: 404 }
+      );
+    }
+    console.log('✅ Space found:', space);
+
+    // 이미 예약된 공간인지 확인
+    if (space.is_reserved) {
+      return NextResponse.json(
+        { error: 'Space is already reserved' },
+        { status: 409 }
+      );
+    }
+
+    // 날짜 중복 확인
+    const { data: existingReservations } = await supabase
+      .from('reservations')
+      .select('id')
+      .eq('space_id', space_id)
+      .not('status', 'eq', 'cancelled')
+      .or(`and(start_date.lte.${end_date},end_date.gte.${start_date})`);
+
+    if (existingReservations && existingReservations.length > 0) {
+      return NextResponse.json(
+        { error: 'Space is already reserved for the selected dates' },
+        { status: 409 }
+      );
+    }
+
+    // 총 비용 계산
+    const durationDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const totalPrice = space.price * durationDays;
+    console.log('💰 Price calculation:', { durationDays, pricePerDay: space.price, totalPrice });
+
+    // 예약 생성
+    console.log('📝 Creating reservation...');
+    const { data: reservation, error: reservationError } = await supabase
+      .from('reservations')
+      .insert({
+        artist_id: user.id,
+        location_id,
+        space_id,
+        artwork_id,
+        start_date,
+        end_date,
+        status: 'pending',
+        total_price: totalPrice,
+      })
+      .select(`
+        *,
+        location:locations(*),
+        space:spaces(*),
+        artwork:artworks(*)
+      `)
+      .single();
+
+    if (reservationError) {
+      console.error('❌ Error creating reservation:', reservationError);
+      return NextResponse.json(
+        { error: 'Failed to create reservation', details: reservationError.message },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ Reservation created successfully:', reservation?.id);
+
+    // 공간 상태 업데이트 (current_reservations 증가)
+    console.log('🔄 Updating space status...');
+    const { data: currentSpace } = await supabase
+      .from('spaces')
+      .select('current_reservations, max_artworks')
+      .eq('id', space_id)
+      .single();
+
+    if (currentSpace) {
+      const newCount = (currentSpace.current_reservations || 0) + 1;
+      await supabase
+        .from('spaces')
+        .update({ 
+          current_reservations: newCount,
+          is_reserved: newCount >= currentSpace.max_artworks
+        })
+        .eq('id', space_id);
+    }
+
+    // location의 reserved_slots 증가 (선택사항)
+    // 현재 값을 가져와서 +1
+    const { data: currentLocation } = await supabase
+      .from('locations')
+      .select('reserved_slots')
+      .eq('id', location_id)
+      .single();
+
+    if (currentLocation) {
+      console.log('📊 Updating location reserved_slots...');
+      await supabase
+        .from('locations')
+        .update({ 
+          reserved_slots: (currentLocation.reserved_slots || 0) + 1 
+        })
+        .eq('id', location_id);
+    }
+
+    console.log('🎉 Reservation process completed:', reservation.id);
+
+    return NextResponse.json(
+      { 
+        success: true,
+        message: 'Reservation created successfully',
+        reservation 
+      },
+      { status: 201 }
+    );
+
+  } catch (error) {
+    console.error('❌ POST /api/reservations error:', error);
+    console.error('Error details:', {
+      message: (error as Error).message,
+      stack: (error as Error).stack,
+      name: (error as Error).name,
+    });
+    return NextResponse.json(
+      { 
+        error: 'Internal server error', 
+        details: (error as Error).message 
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/reservations/[id]
+ * 예약 상태 업데이트 (취소, 확정 등)
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    
+    // 현재 로그인한 사용자 확인
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' }, 
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { reservation_id, status, rejection_reason } = body;
+
+    if (!reservation_id || !status) {
+      return NextResponse.json(
+        { error: 'Missing required fields: reservation_id, status' },
+        { status: 400 }
+      );
+    }
+
+    // 유효한 상태인지 확인
+    const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    // 예약 정보 가져오기
+    const { data: reservation, error: fetchError } = await supabase
+      .from('reservations')
+      .select('*, space_id, location_id, artist_id')
+      .eq('id', reservation_id)
+      .single();
+
+    if (fetchError || !reservation) {
+      return NextResponse.json(
+        { error: 'Reservation not found' },
+        { status: 404 }
+      );
+    }
+
+    // 권한 확인 (예약한 사람 또는 장소 관리자만 수정 가능)
+    const { data: location } = await supabase
+      .from('locations')
+      .select('manager_id, name')
+      .eq('id', reservation.location_id)
+      .single();
+
+    const isOwner = reservation.artist_id === user.id;
+    const isManager = location?.manager_id === user.id;
+
+    if (!isOwner && !isManager) {
+      return NextResponse.json(
+        { error: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
+    // 예약 상태 업데이트
+    const updateData: any = { 
+      status,
+      updated_at: new Date().toISOString()
+    };
+    
+    // 거절 시 거절 사유 저장
+    if (status === 'cancelled' && rejection_reason) {
+      updateData.rejection_reason = rejection_reason;
+    }
+    
+    const { data: updatedReservation, error: updateError } = await supabase
+      .from('reservations')
+      .update(updateData)
+      .eq('id', reservation_id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating reservation:', updateError);
+      return NextResponse.json(
+        { error: 'Failed to update reservation', details: updateError.message },
+        { status: 500 }
+      );
+    }
+
+    // 취소된 경우 공간 상태 업데이트
+    if (status === 'cancelled') {
+      // current_reservations 감소
+      const { data: currentSpace } = await supabase
+        .from('spaces')
+        .select('current_reservations, max_artworks')
+        .eq('id', reservation.space_id)
+        .single();
+
+      if (currentSpace && currentSpace.current_reservations > 0) {
+        const newCount = currentSpace.current_reservations - 1;
+        await supabase
+          .from('spaces')
+          .update({ 
+            current_reservations: newCount,
+            is_reserved: newCount >= currentSpace.max_artworks
+          })
+          .eq('id', reservation.space_id);
+      }
+
+      // reserved_slots 감소
+      const { data: currentLocation } = await supabase
+        .from('locations')
+        .select('reserved_slots')
+        .eq('id', reservation.location_id)
+        .single();
+
+      if (currentLocation && currentLocation.reserved_slots > 0) {
+        await supabase
+          .from('locations')
+          .update({ 
+            reserved_slots: currentLocation.reserved_slots - 1 
+          })
+          .eq('id', reservation.location_id);
+      }
+    }
+
+    // 알림은 데이터베이스 트리거(notify_artist_on_status_change)에서 자동으로 생성됨
+    // 트리거는 상태 변경 시 자동으로 알림을 생성하므로 여기서는 별도로 생성하지 않음
+    console.log('🔔 Notification will be created by trigger for status:', status);
+
+    console.log('✅ Reservation updated:', reservation_id, status);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Reservation updated successfully',
+      reservation: updatedReservation
+    });
+
+  } catch (error) {
+    console.error('PATCH /api/reservations error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+

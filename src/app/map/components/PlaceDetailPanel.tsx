@@ -15,7 +15,7 @@ export default function PlaceDetailPanel({
   if (!place) return null;
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 lg:left-4 lg:bottom-4 lg:right-auto bg-white rounded-t-2xl lg:rounded-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] lg:shadow-2xl p-4 transition-transform duration-300 ease-in-out z-40 cursor-pointer lg:max-w-md"
+      className="fixed bottom-0 left-0 right-0 lg:left-6 lg:bottom-6 lg:right-auto bg-white rounded-t-2xl lg:rounded-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] lg:shadow-2xl p-4 transition-transform duration-300 ease-in-out z-40 cursor-pointer lg:w-[480px] lg:min-w-[420px]"
       style={{ transform: 'translateY(0)' }}
       onClick={onShowDetail}
     >
@@ -42,7 +42,7 @@ export default function PlaceDetailPanel({
           <h2 className="text-2xl font-bold text-theme-brown-darkest">
             {place.name}
           </h2>
-          <span className="font-medium text-theme-brown-dark">{place.category}</span>
+          <span className="font-medium text-theme-brown-dark">{typeof place.category === 'string' ? place.category : place.category?.name || '기타'}</span>
         </div>
 
         <div className="flex items-center gap-3 text-sm text-theme-brown-dark mb-3 flex-wrap">

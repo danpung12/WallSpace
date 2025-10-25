@@ -15,7 +15,7 @@ export default function TransitionProvider({ children }: PropsWithChildren) {
   }, []);
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence mode="popLayout" initial={false}>
       <motion.div
         key={pathname}
         initial={{ opacity: 0 }}

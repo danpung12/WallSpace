@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Location, Space } from '../../../data/locations';
 import BookingModalPC from './BookingModalPC'; // Import the new modal
+import { getLocationReviews, type LocationReview } from '@/lib/api/location-reviews';
 
 export default function LocationDetailPage({
   place,
@@ -16,7 +17,20 @@ export default function LocationDetailPage({
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isPcBookingModalOpen, setIsPcBookingModalOpen] = useState(false);
+  const [locationReviews, setLocationReviews] = useState<LocationReview[]>([]);
+  const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
   const totalImages = place.images?.length || 0;
+
+  // 장소 리뷰 로드
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (place.id) {
+        const reviews = await getLocationReviews(place.id.toString());
+        setLocationReviews(reviews);
+      }
+    };
+    fetchReviews();
+  }, [place.id]);
 
   const handleOpenPcBookingModal = () => {
     if (selectedSpace) {
@@ -89,7 +103,7 @@ export default function LocationDetailPage({
         aria-label="Close"
       />
 
-      <div className="relative h-full w-full overflow-y-auto bg-white custom-scrollbar-thin lg:h-fit lg:max-w-4xl lg:rounded-2xl lg:shadow-2xl lg:overflow-visible">
+      <div className="relative h-full w-full overflow-y-auto bg-white custom-scrollbar-thin lg:h-fit lg:min-h-[600px] lg:w-[1000px] lg:min-w-[900px] lg:max-w-[1200px] lg:rounded-2xl lg:shadow-2xl lg:overflow-visible">
         <header className="sticky top-0 z-10 flex items-center bg-white/80 p-4 backdrop-blur-sm lg:static lg:hidden">
           <button
             onClick={onClose}
@@ -168,13 +182,13 @@ export default function LocationDetailPage({
             </div>
             
             {/* Scrollable Info Section */}
-            <div className="hidden flex-1 overflow-y-auto custom-scrollbar-thin lg:block">
-              <div className="p-8">
+            <div className="hidden flex-1 overflow-y-auto custom-scrollbar-thin lg:block lg:min-h-[300px]">
+              <div className="p-8 min-h-full flex flex-col">
                 <div className="mb-2 flex flex-wrap items-baseline gap-3">
                   <h2 className="text-3xl font-bold text-theme-brown-darkest">
                     {place.name}
                   </h2>
-                  <span className="text-xl font-medium text-theme-brown-dark">{place.category}</span>
+                  <span className="text-xl font-medium text-theme-brown-dark">{typeof place.category === 'string' ? place.category : place.category?.name || '기타'}</span>
                 </div>
                 <div className="mb-4 flex items-center gap-3">
                   <span
@@ -255,7 +269,7 @@ export default function LocationDetailPage({
                   <h2 className="text-3xl font-bold text-theme-brown-darkest">
                     {place.name}
                   </h2>
-                  <span className="text-xl font-medium text-theme-brown-dark">{place.category}</span>
+                  <span className="text-xl font-medium text-theme-brown-dark">{typeof place.category === 'string' ? place.category : place.category?.name || '기타'}</span>
                 </div>
                 <div className="mb-4 flex items-center gap-3">
                   <span
@@ -387,32 +401,64 @@ export default function LocationDetailPage({
                   </div>
                 </div>
                 <div>
-                  <h3 className="mb-8 text-xl font-bold text-theme-brown-darkest">
+                  <h3 className="mb-6 text-xl font-bold text-theme-brown-darkest">
                     🎨 아티스트 후기
                   </h3>
-                  <div className="space-y-6">
-                    {place.reviews?.length > 0 ? (
-                      place.reviews.map((review, index) => (
-                        <div key={index} className="flex items-start gap-4">
-                          <Image
-                            src={review.artistImageUrl}
-                            alt={review.artistName}
-                            className="h-12 w-12 rounded-full object-cover"
-                            width={48}
-                            height={48}
-                          />
-                          <div>
-                            <p className="font-bold text-theme-brown-darkest">
-                              {review.artistName}
-                            </p>
-                            <p className="mt-1 text-theme-brown-dark">
-                              &ldquo;{review.comment}&rdquo;
-                            </p>
+                  <div className="space-y-5">
+                    {locationReviews.length > 0 ? (
+                      locationReviews.map((review) => {
+                        const maxLength = 100;
+                        const isExpanded = expandedReviews.has(review.id);
+                        const needsTruncate = (review.comment?.length || 0) > maxLength;
+                        const displayComment = needsTruncate && !isExpanded 
+                          ? review.comment?.substring(0, maxLength) + '...'
+                          : review.comment;
+
+                        const toggleExpand = () => {
+                          setExpandedReviews(prev => {
+                            const next = new Set(prev);
+                            if (next.has(review.id)) {
+                              next.delete(review.id);
+                            } else {
+                              next.add(review.id);
+                            }
+                            return next;
+                          });
+                        };
+
+                        return (
+                          <div key={review.id} className="flex items-start gap-3">
+                            <Image
+                              src={review.artist?.avatar_url || 'https://i.pravatar.cc/150?img=1'}
+                              alt={review.artist?.nickname || review.artist?.name || '사용자'}
+                              className="h-12 w-12 rounded-full object-cover flex-shrink-0"
+                              width={48}
+                              height={48}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-theme-brown-darkest text-sm">
+                                {review.artist?.nickname || review.artist?.name || '익명'}
+                              </p>
+                              <p className="mt-0.5 text-theme-brown-dark text-sm leading-relaxed">
+                                &ldquo;{displayComment}&rdquo;
+                                {needsTruncate && (
+                                  <button
+                                    onClick={toggleExpand}
+                                    className="ml-1 text-[var(--primary-color)] hover:underline text-xs font-medium"
+                                  >
+                                    {isExpanded ? '접기' : '더보기'}
+                                  </button>
+                                )}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-500">
+                                {new Date(review.created_at).toLocaleDateString('ko-KR')}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
-                      <p className="text-theme-brown-dark">
+                      <p className="text-theme-brown-dark text-sm">
                         아직 등록된 후기가 없습니다.
                       </p>
                     )}
@@ -421,7 +467,7 @@ export default function LocationDetailPage({
               </div>
 
               {/* PC Booking Button */}
-              <div className="mt-8 hidden lg:block">
+              <div className="mt-auto pt-8 hidden lg:block">
                 {/* On PC, this button opens the modal */}
                 <button
                     onClick={handleOpenPcBookingModal}

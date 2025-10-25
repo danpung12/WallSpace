@@ -108,10 +108,21 @@ export default function DateBooking({
   const gotoMonth = (offset: number) =>
     setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
 
-  const isDisabled = (cell: Date) =>
-    cell.getMonth() === month &&
-    cell.getFullYear() === year &&
-    disabledDays.includes(cell.getDate());
+  const isDisabled = (cell: Date) => {
+    // 오늘 날짜 (시간 제외)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // cell 날짜 (시간 제외)
+    const cellDate = new Date(cell);
+    cellDate.setHours(0, 0, 0, 0);
+    
+    // 오늘 이전 날짜 또는 특정 비활성화 날짜
+    return cellDate < today || 
+           (cell.getMonth() === month &&
+            cell.getFullYear() === year &&
+            disabledDays.includes(cell.getDate()));
+  };
 
   function onClickDay(cell: Date) {
     if (isDisabled(cell)) return;
