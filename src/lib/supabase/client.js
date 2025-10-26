@@ -22,6 +22,7 @@ export const signUp = async (email, password, userData) => {
     email,
     password,
     options: {
+      emailRedirectTo: undefined, // 이메일 인증 비활성화
       data: {
         ...userData,
         // Supabase Auth의 Display name으로 표시될 필드
@@ -31,7 +32,9 @@ export const signUp = async (email, password, userData) => {
         phone: userData.phone,
         nickname: userData.nickname,
         user_type: userData.user_type,
-        website: userData.website
+        website: userData.website,
+        dob: userData.dob,
+        gender: userData.gender
       }
     }
   })

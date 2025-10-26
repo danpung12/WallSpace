@@ -32,6 +32,7 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
     email: '',
     password: '',
     confirmPassword: '',
+    name: '',
     dob: '',
     gender: 'male'
   });
@@ -45,6 +46,19 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
     if (isOpen) {
       setShouldRender(true);
     } else {
+      // 모달이 닫힐 때 모든 입력 필드 초기화
+      setFormData({
+        email: '',
+        password: '',
+        confirmPassword: '',
+        name: '',
+        dob: '',
+        gender: 'male'
+      });
+      setError(null);
+      setEmailChecked(false);
+      setCheckingEmail(false);
+      
       const timer = setTimeout(() => setShouldRender(false), 300); // Animation duration
       return () => clearTimeout(timer);
     }
@@ -112,6 +126,13 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
       return;
     }
 
+    // 이름 확인
+    if (!formData.name || formData.name.trim().length === 0) {
+      setError('이름을 입력해주세요.');
+      setIsLoading(false);
+      return;
+    }
+
     // 비밀번호 확인
     if (formData.password !== formData.confirmPassword) {
       setError('비밀번호가 일치하지 않습니다.');
@@ -124,9 +145,11 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
         formData.email,
         formData.password,
         {
-          full_name: '손님', // 간단한 이름
-          nickname: '무명',
-          user_type: 'guest'
+          full_name: formData.name.trim(),
+          nickname: formData.name.trim(), // 손님은 이름을 닉네임으로도 사용
+          user_type: 'guest',
+          dob: formData.dob || undefined,
+          gender: formData.gender || undefined
         }
       );
 
@@ -136,8 +159,8 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
       }
 
       if (user) {
-        // 성공 시 이메일 인증 안내
-        alert('회원가입이 완료되었습니다!\n\n📧 이메일로 발송된 인증 링크를 클릭하여\n계정을 활성화해주세요.');
+        // 성공 시 완료 메시지
+        alert('회원가입이 완료되었습니다! 🎉\n\n로그인하여 서비스를 이용해주세요.');
         onClose();
       }
     } catch (err) {
@@ -167,16 +190,29 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
         </div>
 
         {/* Form Body - Scrollable */}
-        <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto space-y-6 scrollbar-hide">
+        <form id="guest-signup-form" onSubmit={handleSubmit} className="flex-grow overflow-y-auto space-y-6 scrollbar-hide">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
                 {error}
               </div>
             )}
             
+            {/* 이름 */}
+            <InputField 
+              id="name" 
+              name="name"
+              label="이름" 
+              placeholder="이름을 입력하세요" 
+              icon="person"
+              value={formData.name}
+              onChange={handleInputChange}
+              required
+              disabled={isLoading}
+            />
+
             {/* 이메일 중복 확인 */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium pb-2 text-[#2C2C2C]">아이디</label>
+              <label htmlFor="email" className="block text-sm font-medium pb-2 text-[#2C2C2C]">이메일</label>
               <div className="flex gap-3">
                 <div className="relative flex-grow flex items-center bg-white rounded-xl border-2 border-[#E5E0DC] focus-within:border-[#D2B48C] focus-within:shadow-[0_0_0_3px_rgba(210,180,140,0.25)] transition-all duration-300">
                   <span className="material-symbols-outlined absolute left-4 text-[#887563] pointer-events-none">person</span>
@@ -184,7 +220,7 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="아이디를 입력하세요"
+                    placeholder="이메일을 입력하세요"
                     className="w-full h-14 pl-14 pr-4 bg-transparent text-[#2C2C2C] placeholder:text-[#887563] focus:outline-none"
                     value={formData.email}
                     onChange={handleInputChange}
@@ -205,7 +241,7 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
                 </button>
               </div>
               {emailChecked && (
-                <p className="text-xs text-green-600 mt-2">✓ 사용 가능한 아이디입니다.</p>
+                <p className="text-xs text-green-600 mt-2">✓ 사용 가능한 이메일입니다.</p>
               )}
             </div>
             
@@ -289,18 +325,19 @@ const GuestSignUpModal: React.FC<GuestSignUpModalProps> = ({ isOpen, onClose, on
                 </label>
               </div>
             </div>
-            
-            {/* 가입하기 버튼 */}
-            <div className="pt-4">
-              <button 
-                type="submit"
-                disabled={isLoading}
-                className="w-full rounded-xl h-14 text-base bg-[#D2B48C] text-white font-bold hover:shadow-[0_6px_20px_0_rgba(210,180,140,0.12)] hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? '가입 중...' : '가입하기'}
-              </button>
-            </div>
         </form>
+        
+        {/* 가입하기 버튼 - PC에서 고정 */}
+        <div className="flex-shrink-0 pt-6">
+          <button 
+            type="submit"
+            form="guest-signup-form"
+            disabled={isLoading}
+            className="w-full rounded-xl h-14 text-base bg-[#D2B48C] text-white font-bold hover:shadow-[0_6px_20px_0_rgba(210,180,140,0.12)] hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? '가입 중...' : '가입하기'}
+          </button>
+        </div>
         
         {/* Footer */}
         <div className="flex-shrink-0 mt-4 space-y-4">

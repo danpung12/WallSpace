@@ -15,6 +15,8 @@ export interface Database {
           website: string | null
           phone: string | null
           address: string | null
+          dob: string | null
+          gender: string | null
           created_at: string
           updated_at: string
           nickname: string | null
@@ -30,6 +32,8 @@ export interface Database {
           website?: string | null
           phone?: string | null
           address?: string | null
+          dob?: string | null
+          gender?: string | null
           created_at?: string
           updated_at?: string
           nickname?: string | null
@@ -45,6 +49,8 @@ export interface Database {
           website?: string | null
           phone?: string | null
           address?: string | null
+          dob?: string | null
+          gender?: string | null
           created_at?: string
           updated_at?: string
           nickname?: string | null

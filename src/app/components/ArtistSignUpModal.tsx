@@ -46,6 +46,20 @@ const ArtistSignUpModal: React.FC<ArtistSignUpModalProps> = ({ isOpen, onClose, 
     if (isOpen) {
       setShouldRender(true);
     } else {
+      // 모달이 닫힐 때 모든 입력 필드 초기화
+      setFormData({
+        email: '',
+        password: '',
+        confirmPassword: '',
+        name: '',
+        nickname: '',
+        phone: ''
+      });
+      setSnsLink('');
+      setError(null);
+      setEmailChecked(false);
+      setCheckingEmail(false);
+      
       const timer = setTimeout(() => setShouldRender(false), 300);
       return () => clearTimeout(timer);
     }
@@ -141,10 +155,9 @@ const ArtistSignUpModal: React.FC<ArtistSignUpModalProps> = ({ isOpen, onClose, 
       }
 
       if (user) {
-        // 성공 시 이메일 인증 안내
-        alert('회원가입이 완료되었습니다!\n\n📧 이메일로 발송된 인증 링크를 클릭하여\n계정을 활성화해주세요.');
+        // 성공 시 완료 메시지
+        alert('회원가입이 완료되었습니다! 🎉\n\n로그인하여 서비스를 이용해주세요.');
         onClose();
-        // 로그인 페이지로 이동하거나 모달 닫기
       }
     } catch (err) {
       console.error('Registration error:', err);
@@ -173,7 +186,7 @@ const ArtistSignUpModal: React.FC<ArtistSignUpModalProps> = ({ isOpen, onClose, 
         </div>
 
         {/* Form Body - Scrollable */}
-        <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto space-y-6 custom-scrollbar-thin">
+        <form id="artist-signup-form" onSubmit={handleSubmit} className="flex-grow overflow-y-auto space-y-6 custom-scrollbar-thin">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
                 {error}
@@ -229,7 +242,7 @@ const ArtistSignUpModal: React.FC<ArtistSignUpModalProps> = ({ isOpen, onClose, 
               id="nickname" 
               name="nickname"
               label="닉네임 (선택)" 
-              placeholder="닉네임을 입력하세요 (입력하지 않으면 '무명')" 
+              placeholder="닉네임을 입력하세요" 
               icon="badge"
               value={formData.nickname}
               onChange={handleInputChange}
@@ -330,18 +343,19 @@ const ArtistSignUpModal: React.FC<ArtistSignUpModalProps> = ({ isOpen, onClose, 
                   />
                 </div>
             </div>
-            
-            {/* 가입하기 버튼 */}
-            <div className="pt-4">
-              <button 
-                type="submit"
-                disabled={isLoading}
-                className="w-full rounded-xl h-14 text-base bg-[#D2B48C] text-white font-bold hover:shadow-[0_6px_20px_0_rgba(210,180,140,0.12)] hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? '가입 중...' : '가입하기'}
-              </button>
-            </div>
         </form>
+        
+        {/* 가입하기 버튼 - PC에서 고정 */}
+        <div className="flex-shrink-0 pt-6">
+          <button 
+            type="submit"
+            form="artist-signup-form"
+            disabled={isLoading}
+            className="w-full rounded-xl h-14 text-base bg-[#D2B48C] text-white font-bold hover:shadow-[0_6px_20px_0_rgba(210,180,140,0.12)] hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? '가입 중...' : '가입하기'}
+          </button>
+        </div>
         
         {/* Footer */}
         <div className="flex-shrink-0 mt-4 space-y-4">

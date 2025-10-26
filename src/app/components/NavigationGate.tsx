@@ -7,7 +7,6 @@ import { useBottomNav } from '@/app/context/BottomNavContext';
 
 const DEFAULT_NAV_H = '64px';
 const HIDE_ON = new Set<string>([
-  '/',
   '/select-type',
   '/select-type/guest',
   '/select-type/artist',

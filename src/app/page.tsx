@@ -491,10 +491,20 @@ export default function HomePage() {
     checkAuthAndLoadData();
   }, [router]);
 
-  // 알림 데이터 로드
+  // 알림 데이터 로드 (로그인한 사용자만)
   useEffect(() => {
     const loadNotifications = async () => {
       try {
+        // 로그인 상태 확인
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // 로그인하지 않은 사용자는 알림을 로드하지 않음
+        if (!user) {
+          setNotifications([]);
+          return;
+        }
+
         const response = await fetch('/api/notifications');
         if (response.ok) {
           const data: Notification[] = await response.json();
@@ -514,10 +524,13 @@ export default function HomePage() {
           // 최신 3개만 표시
           setNotifications(data.slice(0, 3));
         } else {
-          console.error('Failed to fetch notifications');
+          // 응답 실패 시 빈 배열로 설정 (오류 무시)
+          setNotifications([]);
         }
       } catch (error) {
-        console.error('Error fetching notifications:', error);
+        // 오류 발생 시 빈 배열로 설정 (조용히 처리)
+        console.log('알림 로드 실패 (로그인하지 않은 사용자):', error);
+        setNotifications([]);
       }
     };
     
@@ -697,29 +710,29 @@ export default function HomePage() {
                 ) : (
                   <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg rounded-2xl flex flex-col items-center justify-center shadow-lg border border-white/20 dark:border-gray-700/30"
                     style={{ 
-                      height: 'clamp(5.4rem, 28.8vh, 16.2rem)',
-                      padding: 'clamp(1rem, 3.5vh, 2.5rem)',
-                      gap: 'clamp(0.5rem, 2vh, 1.25rem)',
+                      height: 'clamp(4.5rem, 20vh, 12rem)',
+                      padding: 'clamp(0.75rem, 2.5vh, 1.5rem)',
+                      gap: 'clamp(0.375rem, 1.5vh, 0.875rem)',
                       width: '90%',
                       marginLeft: 'auto',
                       marginRight: 'auto'
                     }}>
                     <div style={{ 
-                      width: 'clamp(3rem, 8vh, 5rem)', 
-                      height: 'clamp(3rem, 8vh, 5rem)' 
+                      width: 'clamp(2.5rem, 6vh, 4rem)', 
+                      height: 'clamp(2.5rem, 6vh, 4rem)' 
                     }} className="rounded-full bg-gradient-to-br from-[#D2B48C]/20 to-[#C19A6B]/20 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[#C19A6B]" style={{ fontSize: 'clamp(2rem, 6vh, 3rem)' }}>notifications_off</span>
+                      <span className="material-symbols-outlined text-[#C19A6B]" style={{ fontSize: 'clamp(1.5rem, 4.5vh, 2.5rem)' }}>notifications_off</span>
                     </div>
                     <div className="text-center">
                       <h4 className="font-bold text-[#2C2C2C] dark:text-gray-100"
                         style={{ 
-                          fontSize: 'clamp(0.875rem, 3.5vh, 1.25rem)',
-                          marginBottom: 'clamp(0.25rem, 1vh, 0.5rem)'
+                          fontSize: 'clamp(0.8125rem, 3vh, 1.125rem)',
+                          marginBottom: 'clamp(0.125rem, 0.5vh, 0.375rem)'
                         }}>
                         새 알림이 없습니다
                       </h4>
                       <p className="text-[#887563] dark:text-gray-400"
-                        style={{ fontSize: 'clamp(0.75rem, 2.5vh, 0.9375rem)' }}>
+                        style={{ fontSize: 'clamp(0.6875rem, 2vh, 0.875rem)' }}>
                         알림이 도착하면 여기에 표시됩니다
                       </p>
                     </div>
@@ -728,9 +741,9 @@ export default function HomePage() {
               </section>
             </div>
 
-            <div className={`lg:mt-0 lg:flex lg:flex-col ${notifications.length > 0 ? 'lg:w-2/3' : 'lg:w-full'} flex-grow flex flex-col justify-end`}
+            <div className={`lg:mt-0 lg:flex lg:flex-col ${notifications.length > 0 ? 'lg:w-2/3' : 'lg:w-full'} flex-grow flex flex-col ${notifications.length === 0 ? 'justify-end lg:justify-start' : ''}`}
               style={{
-                marginTop: 'clamp(1rem, 3.79vh, 2rem)'
+                marginTop: notifications.length > 0 ? 'clamp(1rem, 3.79vh, 2rem)' : '0'
               }}>
               <div className="flex items-baseline sm:px-6 lg:px-0"
                 style={{
@@ -753,7 +766,7 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className={`lg:min-h-0 lg:flex-1`}>
+              <div className={`lg:min-h-0 lg:flex-1 ${notifications.length === 0 ? 'pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0' : ''}`}>
                 <div ref={scrollContainerRef} className="h-full w-full overflow-y-auto scrollbar-hide">
                   <RecommendedPlaces
                     onSlideChange={setCurrentPlaceIndex}

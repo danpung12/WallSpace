@@ -39,6 +39,7 @@ export default function GuestSignUpPage() {
     }
   };
 
+  const [name, setName] = useState("");
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -77,6 +78,11 @@ export default function GuestSignUpPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!name || name.trim().length === 0) {
+      setMessage({ type: 'error', text: "이름을 입력해주세요." });
+      return;
+    }
+
     if (password !== confirmPassword) {
       setMessage({ type: 'error', text: "비밀번호가 일치하지 않습니다." });
       return;
@@ -88,8 +94,11 @@ export default function GuestSignUpPage() {
         password,
         options: {
           data: {
-            date_of_birth: dob,
-            gender: gender,
+            full_name: name.trim(),
+            nickname: name.trim(),
+            user_type: 'guest',
+            dob: dob || undefined,
+            gender: gender || undefined,
           },
         },
       });
@@ -98,7 +107,7 @@ export default function GuestSignUpPage() {
         throw error;
       }
 
-      setMessage({ type: 'success', text: "회원가입이 성공적으로 완료되었습니다. 이메일을 확인하여 인증해주세요." });
+      setMessage({ type: 'success', text: "회원가입이 완료되었습니다! 🎉 로그인하여 서비스를 이용해주세요." });
       console.log("Sign up successful:", data);
       // Redirect to a success page or login page
     } catch (error: any) {
@@ -109,7 +118,7 @@ export default function GuestSignUpPage() {
 
   const checkDuplicateUserId = async () => {
     if (!userId) {
-      setUserIdAvailability({ type: 'error', text: "아이디를 입력해주세요." });
+      setUserIdAvailability({ type: 'error', text: "이메일을 입력해주세요." });
       return;
     }
     try {
@@ -120,9 +129,9 @@ export default function GuestSignUpPage() {
         .single();
 
       if (data) {
-        setUserIdAvailability({ type: 'error', text: "이미 사용 중인 아이디입니다." });
+        setUserIdAvailability({ type: 'error', text: "이미 사용 중인 이메일입니다." });
       } else if (error && error.code === 'PGRST116') { // No rows found
-        setUserIdAvailability({ type: 'success', text: "사용 가능한 아이디입니다." });
+        setUserIdAvailability({ type: 'success', text: "사용 가능한 이메일입니다." });
       } else if (error) {
         throw error;
       }
@@ -193,13 +202,22 @@ export default function GuestSignUpPage() {
 
               {/* Main Content: Form */}
               <main className="flex-grow p-6 space-y-6 pb-28">
+                {/* Name */}
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">이름</label>
+                  <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container transition-all duration-300">
+                    <span className="ms-guest-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">badge</span>
+                    <input id="name" type="text" placeholder="이름을 입력하세요." className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--primary-dark)] placeholder:text-[var(--text-secondary)] focus:outline-none" value={name} onChange={(e) => setName(e.target.value)} required />
+                  </div>
+                </div>
+
                 {/* User ID */}
                 <div>
-                  <label htmlFor="user-id" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">아이디</label>
+                  <label htmlFor="user-id" className="block text-sm font-medium pb-2 text-[var(--text-primary)]">이메일</label>
                   <div className="flex items-center gap-3">
                     <div className="relative flex-1 flex items-center bg-[var(--input-bg-color)] rounded-xl border-2 border-transparent input-container transition-all duration-300">
                       <span className="ms-guest-signup absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none">person</span>
-                      <input id="user-id" type="text" placeholder="아이디를 입력하세요." className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--primary-dark)] placeholder:text-[var(--text-secondary)] focus:outline-none" value={userId} onChange={(e) => { setUserId(e.target.value); setUserIdAvailability(null); }} />
+                      <input id="user-id" type="email" placeholder="이메일을 입력하세요." className="w-full h-14 pl-14 pr-4 text-base bg-transparent text-[var(--primary-dark)] placeholder:text-[var(--text-secondary)] focus:outline-none" value={userId} onChange={(e) => { setUserId(e.target.value); setUserIdAvailability(null); }} required />
                     </div>
                     <button type="button" onClick={checkDuplicateUserId} className="flex-shrink-0 rounded-xl h-14 px-5 bg-[var(--accent-color)] text-white text-sm font-bold hover:opacity-90 transition-opacity">중복확인</button>
                   </div>

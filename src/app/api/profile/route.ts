@@ -44,6 +44,8 @@ export async function GET() {
       email: profile.email,
       avatarUrl: profile.avatar_url || '',
       phone: profile.phone || '',
+      dob: profile.dob || undefined,
+      gender: profile.gender || undefined,
       notificationSettings: {
         comments: true,
         exhibitions: true,
@@ -105,6 +107,8 @@ export async function PUT(req: NextRequest) {
         nickname: updatedProfileData.nickname,
         phone: updatedProfileData.phone || null,
         avatar_url: updatedProfileData.avatarUrl || null,
+        dob: updatedProfileData.dob || null,
+        gender: updatedProfileData.gender || null,
       })
       .eq('id', user.id)
       .select()
@@ -126,6 +130,8 @@ export async function PUT(req: NextRequest) {
       email: updatedProfile.email,
       avatarUrl: updatedProfile.avatar_url || '',
       phone: updatedProfile.phone || '',
+      dob: updatedProfile.dob || undefined,
+      gender: updatedProfile.gender || undefined,
       notificationSettings: updatedProfileData.notificationSettings,
       userSettings: updatedProfileData.userSettings,
     };

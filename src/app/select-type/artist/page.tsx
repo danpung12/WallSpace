@@ -129,7 +129,7 @@ export default function ArtistOwnerSignUpPage() {
       }
 
       if (user) {
-        alert('회원가입이 완료되었습니다!\n\n📧 이메일로 발송된 인증 링크를 클릭하여\n계정을 활성화해주세요.');
+        alert('회원가입이 완료되었습니다! 🎉\n\n로그인하여 서비스를 이용해주세요.');
         router.push('/');
       }
     } catch (err) {

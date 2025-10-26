@@ -467,20 +467,34 @@ export default function MainPage() {
     loadLocations();
   }, []);
 
-  // 알림 데이터 로드
+  // 알림 데이터 로드 (로그인한 사용자만)
   useEffect(() => {
     const loadNotifications = async () => {
       try {
+        // 로그인 상태 확인
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // 로그인하지 않은 사용자는 알림을 로드하지 않음
+        if (!user) {
+          setNotifications([]);
+          return;
+        }
+
         const response = await fetch('/api/notifications');
         if (response.ok) {
           const data: Notification[] = await response.json();
           // 최신 3개만 표시
           setNotifications(data.slice(0, 3));
         } else {
-          console.error('Failed to fetch notifications');
+          // 응답 실패 시 빈 배열로 설정 (오류 무시)
+          setNotifications([]);
         }
       } catch (error) {
-        console.error('Error fetching notifications:', error);
+        // 오류 발생 시 빈 배열로 설정 (조용히 처리)
+        console.log('알림 로드 실패 (로그인하지 않은 사용자):', error);
+        setNotifications([]);
       }
     };
     
