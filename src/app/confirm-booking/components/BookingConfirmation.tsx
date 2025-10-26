@@ -294,10 +294,6 @@ export default function BookingConfirmation({
                           <p className="font-medium">{space.name}</p>
                       </div>
                       <div className="flex justify-between items-center">
-                          <p className="text-[var(--text-secondary)]">공간 크기</p>
-                          <p className="font-medium">{space.width} x {space.height} cm</p>
-                      </div>
-                      <div className="flex justify-between items-center">
                           <p className="text-[var(--text-secondary)]">예약 날짜</p>
                           <p className="font-medium text-right">
                               {fmtKoreanDate(startDate)} - {fmtKoreanDate(endDate)} ({durationDays}일)
@@ -333,12 +329,11 @@ export default function BookingConfirmation({
               {!isModal ? (
                    <footer
                    className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white p-4 border-t border-gray-100"
-                   style={{ height: 'var(--booking-footer-h)' }}
                   >
                       <button
                           onClick={handleConfirmBooking}
                           disabled={isSubmitting || isLoadingArtworks || !selectedArtwork}
-                          className="w-full h-full bg-[#D2B48C] hover:bg-[#C19A6B] text-white font-bold rounded-xl transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full h-14 bg-[#D2B48C] hover:bg-[#C19A6B] text-white font-bold rounded-xl transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                           {isSubmitting ? '예약 중...' : isLoadingArtworks ? '작품 불러오는 중...' : `${costDetails.total.toLocaleString()}원 결제하기`}
                       </button>

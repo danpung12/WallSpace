@@ -473,12 +473,6 @@ export default function DateBooking({
                 </p>
               </div>
               <div className="flex justify-between">
-                <p className="text-[var(--text-secondary)]">작품 크기</p>
-                <p className="font-medium text-[var(--text-primary)]">
-                  {artworkSizes[selectedSize].label}
-                </p>
-              </div>
-              <div className="flex justify-between">
                 <p className="text-[var(--text-secondary)]">예약 날짜</p>
                 <p className="font-medium text-[var(--text-primary)]">
                   {hasRange

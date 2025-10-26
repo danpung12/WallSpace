@@ -5,3 +5,5 @@ ALTER TABLE reservations ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
 CREATE INDEX IF NOT EXISTS idx_reservations_rejection_reason ON reservations(rejection_reason) WHERE rejection_reason IS NOT NULL;
 
 
+
+

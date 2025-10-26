@@ -4,6 +4,7 @@ import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { UserProfile } from '@/data/profile';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useBottomNav } from '@/app/context/BottomNavContext';
 
 type EditProfileModalProps = {
   open: boolean;
@@ -16,10 +17,16 @@ type EditProfileModalProps = {
 
 export default function EditProfileModal({ open, onClose, userProfile: initialProfile, onSave, error, setError }: EditProfileModalProps) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(initialProfile);
+  const { setIsNavVisible } = useBottomNav();
   
   useEffect(() => {
     setUserProfile(initialProfile);
   }, [initialProfile, open]);
+
+  // 모달이 열리면 하단바 숨기기, 닫히면 다시 보이기
+  useEffect(() => {
+    setIsNavVisible(!open);
+  }, [open, setIsNavVisible]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (userProfile) {
@@ -32,13 +39,6 @@ export default function EditProfileModal({ open, onClose, userProfile: initialPr
     if (userProfile) {
       onSave(userProfile);
     }
-  };
-  
-  const readOnlyInputStyle: React.CSSProperties = {
-    border: '1px solid #E7DDC8',
-    background: '#F5EFE4',
-    color: '#8C7853',
-    cursor: 'not-allowed',
   };
 
   return (
@@ -57,230 +57,198 @@ export default function EditProfileModal({ open, onClose, userProfile: initialPr
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
             onClick={onClose}
           >
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 30 }}
-              transition={{ duration: 0.3 }}
-              id="app-container"
-              className="relative flex flex-col bg-[#FDFBF8] text-[#3D2C1D] rounded-2xl shadow-xl max-w-md w-full m-4 max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.3, type: "spring", damping: 25, stiffness: 300 }}
+              className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden"
               style={{
                 fontFamily: "'Pretendard', sans-serif",
               }}
               onClick={(e) => e.stopPropagation()}
             >
               {(!userProfile) ? (
-                 <div className="absolute inset-0 flex items-center justify-center bg-[#FDFBF8]/80 z-[1001] rounded-2xl">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D2B48C]"></div>
+                 <div className="absolute inset-0 flex items-center justify-center bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm z-50 rounded-3xl">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="animate-spin rounded-full h-14 w-14 border-4 border-[#D2B48C] border-t-transparent"></div>
+                      <p className="text-sm text-[#887563] dark:text-gray-400 font-medium">로딩 중...</p>
+                    </div>
                 </div>
               ) : (
                 <>
                   {/* Header */}
-                  <header
-                    className="sticky top-0 z-10"
-                    style={{ background: '#FDFBF8CC', backdropFilter: 'blur(4px)' }}
-                  >
-                    <div className="flex items-center justify-between p-4">
-                      <button style={{ color: '#3D2C1D' }} onClick={onClose}>
-                        <svg fill="currentColor" height="24" viewBox="0 0 256 256" width="24">
-                          <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path>
+                  <div className="relative bg-[#D2B48C] px-6 py-4">
+                    <button 
+                      onClick={onClose}
+                      className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-white/20 transition-all duration-200"
+                    >
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/20">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
-                      </button>
-                      <h1 className="text-xl font-bold" style={{ color: '#3D2C1D' }}>내 정보 수정</h1>
-                      <div className="w-6" />
-                    </div>
-                  </header>
-
-                  {/* Main */}
-                  <main className="flex-1 px-4 py-4 space-y-6">
-                    {/* 프로필 이미지 Section Removed */}
-
-                    {/* 폼 */}
-                    <form className="max-w-md px-3 mx-auto space-y-4" onSubmit={handleSubmit}>
-                      <section className="py-4 space-y-4 shadow-sm px-7 rounded-xl" style={{ background: '#fff' }}>
-                        {/* 닉네임 */}
-                        <div>
-                          <label className="block mb-2 text-sm font-medium" htmlFor="nickname" style={{ color: '#A08C6E' }}>
-                            필명
-                          </label>
-                          <div className="relative">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                              <svg className="w-5 h-5" fill="none" stroke="#A08C6E" viewBox="0 0 24 24">
-                                <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                              </svg>
-                            </span>
-                            <input
-                              className="w-full py-2 pl-10 pr-3 text-sm rounded-lg placeholder:text-sm"
-                              style={{
-                                border: '1px solid #F0EAD6',
-                                background: '#FAF6F0',
-                                outline: 'none',
-                                color: '#3D2C1D',
-                              }}
-                              id="nickname"
-                              type="text"
-                              value={userProfile?.nickname || ''}
-                              onChange={handleChange}
-                              placeholder="닉네임을 입력해주세요"
-                            />
-                          </div>
-                        </div>
-
-                        {/* 이름 (읽기 전용) */}
-                        <div>
-                          <label className="flex mb-2 text-sm font-medium items-center gap-2" htmlFor="name" style={{ color: '#A08C6E' }}>
-                            이름
-                          </label>
-                          <div className="relative">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                              <svg className="w-5 h-5" fill="none" stroke="#A08C6E" viewBox="0 0 24 24">
-                                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                              </svg>
-                            </span>
-                            <input
-                              className="w-full py-2 pl-10 pr-3 text-sm rounded-lg placeholder:text-sm cursor-not-allowed select-none"
-                              style={readOnlyInputStyle}
-                              id="name"
-                              type="text"
-                              value={userProfile?.name || ''}
-                              onChange={handleChange}
-                              placeholder="성함을 입력해주세요"
-                              disabled
-                              readOnly
-                              aria-disabled="true"
-                              tabIndex={-1}
-                              title="이름은 변경할 수 없습니다."
-                            />
-                          </div>
-                        </div>
-
-                        {/* 이메일 */}
-                        <div>
-                          <label className="block mb-2 text-sm font-medium" htmlFor="email" style={{ color: '#A08C6E' }}>
-                            이메일 주소
-                          </label>
-                          <div className="relative">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                              <svg className="w-5 h-5" fill="none" stroke="#A08C6E" viewBox="0 0 24 24">
-                                <path d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                              </svg>
-                            </span>
-                            <input
-                              className="w-full py-2 pl-10 pr-3 text-sm rounded-lg placeholder:text-sm"
-                              style={{
-                                border: '1px solid #F0EAD6',
-                                background: '#FAF6F0',
-                                outline: 'none',
-                                color: '#3D2C1D',
-                              }}
-                              id="email"
-                              type="email"
-                              value={userProfile?.email || ''}
-                              onChange={handleChange}
-                              placeholder="이메일 주소를 입력해주세요"
-                            />
-                          </div>
-                        </div>
-
-                        {/* 전화번호 (읽기 전용) */}
-                        <div>
-                          <label className="flex mb-2 text-sm font-medium items-center gap-2" htmlFor="phone" style={{ color: '#A08C6E' }}>
-                            전화번호
-                          </label>
-                          <div className="relative">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                              <svg className="w-5 h-5" fill="none" stroke="#A08C6E" viewBox="0 0 24 24">
-                                <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                              </svg>
-                            </span>
-                            <input
-                              className="w-full py-2 pl-10 pr-3 text-sm rounded-lg placeholder:text-sm cursor-not-allowed select-none"
-                              style={readOnlyInputStyle}
-                              id="phone"
-                              type="tel"
-                              value={userProfile?.phone || ''}
-                              onChange={handleChange}
-                              placeholder="전화번호를 입력해주세요"
-                              disabled
-                              readOnly
-                              aria-disabled="true"
-                              tabIndex={-1}
-                              title="전화번호는 변경할 수 없습니다."
-                            />
-                          </div>
-                        </div>
-                      </section>
-
-                      {/* 버튼 */}
-                      <div className="px-2 pt-2 space-y-3">
-                        <button
-                          type="submit"
-                          className="flex items-center justify-center w-full gap-2 font-semibold"
-                          style={{
-                            background: '#D2B48C',
-                            color: '#fff',
-                            borderRadius: '12px',
-                            padding: '12px 24px',
-                            fontWeight: 600,
-                          }}
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                          </svg>
-                          <span>저장하기</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="flex items-center justify-center w-full gap-2 font-semibold text-center"
-                          style={{
-                            background: '#EAE3D9',
-                            color: '#8C7853',
-                            borderRadius: '12px',
-                            padding: '12px 24px',
-                            fontWeight: 600,
-                          }}
-                          onClick={onClose}
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                          </svg>
-                          <span>취소</span>
-                        </button>
                       </div>
-                    </form>
-                  </main>
+                      <div>
+                        <h2 className="text-lg font-bold text-white">내 정보 수정</h2>
+                        <p className="text-white/80 text-xs">프로필 정보를 업데이트하세요</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Form */}
+                  <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                    {/* 필명 */}
+                    <div className="space-y-2">
+                      <label htmlFor="nickname" className="flex items-center gap-2 text-sm font-semibold text-[#3D2C1D] dark:text-gray-200">
+                        <svg className="w-4 h-4 text-[#D2B48C]" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                        필명
+                      </label>
+                      <div className="relative group">
+                        <input
+                          id="nickname"
+                          type="text"
+                          value={userProfile?.nickname || ''}
+                          onChange={handleChange}
+                          placeholder="필명을 입력하세요"
+                          className="w-full px-4 py-3.5 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium text-[#2C2C2C] dark:text-gray-100 placeholder:text-gray-400 focus:border-[#D2B48C] focus:ring-4 focus:ring-[#D2B48C]/10 outline-none transition-all duration-200"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 이름 (읽기 전용) */}
+                    <div className="space-y-2">
+                      <label htmlFor="name" className="flex items-center gap-2 text-sm font-semibold text-[#3D2C1D] dark:text-gray-200">
+                        <svg className="w-4 h-4 text-[#D2B48C]" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                        </svg>
+                        이름
+                        <span className="ml-auto text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">읽기 전용</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="name"
+                          type="text"
+                          value={userProfile?.name || ''}
+                          disabled
+                          readOnly
+                          className="w-full px-4 py-3.5 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 이메일 */}
+                    <div className="space-y-2">
+                      <label htmlFor="email" className="flex items-center gap-2 text-sm font-semibold text-[#3D2C1D] dark:text-gray-200">
+                        <svg className="w-4 h-4 text-[#D2B48C]" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                          <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                        </svg>
+                        이메일
+                      </label>
+                      <div className="relative group">
+                        <input
+                          id="email"
+                          type="email"
+                          value={userProfile?.email || ''}
+                          onChange={handleChange}
+                          placeholder="이메일을 입력하세요"
+                          className="w-full px-4 py-3.5 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium text-[#2C2C2C] dark:text-gray-100 placeholder:text-gray-400 focus:border-[#D2B48C] focus:ring-4 focus:ring-[#D2B48C]/10 outline-none transition-all duration-200"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 전화번호 (읽기 전용) */}
+                    <div className="space-y-2">
+                      <label htmlFor="phone" className="flex items-center gap-2 text-sm font-semibold text-[#3D2C1D] dark:text-gray-200">
+                        <svg className="w-4 h-4 text-[#D2B48C]" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                        </svg>
+                        전화번호
+                        <span className="ml-auto text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">읽기 전용</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="phone"
+                          type="tel"
+                          value={userProfile?.phone || ''}
+                          disabled
+                          readOnly
+                          className="w-full px-4 py-3.5 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 버튼 */}
+                    <div className="flex gap-3 pt-4">
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex-1 px-6 py-3.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        취소
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 px-6 py-3.5 bg-[#D2B48C] hover:bg-[#C19A6B] text-white font-semibold rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        저장하기
+                      </button>
+                    </div>
+                  </form>
                 </>
               )}
             </motion.div>
             
-            {(!userProfile) && (
-              <div className="absolute inset-0 flex items-center justify-center bg-[#FDFBF8]/80 z-[1000] rounded-2xl">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D2B48C]"></div>
-              </div>
-            )}
+            {/* Error Modal */}
             {error && (
-              <div 
-                className="absolute inset-0 flex items-center justify-center bg-black/50 z-[1000] backdrop-blur-sm rounded-2xl"
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="absolute inset-0 flex items-center justify-center p-4 z-[60]"
                 onClick={() => setError(null)}
               >
                 <div 
-                  className="bg-white rounded-2xl shadow-xl p-8 m-4 max-w-sm w-full text-center"
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-sm w-full"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <h3 className="text-xl font-bold text-red-500 mb-4">오류 발생</h3>
-                  <p className="text-[#3D2C1D] mb-6">{error}</p>
+                  <div className="flex items-center justify-center w-14 h-14 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full">
+                    <svg className="w-7 h-7 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-center text-[#2C2C2C] dark:text-gray-100 mb-2">오류 발생</h3>
+                  <p className="text-center text-gray-600 dark:text-gray-400 mb-6">{error}</p>
                   <button
                     onClick={() => setError(null)}
-                    className="px-6 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors"
+                    className="w-full px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                   >
                     확인
                   </button>
                 </div>
-              </div>
+              </motion.div>
             )}
           </motion.div>
         </>

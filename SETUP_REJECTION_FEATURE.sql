@@ -35,3 +35,5 @@ WHERE table_name = 'notifications'
 AND column_name = 'rejection_reason';
 
 
+
+

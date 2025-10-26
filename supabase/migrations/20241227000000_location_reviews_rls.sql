@@ -21,3 +21,5 @@ ON location_reviews FOR UPDATE
 USING (auth.uid() = artist_id);
 
 
+
+

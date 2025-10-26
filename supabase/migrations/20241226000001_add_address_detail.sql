@@ -6,3 +6,5 @@ COMMENT ON COLUMN locations.address_detail IS 'Detailed address information (e.g
 
 
 
+
+

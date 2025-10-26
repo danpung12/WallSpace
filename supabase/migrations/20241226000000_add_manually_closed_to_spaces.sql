@@ -11,3 +11,5 @@ CREATE INDEX IF NOT EXISTS idx_spaces_manually_closed ON spaces(manually_closed)
 
 
 
+
+

@@ -15,6 +15,8 @@ const HIDE_ON = new Set<string>([
   '/select-type/guest',
   '/select-type/artist',
   '/confirm-booking',
+  '/dashboard/add',
+  '/dashboard/add-store',
 ]);
 
 export default function BottomNavGate() {

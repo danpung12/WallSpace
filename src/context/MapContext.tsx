@@ -4,7 +4,7 @@ import React, { createContext, useContext, useRef, useState, useCallback, useMem
 import { KakaoPlace, KakaoMap, KakaoLatLng, KakaoGeocoderResult, KakaoGeocoderStatus } from '@/types/kakao';
 import { LocationDetail, Space, Artwork } from '@/types/database';
 import { getLocations, getSpaces } from '@/lib/api/locations';
-import { getArtworks } from '@/lib/api/artworks';
+import { getUserArtworks } from '@/lib/api/artworks';
 
 // --- 타입 정의 ---
 export type { LocationDetail as LocationType, Space, Artwork };
@@ -126,16 +126,22 @@ export function MapProvider({ children }: { children: ReactNode }) {
             setError(null);
             
             // API routes를 통해 데이터 가져오기
-            const [locationsResponse, artworksData] = await Promise.all([
-                fetch('/api/locations'),
-                getArtworks()
-            ]);
+            const locationsResponse = await fetch('/api/locations');
             
             if (!locationsResponse.ok) {
                 throw new Error('Failed to fetch locations');
             }
             
             const locationsData = await locationsResponse.json();
+            
+            // 사용자 작품 가져오기 (로그인하지 않은 경우 빈 배열)
+            let artworksData: Artwork[] = [];
+            try {
+                artworksData = await getUserArtworks();
+                console.log('✅ User artworks loaded:', artworksData.length);
+            } catch (artworkError) {
+                console.log('ℹ️ No user artworks (user may not be logged in)');
+            }
             
             console.log('✅ Locations loaded:', locationsData.length);
             setLocations(locationsData);

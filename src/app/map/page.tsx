@@ -180,7 +180,8 @@ function MapPageContent() {
     }, [selectedPlace, mapInstance]);
 
     useEffect(() => {
-        if (isDetailPageVisible) {
+        // PlaceDetailPanel이나 LocationDetailPage가 열려있으면 하단바 숨김
+        if (isDetailPageVisible || selectedPlace) {
             setIsNavVisible(false);
         } else {
             setIsNavVisible(true);
@@ -188,7 +189,7 @@ function MapPageContent() {
         return () => {
             setIsNavVisible(true);
         };
-    }, [isDetailPageVisible, setIsNavVisible]);
+    }, [isDetailPageVisible, selectedPlace, setIsNavVisible]);
 
     return (
         <div className="map-page-container">

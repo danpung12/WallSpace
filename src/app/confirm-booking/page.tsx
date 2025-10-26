@@ -1,32 +1,102 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { locations } from '@/data/locations';
 import BookingConfirmation from './components/BookingConfirmation';
 import type { Location, Space } from '@/data/locations';
 
 function BookingConfirmationPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [location, setLocation] = useState<Location | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const placeId = searchParams.get('placeId');
   const spaceName = searchParams.get('spaceName');
   const startDateStr = searchParams.get('startDate');
   const endDateStr = searchParams.get('endDate');
 
-  if (!placeId || !spaceName || !startDateStr || !endDateStr) {
-    return <div>잘못된 접근입니다.</div>;
+  // API에서 장소 데이터 가져오기
+  useEffect(() => {
+    const fetchLocation = async () => {
+      if (!placeId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/locations');
+        if (response.ok) {
+          const locations: Location[] = await response.json();
+          const foundLocation = locations.find((loc) => loc.id === placeId || loc.id.toString() === placeId);
+          setLocation(foundLocation || null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch location:', error);
+        setLocation(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLocation();
+  }, [placeId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#D2B48C]"></div>
+      </div>
+    );
   }
 
-  const location = locations.find((l) => l.id.toString() === placeId);
+  if (!placeId || !spaceName || !startDateStr || !endDateStr) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-lg text-gray-600 mb-4">잘못된 접근입니다.</p>
+          <button
+            onClick={() => router.back()}
+            className="px-6 py-2 bg-[#D2B48C] text-white rounded-lg hover:bg-[#C19A6B] transition-colors"
+          >
+            돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!location) {
-    return <div>장소를 찾을 수 없습니다.</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-lg text-gray-600 mb-4">장소를 찾을 수 없습니다.</p>
+          <button
+            onClick={() => router.back()}
+            className="px-6 py-2 bg-[#D2B48C] text-white rounded-lg hover:bg-[#C19A6B] transition-colors"
+          >
+            돌아가기
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const space = location.spaces.find((s) => s.name === spaceName);
   if (!space) {
-    return <div>공간을 찾을 수 없습니다.</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-lg text-gray-600 mb-4">공간을 찾을 수 없습니다.</p>
+          <button
+            onClick={() => router.back()}
+            className="px-6 py-2 bg-[#D2B48C] text-white rounded-lg hover:bg-[#C19A6B] transition-colors"
+          >
+            돌아가기
+          </button>
+        </div>
+      </div>
+    );
   }
   
   const bookingDetails = {
