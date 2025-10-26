@@ -70,3 +70,4 @@ FROM pg_policies
 WHERE tablename = 'location_reviews'
 ORDER BY policyname;
 
+

@@ -259,17 +259,49 @@ const ArtistSignUpModal: React.FC<ArtistSignUpModalProps> = ({ isOpen, onClose, 
               required
               disabled={isLoading}
             />
-            <InputField 
-              id="phone" 
-              name="phone"
-              label="전화번호" 
-              type="tel"
-              placeholder="전화번호를 입력하세요" 
-              icon="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              disabled={isLoading}
-            />
+            {/* 전화번호 인증 (UI만) */}
+            <div>
+              <label className="block text-sm font-medium pb-2 text-[#2C2C2C]">전화번호</label>
+              <div className="flex gap-3">
+                <div className="relative flex-grow flex items-center bg-white rounded-xl border-2 border-[#E5E0DC] focus-within:border-[#D2B48C] focus-within:shadow-[0_0_0_3px_rgba(210,180,140,0.25)] transition-all duration-300">
+                  <span className="material-symbols-outlined absolute left-4 text-[#887563] pointer-events-none">phone</span>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    placeholder="010-1234-5678"
+                    className="w-full h-14 pl-14 pr-4 bg-transparent text-[#2C2C2C] placeholder:text-[#887563] focus:outline-none"
+                    value={formData.phone}
+                    onChange={(e) => {
+                      let value = e.target.value.replace(/[^0-9]/g, '');
+                      // 자동 하이픈 추가
+                      if (value.length > 3 && value.length <= 7) {
+                        value = value.slice(0, 3) + '-' + value.slice(3);
+                      } else if (value.length > 7) {
+                        value = value.slice(0, 3) + '-' + value.slice(3, 7) + '-' + value.slice(7, 11);
+                      }
+                      setFormData(prev => ({ ...prev, phone: value }));
+                    }}
+                    maxLength={13}
+                    disabled={isLoading}
+                  />
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    // 나중에 인증 기능 추가 예정
+                    alert('전화번호 인증 기능은 준비 중입니다.\n현재는 입력한 번호가 그대로 저장됩니다.');
+                  }}
+                  disabled={isLoading || !formData.phone}
+                  className="flex-shrink-0 rounded-xl h-14 px-5 bg-[#C9A67B] text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  인증하기
+                </button>
+              </div>
+              <p className="text-xs text-[#887563] mt-2">
+                하이픈(-)을 포함하거나 제외하고 입력해주세요.
+              </p>
+            </div>
             
             {/* Gender Selection */}
             <div>

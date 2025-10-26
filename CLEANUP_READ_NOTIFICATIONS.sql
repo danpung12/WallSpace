@@ -17,3 +17,4 @@ DELETE FROM notifications WHERE is_read = true;
 SELECT COUNT(*) as remaining_count FROM notifications;
 
 
+

@@ -10,3 +10,4 @@ COMMENT ON COLUMN spaces.manually_closed IS 'Allows managers to manually mark a 
 CREATE INDEX IF NOT EXISTS idx_spaces_manually_closed ON spaces(manually_closed);
 
 
+

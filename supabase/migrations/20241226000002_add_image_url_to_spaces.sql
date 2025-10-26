@@ -15,3 +15,4 @@ WHERE images IS NOT NULL
 -- Add comment for documentation
 COMMENT ON COLUMN spaces.image_url IS 'Representative image URL for the space';
 
+

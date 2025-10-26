@@ -31,3 +31,4 @@ COMMENT ON COLUMN locations.manager_id IS 'The manager/owner of this location';
 
 
 
+

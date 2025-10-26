@@ -93,27 +93,46 @@ function ArtistDashboard({
 
   return (
     <div className="space-y-6">
-      <section className={`${cardBgClass} dark:bg-gray-700 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-600`}>
-        <div className="flex items-center justify-between mb-4">
+      <section className={`${cardBgClass} dark:bg-gray-700 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-600 ${artworks.length === 0 && !isLoadingArtworks ? 'relative min-h-[400px] flex items-center justify-center' : ''}`}>
+        <div className={`flex items-center justify-between ${artworks.length === 0 && !isLoadingArtworks ? 'absolute top-4 left-4 right-4' : 'mb-4'}`}>
           <h2 className="text-2xl font-bold text-[#3D2C1D] dark:text-gray-100">내 작품</h2>
-          <Link
-            href="/dashboard/add"
-            className="bg-[#c19a6b] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90 lg:hidden"
-            >
-            작품 추가
-          </Link>
-          <button
-            onClick={onAddArtworkClick}
-            className="hidden lg:block bg-[#c19a6b] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90"
-          >
-            작품 추가
-          </button>
+          {artworks.length > 0 && (
+            <>
+              <Link
+                href="/dashboard/add"
+                className="bg-[#c19a6b] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90 lg:hidden"
+                >
+                작품 추가
+              </Link>
+              <button
+                onClick={onAddArtworkClick}
+                className="hidden lg:block bg-[#c19a6b] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90"
+              >
+                작품 추가
+              </button>
+            </>
+          )}
         </div>
         {/* Mobile Carousel */}
-        <div ref={containerRef} className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-4 pb-2 no-scrollbar lg:hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div ref={containerRef} className={`flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-4 pb-2 no-scrollbar lg:hidden ${artworks.length === 0 && !isLoadingArtworks ? '' : ''}`} style={{ WebkitOverflowScrolling: 'touch' }}>
           {artworks.length === 0 && !isLoadingArtworks ? (
-            <div className="w-full text-center py-8 text-gray-500">
-              작품을 추가해보세요!
+            <div className="w-full flex flex-col items-center justify-center px-4">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#D2B48C]/20 to-[#C19A6B]/20 flex items-center justify-center mb-3">
+                <span className="material-symbols-outlined text-4xl text-[#C19A6B]">palette</span>
+              </div>
+              <h3 className="text-lg font-bold text-[#3D2C1D] dark:text-gray-100 mb-2">첫 작품을 등록해보세요!</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-4">
+                작품을 추가하고 전시 공간에<br/>당신의 예술을 선보이세요 ✨
+              </p>
+              <Link
+                href="/dashboard/add"
+                className="bg-gradient-to-r from-[#D2B48C] to-[#C19A6B] text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+              >
+                <span className="flex items-center gap-2 text-sm">
+                  <span className="material-symbols-outlined text-xl">add_circle</span>
+                  작품 추가하기
+                </span>
+              </Link>
             </div>
           ) : (
             artworks.map((art, idx) => (
@@ -130,8 +149,23 @@ function ArtistDashboard({
         {/* PC Carousel */}
          <div className="hidden lg:block relative">
            {artworks.length === 0 ? (
-             <div className="w-full text-center py-8 text-gray-500">
-               작품을 추가해보세요!
+             <div className="w-full flex flex-col items-center justify-center px-4">
+               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#D2B48C]/20 to-[#C19A6B]/20 flex items-center justify-center mb-4">
+                 <span className="material-symbols-outlined text-5xl text-[#C19A6B]">palette</span>
+               </div>
+               <h3 className="text-xl font-bold text-[#3D2C1D] dark:text-gray-100 mb-2">첫 작품을 등록해보세요!</h3>
+               <p className="text-base text-gray-500 dark:text-gray-400 text-center mb-6">
+                 작품을 추가하고 전시 공간에 당신의 예술을 선보이세요 ✨
+               </p>
+               <button
+                 onClick={onAddArtworkClick}
+                 className="bg-gradient-to-r from-[#D2B48C] to-[#C19A6B] text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+               >
+                 <span className="flex items-center gap-2">
+                   <span className="material-symbols-outlined">add_circle</span>
+                   작품 추가하기
+                 </span>
+               </button>
              </div>
            ) : (
              <Swiper
@@ -170,12 +204,18 @@ function ArtistDashboard({
       <div className="space-y-6 lg:grid lg:grid-cols-5 lg:gap-8 lg:space-y-0">
         <div className="space-y-6 lg:col-span-2">
           {/* 전시 중 카드 */}
-          <section className={`${cardBgClass} dark:bg-gray-700 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-600`}>
-            <h2 className="text-2xl font-bold text-[#3D2C1D] dark:text-gray-100 mb-4">전시 중</h2>
+          <section className={`${cardBgClass} dark:bg-gray-700 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-600 ${activeExhibitions.length === 0 ? 'relative min-h-[400px] flex items-center justify-center' : ''}`}>
+            <h2 className={`text-2xl font-bold text-[#3D2C1D] dark:text-gray-100 ${activeExhibitions.length === 0 ? 'absolute top-4 left-4 right-4' : 'mb-4'}`}>전시 중</h2>
             <div className="space-y-4">
               {activeExhibitions.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  전시 중인 작품이 없습니다
+                <div className="flex flex-col items-center justify-center px-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center mb-4">
+                    <span className="material-symbols-outlined text-4xl text-green-600">gallery_thumbnail</span>
+                  </div>
+                  <h4 className="text-lg font-bold text-[#3D2C1D] dark:text-gray-100 mb-2">전시 중인 작품이 없어요</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                    예약을 통해<br/>작품을 전시해보세요! 🎨
+                  </p>
                 </div>
               ) : (
                 activeExhibitions.map(exhibition => (
@@ -213,30 +253,35 @@ function ArtistDashboard({
 
         <div className="space-y-6 lg:col-span-3">
           {/* 예정된 예약 카드 */}
-          <section className={`${cardBgClass} dark:bg-gray-700 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-600`}>
-            <h2 className="text-2xl font-bold text-[#3D2C1D] dark:text-gray-100 mb-4">예정된 예약</h2>
+          <section className={`${cardBgClass} dark:bg-gray-700 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-600 ${reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').length === 0 ? 'relative min-h-[400px] flex items-center justify-center' : ''}`}>
+            <h2 className={`text-2xl font-bold text-[#3D2C1D] dark:text-gray-100 ${reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').length === 0 ? 'absolute top-4 left-4 right-4' : 'mb-4'}`}>예정된 예약</h2>
             <div className="space-y-4">
-              {reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').map(reservation => {
-                console.log('📦 Reservation for card:', { id: reservation.id, status: reservation.status });
-                return (
-                  <Link
-                    href={`/bookingdetail?id=${encodeURIComponent(reservation.id)}`}
-                    className="block"
-                    key={reservation.id}
-                  >
-                    <ReservationCard reservation={reservation} userType="artist" />
-                  </Link>
-                );
-              })}
+              {reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').length > 0 ? (
+                reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').map(reservation => {
+                  console.log('📦 Reservation for card:', { id: reservation.id, status: reservation.status });
+                  return (
+                    <Link
+                      href={`/bookingdetail?id=${encodeURIComponent(reservation.id)}`}
+                      className="block"
+                      key={reservation.id}
+                    >
+                      <ReservationCard reservation={reservation} userType="artist" />
+                    </Link>
+                  );
+                })
+              ) : (
+                <div className="flex flex-col items-center justify-center px-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center mb-4">
+                    <span className="material-symbols-outlined text-4xl text-blue-600">event_available</span>
+                  </div>
+                  <h4 className="text-lg font-bold text-[#3D2C1D] dark:text-gray-100 mb-2">예정된 예약이 없어요</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                    새로운 예약이 이곳에 표시됩니다 📅
+                  </p>
+                </div>
+              )}
             </div>
           </section>
-
-          {/* 지난 예약 카드 */}
-          <PastReservationsSection 
-            reservations={reservations.filter(r => r.status === 'completed' || r.status === 'cancelled')}
-            cardBgClass={cardBgClass}
-            userType="artist"
-          />
         </div>
       </div>
     </div>
@@ -287,15 +332,17 @@ function ManagerDashboard({
       <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-8">
         <div className="lg:col-span-3 space-y-6">
   {/* 내 가게 카드 */}
-  <section className={`${cardBgClass} dark:bg-gray-700 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-600`}>
-      <div className="flex items-center justify-between mb-4">
+  <section className={`${cardBgClass} dark:bg-gray-700 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-600 ${locations.length === 0 && !isLoadingLocations ? 'relative min-h-[400px] flex items-center justify-center' : ''}`}>
+      <div className={`flex items-center justify-between ${locations.length === 0 && !isLoadingLocations ? 'absolute top-4 left-4 right-4' : 'mb-4'}`}>
           <h2 className="text-2xl font-bold text-[#3D2C1D] dark:text-gray-100">내 가게</h2>
-          <Link
-            href="/dashboard/add-store"
-            className="bg-[#c19a6b] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90"
-            >
-              가게 추가
-          </Link>
+          {locations.length > 0 && (
+            <Link
+              href="/dashboard/add-store"
+              className="bg-[#c19a6b] text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-opacity-90 transition-colors active:opacity-90"
+              >
+                가게 추가
+            </Link>
+          )}
       </div>
       <div ref={containerRef} className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-4 pb-2 no-scrollbar lg:grid lg:grid-cols-3 lg:overflow-visible" style={{ WebkitOverflowScrolling: 'touch' }}>
           {isLoadingLocations ? (
@@ -303,8 +350,23 @@ function ManagerDashboard({
               가게 정보를 불러오는 중...
             </div>
           ) : locations.length === 0 ? (
-            <div className="w-full text-center py-8 text-gray-500">
-              등록된 가게가 없습니다. 가게를 추가해보세요!
+            <div className="w-full flex flex-col items-center justify-center px-4 lg:col-span-3">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#D2B48C]/20 to-[#C19A6B]/20 flex items-center justify-center mb-3">
+                <span className="material-symbols-outlined text-4xl text-[#C19A6B]">storefront</span>
+              </div>
+              <h3 className="text-lg font-bold text-[#3D2C1D] dark:text-gray-100 mb-2">첫 가게를 등록해보세요!</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-4">
+                가게를 추가하고 예술가들의<br/>작품을 전시하세요 🏪
+              </p>
+              <Link
+                href="/dashboard/add-store"
+                className="bg-gradient-to-r from-[#D2B48C] to-[#C19A6B] text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+              >
+                <span className="flex items-center gap-2 text-sm">
+                  <span className="material-symbols-outlined text-xl">add_business</span>
+                  가게 추가하기
+                </span>
+              </Link>
             </div>
           ) : (
             locations.map((location, idx) => (
@@ -335,28 +397,32 @@ function ManagerDashboard({
 </div>
       <div className="lg:col-span-3 space-y-6">
         {/* 예약 요청 카드 */}
-        <section className={`${cardBgClass} dark:bg-gray-700 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-600`}>
-          <h2 className="text-2xl font-bold text-[#3D2C1D] dark:text-gray-100 mb-4">예약 요청</h2>
+        <section className={`${cardBgClass} dark:bg-gray-700 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-600 ${reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').length === 0 ? 'relative min-h-[400px] flex items-center justify-center' : ''}`}>
+          <h2 className={`text-2xl font-bold text-[#3D2C1D] dark:text-gray-100 ${reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').length === 0 ? 'absolute top-4 left-4 right-4' : 'mb-4'}`}>예약 요청</h2>
           <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4">
-            {reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').map(reservation => (
-              <Link
-                href={`/manager-booking-approval?id=${encodeURIComponent(reservation.id)}`}
-                className="block"
-                key={reservation.id}
-                >
-                <ReservationCard reservation={reservation} userType="manager" />
-              </Link>
-            ))}
+            {reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').length > 0 ? (
+              reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').map(reservation => (
+                <Link
+                  href={`/manager-booking-approval?id=${encodeURIComponent(reservation.id)}`}
+                  className="block"
+                  key={reservation.id}
+                  >
+                  <ReservationCard reservation={reservation} userType="manager" />
+                </Link>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center px-4 lg:col-span-2">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center mb-4">
+                  <span className="material-symbols-outlined text-4xl text-blue-600">event_available</span>
+                </div>
+                <h4 className="text-lg font-bold text-[#3D2C1D] dark:text-gray-100 mb-2">예약 요청이 없어요</h4>
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                  새로운 예약 요청이 이곳에 표시됩니다 📅
+                </p>
+              </div>
+            )}
           </div>
         </section>
-      </div>
-      <div className="lg:col-span-3 space-y-6">
-        {/* 지난 예약 카드 */}
-        <PastReservationsSection 
-          reservations={reservations.filter(r => r.status === 'completed' || r.status === 'cancelled')}
-          cardBgClass={cardBgClass}
-          userType="manager"
-        />
         </div>
       </div>
 
@@ -410,9 +476,15 @@ function PastReservationsSection({
               </Link>
             ))
           ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-              지난 예약이 없습니다
-            </p>
+            <div className="flex flex-col items-center justify-center py-12 px-4">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-100 to-slate-100 flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-4xl text-gray-400">history</span>
+              </div>
+              <h4 className="text-lg font-bold text-[#3D2C1D] dark:text-gray-100 mb-2">지난 예약이 없어요</h4>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                예약 기록이 이곳에 표시됩니다 📋
+              </p>
+            </div>
           )}
         </div>
         

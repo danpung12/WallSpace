@@ -6,36 +6,57 @@ import { Profile, ProfileInsert, ProfileUpdate } from '@/types/database'
 
 // 사용자 프로필 조회
 export const getProfile = async (userId: string): Promise<Profile | null> => {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single()
-  
-  if (error) {
-    console.error('Error fetching profile:', error)
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+    
+    if (error) {
+      // 프로필이 없는 경우 (PGRST116)나 권한 오류는 무시
+      if (error.code === 'PGRST116' || error.code === '42501') {
+        console.log('⚠️ Profile not found or no permission, will retry on login')
+        return null
+      }
+      console.error('❌ Error fetching profile:', error)
+      return null
+    }
+    
+    return data
+  } catch (error) {
+    console.error('❌ Get profile exception:', error)
     return null
   }
-  
-  return data
 }
 
 // 사용자 프로필 생성
 export const createProfile = async (profile: ProfileInsert): Promise<Profile | null> => {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('profiles')
-    .insert(profile)
-    .select()
-    .single()
-  
-  if (error) {
-    console.error('Error creating profile:', error)
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert(profile)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('❌ Error creating profile:', error)
+      // RLS 에러나 이미 존재하는 프로필은 무시
+      if (error.code === '42501' || error.code === '23505') {
+        console.log('⚠️ Profile already exists or RLS policy issue, skipping...')
+        return null
+      }
+      throw error
+    }
+    
+    console.log('✅ Profile created successfully')
+    return data
+  } catch (error) {
+    console.error('❌ Create profile exception:', error)
     return null
   }
-  
-  return data
 }
 
 // 사용자 프로필 업데이트
@@ -70,9 +91,11 @@ export const registerUser = async (
 ) => {
   try {
     // 1. Supabase Auth에 사용자 등록
+    // 트리거가 자동으로 프로필을 생성하므로 user_metadata에 모든 정보를 포함
     const { data: authData, error: authError } = await signUp(email, password, userData)
     
     if (authError) {
+      console.error('❌ Auth error:', authError)
       throw authError
     }
 
@@ -80,25 +103,20 @@ export const registerUser = async (
       throw new Error('User creation failed')
     }
 
-    // 2. 프로필 생성
-    const profileData: any = {
-      id: authData.user.id,
-      email: authData.user.email!,
-      name: userData.full_name, // 'full_name'이 아니라 'name'으로 변경
-      nickname: userData.nickname,
-      user_type: userData.user_type,
-      phone: userData.phone || null,
-      website: userData.website || null
-    }
+    console.log('✅ User created:', authData.user.id, 'Email:', authData.user.email)
 
-    // 디버깅: 전화번호 확인
-    console.log('📞 Creating profile with phone:', userData.phone, '-> DB phone:', profileData.phone)
-
-    const profile = await createProfile(profileData)
+    // 2. 트리거가 자동으로 프로필을 생성
+    // 트리거는 auth.users INSERT 직후 실행되므로 바로 완료됨
+    // 에러가 발생하면 트리거가 프로필을 생성했으므로 무시하고 진행
     
-    return { user: authData.user, profile, error: null }
-  } catch (error) {
-    console.error('Registration error:', error)
+    console.log('✅ Profile will be auto-created by trigger')
+    
+    // 3. 프로필이 없어도 회원가입은 성공으로 처리
+    // 로그인 시 프로필을 다시 확인하므로 문제없음
+    return { user: authData.user, profile: null, error: null }
+    
+  } catch (error: any) {
+    console.error('❌ Registration error:', error)
     return { user: null, profile: null, error }
   }
 }

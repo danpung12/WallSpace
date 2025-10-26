@@ -215,9 +215,10 @@ interface RecommendedPlacesProps {
   onSlideChange: (index: number) => void;
   userLocation: { lat: number; lng: number } | null;
   locations: Location[];
+  hasNotifications: boolean;
 }
 
-const RecommendedPlaces = ({ onSlideChange, userLocation, locations }: RecommendedPlacesProps) => {
+const RecommendedPlaces = ({ onSlideChange, userLocation, locations, hasNotifications }: RecommendedPlacesProps) => {
   const router = useRouter(); // 2. router 인스턴스 생성
 
   const handlePlaceCardClick = (place: Location) => {
@@ -266,8 +267,8 @@ const RecommendedPlaces = ({ onSlideChange, userLocation, locations }: Recommend
         </Swiper>
       </div>
 
-      {/* PC: Grid */}
-      <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
+      {/* PC: Grid - 화면 너비에 따라 자동 조절 (최대 3개) */}
+      <div className={`hidden lg:grid lg:gap-6 ${hasNotifications ? 'lg:grid-cols-1 xl:grid-cols-2' : 'lg:grid-cols-2 xl:grid-cols-3'}`}>
         {locations.map((place) => (
           <PlaceCard
             key={place.id}
@@ -435,10 +436,12 @@ export default function HomePage() {
     title: string;
   } | null>(null);
 
-  // 추천 장소: 사용자 위치 기반 가까운 순으로 4곳
+  // 추천 장소: 사용자 위치 기반 가까운 순으로 (알림 있으면 4곳, 없으면 12곳)
   const recommendedLocations = useMemo(() => {
+    const maxLocations = notifications.length > 0 ? 4 : 12;
+    
     if (!userLocation || locations.length === 0) {
-      return locations.slice(0, 4);
+      return locations.slice(0, maxLocations);
     }
 
     // 거리 계산하여 정렬
@@ -452,11 +455,11 @@ export default function HomePage() {
       ))
     }));
 
-    // 거리순 정렬 후 상위 4개
+    // 거리순 정렬 후 상위 N개
     return locationsWithDistance
       .sort((a, b) => a.distance - b.distance)
-      .slice(0, 4);
-  }, [locations, userLocation]);
+      .slice(0, maxLocations);
+  }, [locations, userLocation, notifications.length]);
 
   // 인증 확인 및 데이터 로드
   useEffect(() => {
@@ -657,26 +660,27 @@ export default function HomePage() {
       <Header /> {/* 2. Header 컴포넌트 추가 */}
       <div className="h-screen w-full lg:h-screen lg:overflow-hidden relative bg-[#e8e3da] dark:bg-[#1a1a1a] transition-colors duration-300 flex flex-col">
 
-        <div className="relative z-10 mx-auto w-full max-w-screen-2xl flex-grow overflow-y-auto scrollbar-hide lg:px-8 lg:pt-12 lg:pb-0"
+        <div className="relative z-10 mx-auto w-full max-w-screen-2xl flex-grow overflow-y-auto scrollbar-hide lg:px-8 lg:pt-12 lg:pb-0 flex flex-col"
           style={{
             paddingTop: 'clamp(1rem, 3.79vh, 2rem)',
             paddingBottom: 'clamp(1.5rem, 5.69vh, 3rem)'
           }}>
-          <div className="lg:flex lg:h-full lg:gap-8">
-            <div className="lg:w-1/3">
-              {notifications.length > 0 && (
-                <section className="sm:px-6 lg:sticky lg:top-12 lg:px-0"
+          <div className="lg:flex lg:h-full lg:gap-8 flex-grow flex flex-col lg:flex-row">
+            {/* 모바일: 항상 표시, PC: 알림 있을 때만 표시 */}
+            <div className={`lg:w-1/3 ${notifications.length === 0 ? 'lg:hidden' : ''}`}>
+              <section className="sm:px-6 lg:sticky lg:top-12 lg:px-0"
+                style={{
+                  paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
+                  paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)'
+                }}>
+                <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
                   style={{
-                    paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
-                    paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)'
+                    marginBottom: 'clamp(0.5rem, 1.9vh, 1rem)',
+                    fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)'
                   }}>
-                  <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
-                    style={{
-                      marginBottom: 'clamp(0.5rem, 1.9vh, 1rem)',
-                      fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)'
-                    }}>
-                    새로운 알림
-                  </h2>
+                  새로운 알림
+                </h2>
+                {notifications.length > 0 ? (
                   <div style={{ 
                     display: 'flex',
                     flexDirection: 'column',
@@ -690,11 +694,41 @@ export default function HomePage() {
                       />
                     ))}
                   </div>
-                </section>
-              )}
+                ) : (
+                  <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg rounded-2xl flex flex-col items-center justify-center shadow-lg border border-white/20 dark:border-gray-700/30"
+                    style={{ 
+                      height: 'clamp(5.4rem, 28.8vh, 16.2rem)',
+                      padding: 'clamp(1rem, 3.5vh, 2.5rem)',
+                      gap: 'clamp(0.5rem, 2vh, 1.25rem)',
+                      width: '90%',
+                      marginLeft: 'auto',
+                      marginRight: 'auto'
+                    }}>
+                    <div style={{ 
+                      width: 'clamp(3rem, 8vh, 5rem)', 
+                      height: 'clamp(3rem, 8vh, 5rem)' 
+                    }} className="rounded-full bg-gradient-to-br from-[#D2B48C]/20 to-[#C19A6B]/20 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[#C19A6B]" style={{ fontSize: 'clamp(2rem, 6vh, 3rem)' }}>notifications_off</span>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="font-bold text-[#2C2C2C] dark:text-gray-100"
+                        style={{ 
+                          fontSize: 'clamp(0.875rem, 3.5vh, 1.25rem)',
+                          marginBottom: 'clamp(0.25rem, 1vh, 0.5rem)'
+                        }}>
+                        새 알림이 없습니다
+                      </h4>
+                      <p className="text-[#887563] dark:text-gray-400"
+                        style={{ fontSize: 'clamp(0.75rem, 2.5vh, 0.9375rem)' }}>
+                        알림이 도착하면 여기에 표시됩니다
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </section>
             </div>
 
-            <div className="lg:mt-0 lg:flex lg:flex-col lg:w-2/3"
+            <div className={`lg:mt-0 lg:flex lg:flex-col ${notifications.length > 0 ? 'lg:w-2/3' : 'lg:w-full'} flex-grow flex flex-col justify-end`}
               style={{
                 marginTop: 'clamp(1rem, 3.79vh, 2rem)'
               }}>
@@ -725,6 +759,7 @@ export default function HomePage() {
                     onSlideChange={setCurrentPlaceIndex}
                     userLocation={userLocation}
                     locations={recommendedLocations}
+                    hasNotifications={notifications.length > 0}
                   />
                 </div>
               </div>

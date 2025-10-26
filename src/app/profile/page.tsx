@@ -312,7 +312,7 @@ export default function ProfilePage() {
             </div>
             <div className="flex-1 ml-3 lg:ml-4">
               <p className="block text-[11px] font-bold mb-1 uppercase tracking-widest text-[#887563] dark:text-gray-400">전화번호</p>
-              <p className="text-sm lg:text-base font-bold text-[#2C2C2C] dark:text-gray-100">{userProfile.phone}</p>
+              <p className="text-sm lg:text-base font-bold text-[#2C2C2C] dark:text-gray-100">{userProfile.phone || '전화번호 없음'}</p>
             </div>
           </div>
         </section>

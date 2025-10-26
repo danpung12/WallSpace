@@ -152,3 +152,4 @@ export const getLocationAverageRating = async (locationId: string): Promise<numb
   return Math.round(average * 10) / 10
 }
 
+

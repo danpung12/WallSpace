@@ -34,3 +34,4 @@ FROM information_schema.columns
 WHERE table_name = 'notifications' 
 AND column_name = 'rejection_reason';
 
+

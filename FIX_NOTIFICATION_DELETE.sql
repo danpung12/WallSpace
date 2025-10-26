@@ -36,3 +36,4 @@ USING (auth.uid() = user_id);
 SELECT * FROM pg_policies WHERE tablename = 'notifications';
 
 
+
