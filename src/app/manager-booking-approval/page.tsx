@@ -12,6 +12,7 @@ function ManagerBookingApprovalContent() {
   const reservationId = searchParams.get('id');
   const { getReservationById, updateReservationStatus } = useReservations();
   const [reservation, setReservation] = useState<Reservation | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [actionType, setActionType] = useState<'accept' | 'reject' | null>(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -19,10 +20,16 @@ function ManagerBookingApprovalContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (reservationId) {
+    const loadReservation = async () => {
+      if (!reservationId) {
+        setIsLoading(false);
+        return;
+      }
+
+      // 먼저 컨텍스트에서 찾기
       const found = getReservationById(reservationId);
       console.log('🔍 Loading reservation for manager:', reservationId);
-      console.log('📦 Found reservation:', found);
+      console.log('📦 Found reservation in context:', found);
       
       if (found) {
         // API 데이터를 UI가 기대하는 형식으로 변환
@@ -58,8 +65,54 @@ function ManagerBookingApprovalContent() {
           rawArtist: (found as any).artist
         });
         setReservation(transformed as any);
+        setIsLoading(false);
+      } else {
+        // 컨텍스트에 없으면 API에서 직접 가져오기
+        console.log('⚠️ Reservation not found in context, fetching from API...');
+        try {
+          const response = await fetch(`/api/reservations?id=${reservationId}`);
+          if (response.ok) {
+            const data = await response.json();
+            console.log('✅ Fetched reservation from API:', data);
+            
+            const startDateStr = (data as any).start_date || (data as any).startDate;
+            const endDateStr = (data as any).end_date || (data as any).endDate;
+            const period = startDateStr && endDateStr 
+              ? `${new Date(startDateStr).toLocaleDateString('ko-KR')} ~ ${new Date(endDateStr).toLocaleDateString('ko-KR')}` 
+              : '날짜 정보 없음';
+            
+            const transformed = {
+              ...(data as any),
+              artworkTitle: (data as any).artwork?.title || '',
+              artistName: (data as any).artist?.name || '',
+              artistDisplayName: (data as any).artist?.nickname || (data as any).artist?.name || '',
+              artistPhone: (data as any).artist?.phone || '',
+              artistEmail: (data as any).artist?.email || '',
+              artistImage: (data as any).artist?.avatar_url || (data as any).artist?.image_url || '',
+              storeName: (data as any).location?.name || '',
+              locationAddress: (data as any).location?.address || '',
+              image: (data as any).artwork?.image_url || (data as any).artwork?.images?.[0] || '',
+              locationImage: (data as any).location?.images?.[0] || '',
+              startDate: startDateStr,
+              endDate: endDateStr,
+              period: period,
+              price: (data as any).space?.price || (data as any).price || 0,
+            };
+            setReservation(transformed as any);
+          } else {
+            console.error('❌ Failed to fetch reservation from API');
+            setReservation(null);
+          }
+        } catch (error) {
+          console.error('❌ Error fetching reservation:', error);
+          setReservation(null);
+        } finally {
+          setIsLoading(false);
+        }
       }
-    }
+    };
+
+    loadReservation();
   }, [reservationId, getReservationById]);
 
   const handleAccept = () => {
@@ -114,12 +167,34 @@ function ManagerBookingApprovalContent() {
     setActionType(null);
   };
 
+  if (isLoading) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-[#e8e3da] dark:bg-[#1a1a1a] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#D2B48C]"></div>
+            <p className="text-[#8C7853] dark:text-gray-400">예약 정보를 불러오는 중...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   if (!reservation) {
     return (
       <>
         <Header />
         <div className="min-h-screen bg-[#e8e3da] dark:bg-[#1a1a1a] flex items-center justify-center">
-          <p className="text-[#2C2C2C] dark:text-gray-100 text-lg">예약 정보를 찾을 수 없습니다.</p>
+          <div className="flex flex-col items-center gap-4">
+            <p className="text-[#2C2C2C] dark:text-gray-100 text-lg">예약 정보를 찾을 수 없습니다.</p>
+            <button
+              onClick={() => router.back()}
+              className="px-6 py-2 bg-[#D2B48C] text-white rounded-lg hover:bg-[#C19A6B] transition-colors"
+            >
+              돌아가기
+            </button>
+          </div>
         </div>
       </>
     );

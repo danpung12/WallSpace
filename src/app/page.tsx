@@ -11,6 +11,7 @@ import { useMap, LocationType } from '../context/MapContext'; // ✨ 1. 지도 �
 import { useRouter } from 'next/navigation'; // 1. useRouter 훅 임포트
 import { Location } from '@/data/locations';
 import { createClient } from '@/lib/supabase/client';
+import { useReservations } from '@/context/ReservationContext';
 
 // --- Swiper CSS 임포트 ---
 import 'swiper/css';
@@ -443,7 +444,9 @@ PlaceCard.displayName = 'PlaceCard';
 // --- 메인 페이지 컴포넌트 ---
 export default function HomePage() {
   const router = useRouter();
+  const { refreshReservations } = useReservations();
   const [isLoading, setIsLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [currentPlaceIndex, setCurrentPlaceIndex] = useState(0);
@@ -596,33 +599,49 @@ export default function HomePage() {
       return;
     }
     
-    // 읽음 처리 및 삭제
-    if (!notification.is_read) {
-      try {
-        await fetch(`/api/notifications/${notification.id}`, { method: 'PATCH' });
-      } catch (err) {
-        console.error('Failed to mark notification as read:', err);
-      }
-    }
+    // 로딩 시작
+    setIsNavigating(true);
     
-    // 백그라운드에서 삭제
-    fetch(`/api/notifications?id=${notification.id}`, {
-      method: 'DELETE',
-    }).catch(error => {
-      console.error('Failed to delete notification:', error);
-    });
+    try {
+      // 읽음 처리 및 삭제
+      if (!notification.is_read) {
+        try {
+          await fetch(`/api/notifications/${notification.id}`, { method: 'PATCH' });
+        } catch (err) {
+          console.error('Failed to mark notification as read:', err);
+        }
+      }
+      
+      // 백그라운드에서 삭제
+      fetch(`/api/notifications?id=${notification.id}`, {
+        method: 'DELETE',
+      }).catch(error => {
+        console.error('Failed to delete notification:', error);
+      });
 
-    // 페이지 이동
-    if (notification.related_id) {
-      let path = '';
-      if (notification.type === 'reservation_request') {
-        path = `/manager-booking-approval?id=${notification.related_id}`;
-      } else if (notification.type === 'reservation_status_update') {
-        path = `/bookingdetail?id=${notification.related_id}`;
+      // 예약 데이터 새로고침 (최신 데이터 확보)
+      await refreshReservations();
+
+      // 페이지 이동
+      if (notification.related_id) {
+        let path = '';
+        if (notification.type === 'reservation_request') {
+          path = `/manager-booking-approval?id=${notification.related_id}`;
+        } else if (notification.type === 'reservation_status_update' || notification.type === 'reservation_confirmed') {
+          path = `/bookingdetail?id=${notification.related_id}`;
+        }
+        if (path) {
+          router.push(path);
+          // 로딩은 페이지가 로드되면서 자동으로 해제됩니다
+        } else {
+          setIsNavigating(false);
+        }
+      } else {
+        setIsNavigating(false);
       }
-      if (path) {
-        router.push(path);
-      }
+    } catch (error) {
+      console.error('Error handling notification click:', error);
+      setIsNavigating(false);
     }
   };
 
@@ -686,6 +705,17 @@ export default function HomePage() {
     <>
       <GlobalSwiperStyles />
       <Header /> {/* 2. Header 컴포넌트 추가 */}
+      
+      {/* 로딩 오버레이 */}
+      {isNavigating && (
+        <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#D2B48C]"></div>
+            <p className="text-lg font-medium text-gray-700 dark:text-gray-200">페이지 이동 중...</p>
+          </div>
+        </div>
+      )}
+      
       <div className="h-screen w-full lg:h-screen lg:overflow-hidden relative bg-[#e8e3da] dark:bg-[#1a1a1a] transition-colors duration-300 flex flex-col">
 
         <div className={`relative z-10 mx-auto w-full max-w-screen-2xl flex-grow overflow-y-auto scrollbar-hide lg:px-8 lg:pb-0 flex flex-col ${notifications.length === 0 ? 'lg:!pt-[40px]' : 'lg:pt-12'}`}
