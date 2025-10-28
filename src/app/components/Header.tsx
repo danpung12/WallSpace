@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUserMode } from '../context/UserModeContext';
-import { useEffect, useState, memo, useCallback, useMemo } from 'react';
+import { useState, memo, useCallback, useMemo } from 'react';
 import { UserProfile } from '@/data/profile';
 import LogoutConfirmationModal from './LogoutConfirmationModal';
 import { createClient } from '@/lib/supabase/client';
+import { useUserProfile } from '@/context/UserProfileContext';
 
 const NavLinks = memo(function NavLinks() {
   const pathname = usePathname();
@@ -180,26 +181,11 @@ const HeaderContent = memo(function HeaderContent({
 function Header() {
   const { userMode, setUserMode } = useUserMode();
   const router = useRouter();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const { userProfile } = useUserProfile(); // Context에서 가져옴 (캐싱됨)
   const [showConfirm, setShowConfirm] = useState(false);
   const pathname = usePathname();
   const isHomePage = pathname === '/' || pathname === '/guest/home';
   const isGuestMode = pathname.startsWith('/guest');
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await fetch('/api/profile');
-        if (response.ok) {
-          const data: UserProfile = await response.json();
-          setUserProfile(data);
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-      }
-    };
-    fetchProfile();
-  }, []);
 
   const handleLogout = useCallback(() => {
     setShowConfirm(true);
@@ -209,6 +195,9 @@ function Header() {
     // Supabase 로그아웃
     const supabase = createClient();
     await supabase.auth.signOut();
+    
+    // 캐시된 프로필 정보 삭제
+    sessionStorage.removeItem('userProfile');
     
     setShowConfirm(false);
     router.push('/login');

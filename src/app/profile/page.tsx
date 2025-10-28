@@ -17,11 +17,13 @@ import { useDarkMode } from "../context/DarkModeContext"; // ✅ 다크모드 �
 import { useUserMode } from "../context/UserModeContext"; // ✅ UserMode 훅 추가
 import { useRouter } from "next/navigation"; // ✅ 라우터 추가
 import { logoutUser } from "@/lib/api/auth"; // ✅ 로그아웃 함수 추가
+import { useUserProfile } from "@/context/UserProfileContext"; // ✅ 사용자 프로필 Context 추가
 
 export default function ProfilePage() {
   const router = useRouter(); // ✅ 라우터 초기화
   const { isDarkMode, setDarkMode } = useDarkMode(); // ✅ 다크모드 상태 가져오기
   const { userMode } = useUserMode(); // ✅ 현재 사용자 모드 가져오기
+  const { updateProfile: updateGlobalProfile } = useUserProfile(); // ✅ 전역 프로필 업데이트 함수
   const [showChangePw, setShowChangePw] = useState(false);
   const [showNotiModal, setShowNotiModal] = useState(false);
   const [showUserSettingsModal, setShowUserSettingsModal] = useState(false); // ✅ 추가
@@ -104,6 +106,7 @@ export default function ProfilePage() {
       }
       const data: UserProfile = await response.json();
       setUserProfile(data); // Re-sync with server state
+      updateGlobalProfile(data); // ✅ 전역 Context도 업데이트 (Header가 재렌더링 안 됨)
       return true;
     } catch (err: any) {
       setError(err.message || "Failed to update profile");

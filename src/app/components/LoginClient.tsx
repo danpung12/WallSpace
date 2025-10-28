@@ -185,9 +185,21 @@ export default function LoginClient() {
         />
       </div>
       <style jsx global>{`
+        .input-wrapper {
+          position: relative;
+        }
+        .input-icon {
+          position: absolute;
+          left: 1rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #a99985;
+          pointer-events: none;
+          font-size: 1.25rem;
+        }
         .input-field {
           width: 100%; height: 3rem; background: #ffffff; border-radius: 0.5rem; color: #3d2b1f;
-          padding-left: 1rem; font-size: 0.95rem; font-weight: 400; border: 1px solid #e5e7eb; transition: all 0.3s;
+          padding-left: 2.75rem; font-size: 0.95rem; font-weight: 400; border: 1px solid #e5e7eb; transition: all 0.3s;
           box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.04);
         }
         .input-field:focus { outline: none; border-color: #c19a6b; box-shadow: 0 0 0 3px rgba(193, 154, 107, 0.18); }
@@ -239,7 +251,7 @@ export default function LoginClient() {
 
         <div
           className="relative p-6 sm:p-8 rounded-2xl shadow-2xl max-w-md w-full mx-auto border border-white/60 ring-1 ring-black/5"
-          style={{ background: 'rgba(255,255,255,0.90)' }}
+          style={{ background: 'rgba(255,255,255,0.95)' }}
         >
           <div className="text-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight" style={{ color: '#3d2b1f' }}>로그인</h2>
@@ -250,8 +262,9 @@ export default function LoginClient() {
                 {loginError}
               </div>
             )}
-            <div>
+            <div className="input-wrapper">
               <label className="sr-only" htmlFor="login-email">Email / ID</label>
+              <span className="input-icon material-symbols-outlined">person</span>
               <input 
                 className="input-field" 
                 id="login-email" 
@@ -263,8 +276,9 @@ export default function LoginClient() {
                 disabled={isLoading}
               />
             </div>
-            <div>
+            <div className="input-wrapper">
               <label className="sr-only" htmlFor="login-password">Password</label>
+              <span className="input-icon material-symbols-outlined">lock</span>
               <input 
                 className="input-field" 
                 id="login-password" 
