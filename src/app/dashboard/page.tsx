@@ -679,8 +679,8 @@ const ReservationCard = React.memo(({ reservation, userType }: { reservation: an
 
 ReservationCard.displayName = 'ReservationCard';
 
-// --- 메인 대시보드 페이지 ---
-export default function Dashboard() {
+// --- 내부 대시보드 컴포넌트 ---
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [artworks, setArtworks] = useState<Artwork[]>([]);
@@ -976,5 +976,21 @@ export default function Dashboard() {
         onDelete={handleDeleteArtwork}
       />
     </>
+  );
+}
+
+// --- 메인 대시보드 페이지 (Suspense로 감싸기) ---
+export default function Dashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-[100dvh] w-full h-full items-center justify-center font-pretendard bg-[#FDFBF8] dark:bg-gray-900">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C19A6B]"></div>
+          <p className="text-[#8C7853] dark:text-gray-400">대시보드를 불러오는 중...</p>
+        </div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 }
