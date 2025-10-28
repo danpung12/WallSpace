@@ -4,3 +4,4 @@ ALTER TABLE notifications ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
 
 
 
+

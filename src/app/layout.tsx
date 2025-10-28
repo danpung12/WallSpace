@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import TransitionProvider from "./transition-provider";
 import NavigationGate from "./components/NavigationGate";
@@ -14,6 +14,13 @@ export const metadata: Metadata = {
     description: "작가와 공간을 잇는 플랫폼",
     siteName: "WallSpace",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({

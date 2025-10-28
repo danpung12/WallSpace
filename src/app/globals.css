@@ -45,6 +45,29 @@ html, body {
   font-family: 'Pretendard', Arial, Helvetica, sans-serif !important;
 }
 
+/* 모바일 최적화 */
+html {
+  -webkit-text-size-adjust: 100%; /* iOS Safari 텍스트 크기 자동 조정 방지 */
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* 모바일 터치 최적화 */
+* {
+  -webkit-tap-highlight-color: transparent; /* 터치 시 파란색 하이라이트 제거 */
+}
+
+button, a {
+  -webkit-touch-callout: none; /* iOS에서 길게 누를 때 팝업 방지 */
+}
+
 .material-symbols-outlined {
   font-family: "Material Symbols Outlined";
   font-weight: normal;
