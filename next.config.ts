@@ -42,6 +42,13 @@ const nextConfig: NextConfig = {
         pathname: "/storage/v1/object/public/**",
       },
     ],
+    // 이미지 최적화 설정
+    formats: ['image/webp', 'image/avif'], // 최신 포맷 우선 사용
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840], // 반응형 이미지 크기
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384], // 작은 이미지 크기
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30일 캐싱
+    dangerouslyAllowSVG: true, // SVG 허용
+    contentDispositionType: 'inline', // 인라인 표시
   },
 
   // 모든 이미지 경로에 대해 Content-Disposition 헤더를 제거합니다.

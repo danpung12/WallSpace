@@ -154,7 +154,13 @@ async function processLocations(supabase: any, basicLocations: any[]) {
   );
 
   console.log('Returning locations:', uniqueLocations.length);
-  return NextResponse.json(uniqueLocations);
+  
+  // 캐싱 헤더 추가로 성능 향상
+  return NextResponse.json(uniqueLocations, {
+    headers: {
+      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+    },
+  });
 }
 
 export async function GET(request: Request) {

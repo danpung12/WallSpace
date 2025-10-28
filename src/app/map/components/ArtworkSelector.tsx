@@ -51,12 +51,16 @@ export default function ArtworkSelector({
               key={artwork.id}
               className={`group flex-shrink-0 cursor-pointer rounded-xl lg:rounded-2xl p-2 lg:p-2.5 text-center transition-all duration-300 hover:scale-105 active:scale-95 ${
                 selectedArtwork?.id === artwork.id
-                  ? 'bg-[#D2B48C]/15 shadow-md ring-2 ring-[#D2B48C]/40'
+                  ? 'bg-[#D2B48C]/15 shadow-md'
                   : 'hover:bg-gray-50 hover:shadow-sm'
               }`}
               onClick={() => onSelectArtwork(artwork)}
             >
-              <div className="relative overflow-hidden rounded-lg lg:rounded-xl">
+              <div className={`relative overflow-hidden rounded-lg lg:rounded-xl ${
+                selectedArtwork?.id === artwork.id
+                  ? 'ring-2 ring-inset ring-[#D2B48C]/60'
+                  : ''
+              }`}>
                 <Image
                   alt={artwork.alt_text || artwork.title}
                   className="h-20 w-20 lg:h-24 lg:w-24 rounded-lg lg:rounded-xl object-cover transition-transform duration-300 group-hover:scale-110"

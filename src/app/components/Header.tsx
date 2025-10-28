@@ -3,12 +3,12 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUserMode } from '../context/UserModeContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo, useCallback, useMemo } from 'react';
 import { UserProfile } from '@/data/profile';
 import LogoutConfirmationModal from './LogoutConfirmationModal';
 import { createClient } from '@/lib/supabase/client';
 
-function NavLinks() {
+const NavLinks = memo(function NavLinks() {
   const pathname = usePathname();
   const isGuestMode = pathname.startsWith('/guest');
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
@@ -45,7 +45,137 @@ function NavLinks() {
       ))}
     </div>
   );
-}
+});
+
+const UserInfo = memo(function UserInfo({ 
+  userProfile, 
+  onLogout 
+}: { 
+  userProfile: UserProfile; 
+  onLogout: () => void;
+}) {
+  return (
+    <div className="flex items-center space-x-4 ml-4 pl-4 border-l border-gray-300">
+      <Link
+        href="/profile"
+        className="text-sm font-medium text-[#3D2C1D] hover:text-[#5D4C3D] transition-colors">
+        {userProfile.nickname || userProfile.name || userProfile.full_name || '사용자'} 님
+      </Link>
+      <button
+        onClick={onLogout}
+        className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
+      >
+        로그아웃
+      </button>
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  // 닉네임이 같으면 재렌더링 하지 않음 (true 반환)
+  // 닉네임이 다르면 재렌더링 함 (false 반환)
+  const prevNickname = prevProps.userProfile.nickname || prevProps.userProfile.name || prevProps.userProfile.full_name;
+  const nextNickname = nextProps.userProfile.nickname || nextProps.userProfile.name || nextProps.userProfile.full_name;
+  return prevNickname === nextNickname; // 같으면 true (재렌더링 안 함), 다르면 false (재렌더링)
+});
+
+const UserModeToggle = memo(function UserModeToggle({
+  userMode,
+  onModeChange
+}: {
+  userMode: 'artist' | 'manager';
+  onModeChange: (mode: 'artist' | 'manager') => void;
+}) {
+  return (
+    <div className="flex items-center text-xs font-semibold p-1 rounded-lg bg-[#EAE5DE] ml-6">
+      <button
+        type="button"
+        onClick={() => onModeChange('artist')}
+        className={`px-3 py-1 rounded-md transition-all duration-300 ${
+          userMode === 'artist'
+            ? 'bg-white shadow-sm text-[#3D2C1D]'
+            : 'text-[#8C7853]'
+        }`}
+      >
+        작가
+      </button>
+      <button
+        type="button"
+        onClick={() => onModeChange('manager')}
+        className={`px-3 py-1 rounded-md transition-all duration-300 ${
+          userMode === 'manager'
+            ? 'bg-white shadow-sm text-[#3D2C1D]'
+            : 'text-[#8C7853]'
+        }`}
+      >
+        사장님
+      </button>
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  return prevProps.userMode === nextProps.userMode;
+});
+
+const HeaderContent = memo(function HeaderContent({
+  isHomePage,
+  isGuestMode,
+  userMode,
+  nickname,
+  onModeChange,
+  onLogout
+}: {
+  isHomePage: boolean;
+  isGuestMode: boolean;
+  userMode: 'artist' | 'manager';
+  nickname: string | null;
+  onModeChange: (mode: 'artist' | 'manager') => void;
+  onLogout: () => void;
+}) {
+  return (
+    <header className="hidden lg:block border-b border-gray-200 bg-white sticky top-0 z-40">
+      <div
+        className={`${
+          isHomePage ? 'max-w-screen-2xl' : 'max-w-7xl'
+        } mx-auto px-4 sm:px-6 lg:px-8`}
+      >
+        <div className="flex items-center justify-between h-16">
+          <div className="flex-shrink-0">
+            <Link href={isGuestMode ? "/guest/home" : "/"} className="text-2xl font-bold text-[#3D2C1D]">
+              WallSpace
+            </Link>
+          </div>
+          <div className="hidden lg:flex items-center space-x-6">
+            <NavLinks />
+            {!isGuestMode && (
+              <UserModeToggle userMode={userMode} onModeChange={onModeChange} />
+            )}
+            {nickname && (
+              <div className="flex items-center space-x-4 ml-4 pl-4 border-l border-gray-300">
+                <Link
+                  href="/profile"
+                  className="text-sm font-medium text-[#3D2C1D] hover:text-[#5D4C3D] transition-colors">
+                  {nickname} 님
+                </Link>
+                <button
+                  onClick={onLogout}
+                  className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  로그아웃
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}, (prevProps, nextProps) => {
+  // 닉네임 값만 비교
+  return (
+    prevProps.userMode === nextProps.userMode &&
+    prevProps.nickname === nextProps.nickname &&
+    prevProps.isHomePage === nextProps.isHomePage &&
+    prevProps.isGuestMode === nextProps.isGuestMode
+  );
+});
 
 function Header() {
   const { userMode, setUserMode } = useUserMode();
@@ -71,25 +201,25 @@ function Header() {
     fetchProfile();
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     setShowConfirm(true);
-  };
+  }, []);
 
-  const handleConfirmLogout = async () => {
+  const handleConfirmLogout = useCallback(async () => {
     // Supabase 로그아웃
     const supabase = createClient();
     await supabase.auth.signOut();
     
     setShowConfirm(false);
     router.push('/login');
-  };
+  }, [router]);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setShowConfirm(false);
-  };
+  }, []);
 
   // user_type을 데이터베이스에 업데이트하는 함수
-  const handleUserModeChange = async (mode: 'artist' | 'manager') => {
+  const handleUserModeChange = useCallback(async (mode: 'artist' | 'manager') => {
     try {
       // 로컬 상태 먼저 업데이트 (즉각적인 UI 반응)
       setUserMode(mode);
@@ -119,69 +249,22 @@ function Header() {
       // setUserMode(userMode);
       // alert('모드 전환에 실패했습니다. 다시 시도해주세요.');
     }
-  };
+  }, [setUserMode]);
+
+  const nickname = useMemo(() => {
+    return userProfile?.nickname || userProfile?.name || userProfile?.full_name || null;
+  }, [userProfile?.nickname, userProfile?.name, userProfile?.full_name]);
 
   return (
     <>
-      <header className="hidden lg:block border-b border-gray-200 bg-white sticky top-0 z-40">
-        <div
-          className={`${
-            isHomePage ? 'max-w-screen-2xl' : 'max-w-7xl'
-          } mx-auto px-4 sm:px-6 lg:px-8`}
-        >
-          <div className="flex items-center justify-between h-16">
-            <div className="flex-shrink-0">
-              <Link href={isGuestMode ? "/guest/home" : "/"} className="text-2xl font-bold text-[#3D2C1D]">
-                WallSpace
-              </Link>
-            </div>
-            <div className="hidden lg:flex items-center space-x-6">
-              <NavLinks />
-              {!isGuestMode && (
-                <div className="flex items-center text-xs font-semibold p-1 rounded-lg bg-[#EAE5DE] ml-6">
-                  <button
-                    type="button"
-                    onClick={() => handleUserModeChange('artist')}
-                    className={`px-3 py-1 rounded-md transition-all duration-300 ${
-                      userMode === 'artist'
-                        ? 'bg-white shadow-sm text-[#3D2C1D]'
-                        : 'text-[#8C7853]'
-                    }`}
-                  >
-                    작가
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleUserModeChange('manager')}
-                    className={`px-3 py-1 rounded-md transition-all duration-300 ${
-                      userMode === 'manager'
-                        ? 'bg-white shadow-sm text-[#3D2C1D]'
-                        : 'text-[#8C7853]'
-                    }`}
-                  >
-                    사장님
-                  </button>
-                </div>
-              )}
-              {userProfile && (
-                <div className="flex items-center space-x-4 ml-4 pl-4 border-l border-gray-300">
-                  <Link
-                    href="/profile"
-                    className="text-sm font-medium text-[#3D2C1D] hover:text-[#5D4C3D] transition-colors">
-                    {userProfile.nickname || userProfile.name || userProfile.full_name || '사용자'} 님
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    로그아웃
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      <HeaderContent
+        isHomePage={isHomePage}
+        isGuestMode={isGuestMode}
+        userMode={userMode}
+        nickname={nickname}
+        onModeChange={handleUserModeChange}
+        onLogout={handleLogout}
+      />
       <LogoutConfirmationModal
         isOpen={showConfirm}
         onClose={handleCloseModal}

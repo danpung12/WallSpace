@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 
 interface AvatarUploadModalProps {
   open: boolean;
@@ -77,10 +78,13 @@ export default function AvatarUploadModal({
             onClick={() => fileInputRef.current?.click()}
           >
             {previewUrl && (
-              <img
+              <Image
                 src={previewUrl}
                 alt="Avatar preview"
-                className="object-cover w-full h-full"
+                fill
+                sizes="160px"
+                className="object-cover"
+                unoptimized={previewUrl.startsWith('data:')}
               />
             )}
             <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

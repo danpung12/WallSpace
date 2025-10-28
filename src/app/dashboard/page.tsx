@@ -1,19 +1,33 @@
 'use client';
 
+import React, { useEffect, useRef, useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { CardTitle, CardDescription, CardHeader, CardContent, Card } from '@/app/map/components/ui/card';
 
 import Header from '../components/Header'; // Import UserModeToggle
 import { useBottomNav } from '../context/BottomNavContext';
 import { useUserMode } from '../context/UserModeContext';
 import { useReservations } from '@/context/ReservationContext'; // Import useReservations
-import AddArtworkModal from './components/AddArtworkModal';
-import ArtworkDetailModal from './components/ArtworkDetailModal';
 import { getUserArtworks, createArtwork, updateArtwork, deleteArtwork } from '@/lib/api/artworks';
 import type { Artwork } from '@/types/database';
+
+// 동적 임포트로 모달을 lazy load
+const AddArtworkModal = dynamic(() => import('./components/AddArtworkModal'), {
+  loading: () => <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+  </div>,
+  ssr: false
+});
+
+const ArtworkDetailModal = dynamic(() => import('./components/ArtworkDetailModal'), {
+  loading: () => <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+  </div>,
+  ssr: false
+});
 
 // Swiper
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -231,7 +245,7 @@ function ArtistDashboard({
                     />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-[#8C7853] dark:text-gray-300">
-                        예약 ID: {exhibition.short_id || exhibition.id}
+                        예약 ID: {(exhibition.short_id || exhibition.id).substring(0, 5).toUpperCase()}
                       </p>
                       <h3 className="text-lg font-bold text-[#3D2C1D] dark:text-gray-100 mt-1 truncate">
                         {exhibition.storeName}
@@ -288,7 +302,7 @@ function ArtistDashboard({
   );
 }
 
-const ArtworkCard = ({ art, onEditClick, onViewClick }: { art: Artwork; onEditClick: (artwork: Artwork) => void; onViewClick: (artwork: Artwork) => void; }) => (
+const ArtworkCard = React.memo(({ art, onEditClick, onViewClick }: { art: Artwork; onEditClick: (artwork: Artwork) => void; onViewClick: (artwork: Artwork) => void; }) => (
     <div className="bg-white dark:bg-gray-600 rounded-xl shadow-md overflow-hidden border border-gray-100 dark:border-gray-500 h-full">
         <div 
             className="w-full h-40 bg-center bg-no-repeat bg-cover cursor-pointer hover:opacity-90 transition-opacity" 
@@ -307,7 +321,9 @@ const ArtworkCard = ({ art, onEditClick, onViewClick }: { art: Artwork; onEditCl
             </div>
         </div>
     </div>
-);
+), (prevProps, nextProps) => {
+    return prevProps.art.id === nextProps.art.id && prevProps.art.image_url === nextProps.art.image_url;
+});
 
 // 🏬 사장님 대시보드 컴포넌트
 function ManagerDashboard({ 
@@ -604,7 +620,7 @@ function PastReservationsSection({
 }
 
 // 🎫 예약 카드 공통 컴포넌트
-function ReservationCard({ reservation, userType }: { reservation: any; userType: 'artist' | 'manager' }) {
+const ReservationCard = React.memo(({ reservation, userType }: { reservation: any; userType: 'artist' | 'manager' }) => {
   const statusStyles = {
     confirmed: 'text-green-600 bg-green-100',
     pending: 'text-yellow-600 bg-yellow-100',
@@ -656,7 +672,12 @@ function ReservationCard({ reservation, userType }: { reservation: any; userType
       )}
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+    return prevProps.reservation.id === nextProps.reservation.id && 
+           prevProps.reservation.status === nextProps.reservation.status;
+});
+
+ReservationCard.displayName = 'ReservationCard';
 
 // --- 메인 대시보드 페이지 ---
 export default function Dashboard() {
@@ -683,47 +704,40 @@ export default function Dashboard() {
     setIsNavVisible(true);
   }, [setIsNavVisible]);
 
-  // Fetch artworks from Supabase
+  // 병렬로 데이터 로드 (최적화)
   useEffect(() => {
-    const fetchArtworks = async () => {
-      try {
-        setIsLoadingArtworks(true);
-        const data = await getUserArtworks();
-        setArtworks(data);
-      } catch (error) {
-        console.error('Failed to fetch artworks:', error);
-      } finally {
-        setIsLoadingArtworks(false);
-      }
-    };
-
-    if (userMode === 'artist') {
-      fetchArtworks();
-    }
-  }, [userMode]);
-
-  // Fetch locations from API (only manager's own locations)
-  useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        setIsLoadingLocations(true);
-        const response = await fetch('/api/locations?myLocations=true');
-        if (response.ok) {
-          const data = await response.json();
-          setLocations(data);
-        } else {
-          console.error('Failed to fetch locations');
+    const fetchData = async () => {
+      if (userMode === 'artist') {
+        try {
+          setIsLoadingArtworks(true);
+          const data = await getUserArtworks();
+          setArtworks(data);
+        } catch (error) {
+          console.error('Failed to fetch artworks:', error);
+        } finally {
+          setIsLoadingArtworks(false);
         }
-      } catch (error) {
-        console.error('Error fetching locations:', error);
-      } finally {
-        setIsLoadingLocations(false);
+      } else if (userMode === 'manager') {
+        try {
+          setIsLoadingLocations(true);
+          const response = await fetch('/api/locations?myLocations=true', {
+            next: { revalidate: 60 } // 60초 캐싱
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setLocations(data);
+          } else {
+            console.error('Failed to fetch locations');
+          }
+        } catch (error) {
+          console.error('Error fetching locations:', error);
+        } finally {
+          setIsLoadingLocations(false);
+        }
       }
     };
 
-    if (userMode === 'manager') {
-      fetchLocations();
-    }
+    fetchData();
   }, [userMode]);
 
   // 중앙에 위치한 카드를 계산하고 해당 카드로 스크롤하는 함수

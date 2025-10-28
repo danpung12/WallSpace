@@ -2,12 +2,22 @@
 
 import Head from 'next/head';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useEffect } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useBottomNav } from '@/app/context/BottomNavContext';
+import { createArtwork } from '@/lib/api/artworks';
 
 export default function AddArtworkPage() {
   const router = useRouter();
   const { setIsNavVisible } = useBottomNav();
+  
+  const [title, setTitle] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [height, setHeight] = useState('');
+  const [width, setWidth] = useState('');
+  const [price, setPrice] = useState('');
+  const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     setIsNavVisible(false);
@@ -18,10 +28,51 @@ export default function AddArtworkPage() {
 
   const handleBack = () => router.back();
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      // 미리보기 생성
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(selectedFile);
+    }
+  };
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // TODO: 업로드 로직
-    // 성공 시: router.push('/dashboard');
+    
+    if (!file) {
+      alert('작품 사진을 선택해주세요.');
+      return;
+    }
+
+    if (!title || !height || !width) {
+      alert('작품명과 사이즈를 입력해주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await createArtwork({
+        title,
+        dimensions: `${height} x ${width} cm`,
+        description: description || '',
+        price: parseFloat(price) || 0,
+        file,
+      });
+      
+      alert('작품이 추가되었습니다!');
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Failed to create artwork:', error);
+      alert('작품 추가에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -134,31 +185,64 @@ export default function AddArtworkPage() {
             {/* 작품명 */}
             <div>
               <label className="input-label" htmlFor="artwork-name">작품명</label>
-              <input id="artwork-name" type="text" className="input-field" placeholder="예: 호수 위의 노을" />
+              <input 
+                id="artwork-name" 
+                type="text" 
+                className="input-field" 
+                placeholder="예: 호수 위의 노을"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
             </div>
 
             {/* 작품 사진 */}
             <div>
               <label className="input-label">작품 사진</label>
               <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md bg-white/50">
-                <div className="space-y-1 text-center">
-                  <svg aria-hidden="true" className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M28 8H12a4 4 0 0 0-4 4v20" />
-                    <path d="M40 20v8" />
-                    <path d="M40 28v8a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4v-4" />
-                    <path d="m40 28-3.172-3.172a4 4 0 0 0-5.656 0L28 28" />
-                    <path d="m8 32 9.172-9.172a4 4 0 0 1 5.656 0L28 28l4 4" />
-                    <path d="M40 8h8M44 4v8" />
-                  </svg>
-                  <div className="flex text-sm text-[var(--text-secondary)] justify-center gap-1">
-                    <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-[var(--primary-color)] hover:opacity-80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[var(--primary-color)] px-1">
-                      <span>파일 업로드</span>
-                      <input id="file-upload" name="file-upload" type="file" className="sr-only" />
-                    </label>
-                    <p>또는 파일을 여기로 끌어다 놓기</p>
+                {previewUrl ? (
+                  <div className="relative w-full">
+                    <img src={previewUrl} alt="Preview" className="w-full h-48 object-contain rounded-md" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFile(null);
+                        setPreviewUrl(null);
+                      }}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
                   </div>
-                  <p className="text-xs text-gray-500">PNG, JPG, GIF (최대 10MB)</p>
-                </div>
+                ) : (
+                  <div className="space-y-1 text-center">
+                    <svg aria-hidden="true" className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M28 8H12a4 4 0 0 0-4 4v20" />
+                      <path d="M40 20v8" />
+                      <path d="M40 28v8a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4v-4" />
+                      <path d="m40 28-3.172-3.172a4 4 0 0 0-5.656 0L28 28" />
+                      <path d="m8 32 9.172-9.172a4 4 0 0 1 5.656 0L28 28l4 4" />
+                      <path d="M40 8h8M44 4v8" />
+                    </svg>
+                    <div className="flex text-sm text-[var(--text-secondary)] justify-center gap-1">
+                      <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-[var(--primary-color)] hover:opacity-80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[var(--primary-color)] px-1">
+                        <span>파일 업로드</span>
+                        <input 
+                          id="file-upload" 
+                          name="file-upload" 
+                          type="file" 
+                          className="sr-only" 
+                          accept="image/*"
+                          onChange={handleFileChange}
+                        />
+                      </label>
+                      <p>또는 파일을 여기로 끌어다 놓기</p>
+                    </div>
+                    <p className="text-xs text-gray-500">PNG, JPG, GIF (최대 10MB)</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -169,7 +253,16 @@ export default function AddArtworkPage() {
                 <div>
                   <label className="text-xs text-[var(--text-secondary)]" htmlFor="height">세로</label>
                   <div className="relative mt-1">
-                    <input id="height" type="number" className="input-field pr-12" placeholder="0" min="0" />
+                    <input 
+                      id="height" 
+                      type="number" 
+                      className="input-field pr-12" 
+                      placeholder="0" 
+                      min="0"
+                      value={height}
+                      onChange={(e) => setHeight(e.target.value)}
+                      required
+                    />
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                       <span className="text-gray-500 sm:text-sm">cm</span>
                     </div>
@@ -178,7 +271,16 @@ export default function AddArtworkPage() {
                 <div>
                   <label className="text-xs text-[var(--text-secondary)]" htmlFor="width">가로</label>
                   <div className="relative mt-1">
-                    <input id="width" type="number" className="input-field pr-12" placeholder="0" min="0" />
+                    <input 
+                      id="width" 
+                      type="number" 
+                      className="input-field pr-12" 
+                      placeholder="0" 
+                      min="0"
+                      value={width}
+                      onChange={(e) => setWidth(e.target.value)}
+                      required
+                    />
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                       <span className="text-gray-500 sm:text-sm">cm</span>
                     </div>
@@ -214,7 +316,9 @@ export default function AddArtworkPage() {
                   step="1000" 
                   className="input-field pr-16" 
                   placeholder="0" 
-                  min="0" 
+                  min="0"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
                 />
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                   <span className="text-gray-500 sm:text-sm">원</span>
@@ -225,13 +329,24 @@ export default function AddArtworkPage() {
             {/* 설명 */}
             <div>
               <label className="input-label" htmlFor="description">작품 설명</label>
-              <textarea id="description" rows={5} className="input-field" placeholder="갤러리에 전시되는 것처럼 작품을 소개해 주세요…" />
+              <textarea 
+                id="description" 
+                rows={5} 
+                className="input-field" 
+                placeholder="갤러리에 전시되는 것처럼 작품을 소개해 주세요…"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
             </div>
 
             {/* 하단 저장 버튼 */}
             <div className="pt-2">
-              <button type="submit" className="button_primary w-full text-lg font-semibold py-3">
-                작품 저장
+              <button 
+                type="submit" 
+                className="button_primary w-full text-lg font-semibold py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? '저장 중...' : '작품 저장'}
               </button>
             </div>
           </form>

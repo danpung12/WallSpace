@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef, useMemo } from 'react';
+import Image from 'next/image';
 
 // --- 라이브러리 임포트 ---
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -289,9 +290,10 @@ type PlaceCardProps = {
   onImageClick: () => void;
 };
 
-const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
+const PlaceCard = React.memo(({ place, userLocation, onImageClick }: PlaceCardProps) => {
   const [isBeginning, setIsBeginning] = useState(true);
   const [isEnd, setIsEnd] = useState(place.images.length <= 1);
+  const [activeIndex, setActiveIndex] = useState(0);
   const distance = userLocation
     ? calculateDistance(userLocation.lat, userLocation.lng, place.lat, place.lng)
     : null;
@@ -319,19 +321,32 @@ const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
           onSlideChange={(swiper) => {
             setIsBeginning(swiper.isBeginning);
             setIsEnd(swiper.isEnd);
+            setActiveIndex(swiper.activeIndex);
           }}
           onInit={(swiper) => {
             setIsBeginning(swiper.isBeginning);
             setIsEnd(swiper.isEnd);
           }}
+          lazy={{
+            loadPrevNext: true,
+            loadPrevNextAmount: 1,
+          }}
         >
           {place.images.map((imgUrl, index) => (
             <SwiperSlide key={index}>
-              <img
-                src={imgUrl}
-                alt={`${place.name} ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
+              <div className="relative w-full h-full">
+                <Image
+                  src={imgUrl}
+                  alt={`${place.name} ${index + 1}`}
+                  fill
+                  sizes="(max-width: 768px) 85vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover"
+                  priority={index === 0}
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABQODxIPDRQSEBIXFRQYHjIhHhwcHj0sLiQySUBMS0dARkVQWnNiUFVtVkVGZIhlbXd7gYKBTmCNl4x9lnN+gXz/2wBDARUXFx4aHjshITt8U0ZTfHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHz/wAARCAAUABQDASIAAhEBAxEB/8QAFwABAQEBAAAAAAAAAAAAAAAAAAMEAv/EACQQAAEEAgEDBQEAAAAAAAAAAAEAAgMRBCExEhNRBSIyQXFh/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAH/xAAXEQEBAQEAAAAAAAAAAAAAAAABAAIR/9oADAMBAAIRAxEAPwDlkErYjMY7kxZMMcsoaC3gqVs7Yy4NIIQETPtpdskG0BPE1zgxgJccAAV+/SBM2eJ0Qc1wIOx3lAsKAf/Z"
+                />
+              </div>
             </SwiperSlide>
           ))}
         </Swiper>
@@ -413,7 +428,16 @@ const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // 커스텀 비교 함수로 불필요한 리렌더링 방지
+  return (
+    prevProps.place.id === nextProps.place.id &&
+    prevProps.userLocation?.lat === nextProps.userLocation?.lat &&
+    prevProps.userLocation?.lng === nextProps.userLocation?.lng
+  );
+});
+
+PlaceCard.displayName = 'PlaceCard';
 
 
 // --- 메인 페이지 컴포넌트 ---
@@ -472,17 +496,28 @@ export default function HomePage() {
         return;
       }
 
-      // 장소 데이터 로드
+      // 장소 데이터와 알림 병렬 로드로 속도 향상
       try {
-        const response = await fetch('/api/locations');
-        if (response.ok) {
-          const data = await response.json();
+        const [locationsResponse, notificationsResponse] = await Promise.allSettled([
+          fetch('/api/locations'),
+          fetch('/api/notifications')
+        ]);
+
+        // 장소 데이터 처리
+        if (locationsResponse.status === 'fulfilled' && locationsResponse.value.ok) {
+          const data = await locationsResponse.value.json();
           setLocations(data);
         } else {
           console.error('Failed to fetch locations');
         }
+
+        // 알림 데이터 처리
+        if (notificationsResponse.status === 'fulfilled' && notificationsResponse.value.ok) {
+          const data = await notificationsResponse.value.json();
+          setNotifications(data.slice(0, 3));
+        }
       } catch (error) {
-        console.error('Error fetching locations:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setIsLoading(false);
       }
@@ -491,15 +526,13 @@ export default function HomePage() {
     checkAuthAndLoadData();
   }, [router]);
 
-  // 알림 데이터 로드 (로그인한 사용자만)
+  // 알림 폴링 (30초마다 - 초기 로드는 위에서 처리)
   useEffect(() => {
     const loadNotifications = async () => {
       try {
-        // 로그인 상태 확인
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         
-        // 로그인하지 않은 사용자는 알림을 로드하지 않음
         if (!user) {
           setNotifications([]);
           return;
@@ -508,35 +541,17 @@ export default function HomePage() {
         const response = await fetch('/api/notifications');
         if (response.ok) {
           const data: Notification[] = await response.json();
-          console.log('🏠 === 홈 페이지 알림 로드 DEBUG ===');
-          console.log('Total notifications:', data.length);
-          console.log('All notifications:', data);
-          data.forEach((n, idx) => {
-            console.log(`Notification ${idx}:`, {
-              id: n.id,
-              type: n.type,
-              title: n.title,
-              rejection_reason: n.rejection_reason,
-              hasRejectionReason: !!n.rejection_reason
-            });
-          });
-          console.log('🏠 === END DEBUG ===');
-          // 최신 3개만 표시
           setNotifications(data.slice(0, 3));
         } else {
-          // 응답 실패 시 빈 배열로 설정 (오류 무시)
           setNotifications([]);
         }
       } catch (error) {
-        // 오류 발생 시 빈 배열로 설정 (조용히 처리)
-        console.log('알림 로드 실패 (로그인하지 않은 사용자):', error);
+        console.log('알림 로드 실패:', error);
         setNotifications([]);
       }
     };
     
-    loadNotifications();
-    
-    // 30초마다 알림 업데이트
+    // 30초마다 알림 업데이트 (초기 로드는 제외)
     const interval = setInterval(loadNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -673,7 +688,7 @@ export default function HomePage() {
       <Header /> {/* 2. Header 컴포넌트 추가 */}
       <div className="h-screen w-full lg:h-screen lg:overflow-hidden relative bg-[#e8e3da] dark:bg-[#1a1a1a] transition-colors duration-300 flex flex-col">
 
-        <div className="relative z-10 mx-auto w-full max-w-screen-2xl flex-grow overflow-y-auto scrollbar-hide lg:px-8 lg:pt-12 lg:pb-0 flex flex-col"
+        <div className={`relative z-10 mx-auto w-full max-w-screen-2xl flex-grow overflow-y-auto scrollbar-hide lg:px-8 lg:pb-0 flex flex-col ${notifications.length === 0 ? 'lg:!pt-[40px]' : 'lg:pt-12'}`}
           style={{
             paddingTop: 'clamp(1rem, 3.79vh, 2rem)',
             paddingBottom: 'clamp(1.5rem, 5.69vh, 3rem)'
@@ -766,7 +781,7 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className={`lg:min-h-0 lg:flex-1 ${notifications.length === 0 ? 'pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0' : ''}`}>
+              <div className={`lg:min-h-0 lg:flex-1 ${notifications.length === 0 ? 'pb-[calc(48px+env(safe-area-inset-bottom))] lg:pb-0' : ''}`}>
                 <div ref={scrollContainerRef} className="h-full w-full overflow-y-auto scrollbar-hide">
                   <RecommendedPlaces
                     onSlideChange={setCurrentPlaceIndex}

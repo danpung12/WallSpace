@@ -81,7 +81,7 @@ const ArtworkDetailModal: React.FC<ArtworkDetailModalProps> = ({ isOpen, onClose
         {/* Scrollable Content */}
         <div className="flex-grow overflow-y-auto custom-scrollbar">
           {/* Artwork Image */}
-          <div className="relative w-full aspect-[4/3] bg-gray-100 py-2 px-4 lg:py-4 lg:px-8">
+          <div className="relative w-full aspect-[4/3] bg-gray-100 p-4 lg:p-8">
             <img 
               src={artwork.image_url || 'https://via.placeholder.com/800x600'} 
               alt={artwork.title}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef, useMemo } from 'react';
+import Image from 'next/image';
 
 // --- 라이브러리 임포트 ---
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -213,9 +214,10 @@ interface RecommendedPlacesProps {
   onSlideChange: (index: number) => void;
   userLocation: { lat: number; lng: number } | null;
   locations: Location[];
+  hasNotifications: boolean;
 }
 
-const RecommendedPlaces = ({ onSlideChange, userLocation, locations }: RecommendedPlacesProps) => {
+const RecommendedPlaces = ({ onSlideChange, userLocation, locations, hasNotifications }: RecommendedPlacesProps) => {
   const router = useRouter(); // 2. router 인스턴스 생성
 
   const handlePlaceCardClick = (place: Location) => {
@@ -264,8 +266,8 @@ const RecommendedPlaces = ({ onSlideChange, userLocation, locations }: Recommend
         </Swiper>
       </div>
 
-      {/* PC: Grid */}
-      <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
+      {/* PC: Grid - 화면 너비에 따라 자동 조절 (최대 3개) */}
+      <div className={`hidden lg:grid lg:gap-6 ${hasNotifications ? 'lg:grid-cols-1 xl:grid-cols-2' : 'lg:grid-cols-2 xl:grid-cols-3'}`}>
         {locations.map((place) => (
           <PlaceCard
             key={place.id}
@@ -286,9 +288,10 @@ type PlaceCardProps = {
   onImageClick: () => void;
 };
 
-const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
+const PlaceCard = React.memo(({ place, userLocation, onImageClick }: PlaceCardProps) => {
   const [isBeginning, setIsBeginning] = useState(true);
   const [isEnd, setIsEnd] = useState(place.images.length <= 1);
+  const [activeIndex, setActiveIndex] = useState(0);
   const distance = userLocation
     ? calculateDistance(userLocation.lat, userLocation.lng, place.lat, place.lng)
     : null;
@@ -316,6 +319,7 @@ const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
           onSlideChange={(swiper) => {
             setIsBeginning(swiper.isBeginning);
             setIsEnd(swiper.isEnd);
+            setActiveIndex(swiper.activeIndex);
           }}
           onInit={(swiper) => {
             setIsBeginning(swiper.isBeginning);
@@ -324,11 +328,19 @@ const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
         >
           {place.images.map((imgUrl, index) => (
             <SwiperSlide key={index}>
-              <img
-                src={imgUrl}
-                alt={`${place.name} ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
+              <div className="relative w-full h-full">
+                <Image
+                  src={imgUrl}
+                  alt={`${place.name} ${index + 1}`}
+                  fill
+                  sizes="(max-width: 768px) 85vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover"
+                  priority={index === 0}
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABQODxIPDRQSEBIXFRQYHjIhHhwcHj0sLiQySUBMS0dARkVQWnNiUFVtVkVGZIhlbXd7gYKBTmCNl4x9lnN+gXz/2wBDARUXFx4aHjshITt8U0ZTfHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHz/wAARCAAUABQDASIAAhEBAxEB/8QAFwABAQEBAAAAAAAAAAAAAAAAAAMEAv/EACQQAAEEAgEDBQEAAAAAAAAAAAEAAgMRBCExEhNRBSIyQXFh/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAH/xAAXEQEBAQEAAAAAAAAAAAAAAAABAAIR/9oADAMBAAIRAxEAPwDlkErYjMY7kxZMMsoaC3gqVs7Yy4NIIQETPtpdskG0BPE1zgxgJccAAV+/SBM2eJ0Qc1wIOx3lAsKAf/Z"
+                />
+              </div>
             </SwiperSlide>
           ))}
         </Swiper>
@@ -410,7 +422,16 @@ const PlaceCard = ({ place, userLocation, onImageClick }: PlaceCardProps) => {
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // 커스텀 비교 함수로 불필요한 리렌더링 방지
+  return (
+    prevProps.place.id === nextProps.place.id &&
+    prevProps.userLocation?.lat === nextProps.userLocation?.lat &&
+    prevProps.userLocation?.lng === nextProps.userLocation?.lng
+  );
+});
+
+PlaceCard.displayName = 'PlaceCard';
 
 
 // --- 메인 페이지 컴포넌트 ---
@@ -425,10 +446,12 @@ export default function MainPage() {
   const [showTopFade, setShowTopFade] = useState(false);
   const [showBottomFade, setShowBottomFade] = useState(true);
 
-  // 추천 장소: 사용자 위치 기반 가까운 순으로 4곳
+  // 추천 장소: 사용자 위치 기반 가까운 순으로 (알림 있으면 4곳, 없으면 12곳)
   const recommendedLocations = useMemo(() => {
+    const maxLocations = notifications.length > 0 ? 4 : 12;
+    
     if (!userLocation || locations.length === 0) {
-      return locations.slice(0, 4);
+      return locations.slice(0, maxLocations);
     }
 
     // 거리 계산하여 정렬
@@ -442,11 +465,11 @@ export default function MainPage() {
       ))
     }));
 
-    // 거리순 정렬 후 상위 4개
+    // 거리순 정렬 후 상위 N개
     return locationsWithDistance
       .sort((a, b) => a.distance - b.distance)
-      .slice(0, 4);
-  }, [locations, userLocation]);
+      .slice(0, maxLocations);
+  }, [locations, userLocation, notifications.length]);
 
   // 장소 데이터 로드
   useEffect(() => {
@@ -586,26 +609,27 @@ export default function MainPage() {
       <Header /> {/* 2. Header 컴포넌트 추가 */}
       <div className="h-screen w-full lg:h-screen lg:overflow-hidden relative bg-[#e8e3da] dark:bg-[#1a1a1a] transition-colors duration-300 flex flex-col">
 
-        <div className="relative z-10 mx-auto w-full max-w-screen-2xl flex-grow overflow-y-auto scrollbar-hide lg:px-8 lg:pt-12 lg:pb-0"
+        <div className={`relative z-10 mx-auto w-full max-w-screen-2xl flex-grow flex flex-col lg:overflow-y-auto lg:scrollbar-hide lg:px-8 lg:pb-0 ${notifications.length === 0 ? 'lg:!pt-[40px]' : 'lg:pt-12'}`}
           style={{
             paddingTop: 'clamp(1rem, 3.79vh, 2rem)',
-            paddingBottom: 'clamp(1.5rem, 5.69vh, 3rem)'
+            paddingBottom: notifications.length > 0 ? 'clamp(1.5rem, 5.69vh, 3rem)' : '0' // 알림 있을 때만 여유 공간
           }}>
-          <div className="lg:flex lg:h-full lg:gap-8">
-            <div className="lg:w-1/3">
-              {notifications.length > 0 && (
-                <section className="sm:px-6 lg:sticky lg:top-12 lg:px-0"
+          <div className="lg:flex lg:h-full lg:gap-8 flex-grow flex flex-col lg:flex-row">
+            {/* 모바일: 항상 표시, PC: 알림 있을 때만 표시 */}
+            <div className={`lg:w-1/3 ${notifications.length === 0 ? 'lg:hidden' : ''}`}>
+              <section className="sm:px-6 lg:sticky lg:top-12 lg:px-0"
+                style={{
+                  paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
+                  paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)'
+                }}>
+                <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
                   style={{
-                    paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
-                    paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)'
+                    marginBottom: 'clamp(0.5rem, 1.9vh, 1rem)',
+                    fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)'
                   }}>
-                  <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
-                    style={{
-                      marginBottom: 'clamp(0.5rem, 1.9vh, 1rem)',
-                      fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)'
-                    }}>
-                    새로운 알림
-                  </h2>
+                  새로운 알림
+                </h2>
+                {notifications.length > 0 ? (
                   <div style={{ 
                     display: 'flex',
                     flexDirection: 'column',
@@ -619,17 +643,48 @@ export default function MainPage() {
                       />
                     ))}
                   </div>
-                </section>
-              )}
+                ) : (
+                  <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg rounded-2xl flex flex-col items-center justify-center shadow-lg border border-white/20 dark:border-gray-700/30"
+                    style={{ 
+                      height: 'clamp(4.5rem, 20vh, 12rem)',
+                      padding: 'clamp(0.75rem, 2.5vh, 1.5rem)',
+                      gap: 'clamp(0.375rem, 1.5vh, 0.875rem)',
+                      width: '90%',
+                      marginLeft: 'auto',
+                      marginRight: 'auto'
+                    }}>
+                    <div style={{ 
+                      width: 'clamp(2.5rem, 6vh, 4rem)', 
+                      height: 'clamp(2.5rem, 6vh, 4rem)' 
+                    }} className="rounded-full bg-gradient-to-br from-[#D2B48C]/20 to-[#C19A6B]/20 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[#C19A6B]" style={{ fontSize: 'clamp(1.5rem, 4.5vh, 2.5rem)' }}>notifications_off</span>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="font-bold text-[#2C2C2C] dark:text-gray-100"
+                        style={{ 
+                          fontSize: 'clamp(0.8125rem, 3vh, 1.125rem)',
+                          marginBottom: 'clamp(0.125rem, 0.5vh, 0.375rem)'
+                        }}>
+                        새 알림이 없습니다
+                      </h4>
+                      <p className="text-[#887563] dark:text-gray-400"
+                        style={{ fontSize: 'clamp(0.6875rem, 2vh, 0.875rem)' }}>
+                        알림이 도착하면 여기에 표시됩니다
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </section>
             </div>
 
-            <div className="lg:mt-0 lg:flex lg:flex-col lg:w-2/3"
+            <div className={`lg:mt-0 lg:flex lg:flex-col ${notifications.length > 0 ? 'lg:w-2/3' : 'lg:w-full'} flex-grow flex flex-col ${notifications.length === 0 ? 'justify-end lg:justify-start' : ''}`}
               style={{
-                marginTop: 'clamp(1rem, 3.79vh, 2rem)'
+                marginTop: notifications.length > 0 ? 'clamp(1rem, 3.79vh, 2rem)' : 'clamp(1rem, 3vh, 2rem)',
+                marginBottom: notifications.length > 0 ? '0' : 'clamp(12rem, 30vh, 22rem)'
               }}>
               <div className="flex items-baseline sm:px-6 lg:px-0"
                 style={{
-                  marginBottom: 'clamp(0.5rem, 1.9vh, 1rem)',
+                  marginBottom: notifications.length > 0 ? 'clamp(0.5rem, 1.9vh, 1rem)' : 'clamp(1rem, 3vh, 2rem)',
                   paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
                   paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)'
                 }}>
@@ -648,12 +703,13 @@ export default function MainPage() {
                 </p>
               </div>
 
-              <div className={`lg:min-h-0 lg:flex-1`}>
+              <div className={`lg:min-h-0 lg:flex-1 ${notifications.length === 0 ? 'pb-[calc(48px+env(safe-area-inset-bottom))] lg:pb-0' : ''}`}>
                 <div ref={scrollContainerRef} className="h-full w-full overflow-y-auto scrollbar-hide">
                   <RecommendedPlaces
                     onSlideChange={setCurrentPlaceIndex}
                     userLocation={userLocation}
                     locations={recommendedLocations}
+                    hasNotifications={notifications.length > 0}
                   />
                 </div>
               </div>

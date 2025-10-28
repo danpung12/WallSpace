@@ -34,28 +34,38 @@ export default function ProfilePage() {
   const [showNotificationList, setShowNotificationList] = useState(false);
   const [hasNotifications, setHasNotifications] = useState(false);
 
-  // 프로필 데이터 가져오기
+  // 프로필 및 알림 병렬 로드 (최적화)
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch("/api/profile");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        // 병렬로 프로필과 알림 데이터 가져오기
+        const [profileResponse, notificationsResponse, supabaseModule] = await Promise.all([
+          fetch("/api/profile", { next: { revalidate: 30 } }),
+          fetch('/api/notifications?cleanupRead=true', { next: { revalidate: 10 } }),
+          import('@/lib/supabase/client')
+        ]);
+
+        // 프로필 데이터 처리
+        if (profileResponse.ok) {
+          const data: UserProfile = await profileResponse.json();
+          setUserProfile(data);
+          if (data.userSettings?.darkMode !== undefined) {
+            setDarkMode(data.userSettings.darkMode);
+          }
+        } else {
+          throw new Error(`HTTP error! status: ${profileResponse.status}`);
         }
-        const data: UserProfile = await response.json();
-        setUserProfile(data);
-        // 프로필에서 다크모드 설정 동기화
-        if (data.userSettings?.darkMode !== undefined) {
-          setDarkMode(data.userSettings.darkMode);
+
+        // 알림 데이터 처리
+        if (notificationsResponse.ok) {
+          const notifData = await notificationsResponse.json();
+          setHasNotifications(notifData.length > 0);
         }
 
         // SNS 로그인 여부 확인
-        const { createClient } = await import('@/lib/supabase/client');
-        const supabase = createClient();
+        const supabase = supabaseModule.createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        
         if (user) {
-          // provider가 email이 아니면 소셜 로그인
           const provider = user.app_metadata?.provider || 'email';
           setIsSocialLogin(provider !== 'email');
         }
@@ -66,25 +76,8 @@ export default function ProfilePage() {
         setIsLoading(false);
       }
     };
-    fetchProfile();
+    fetchData();
   }, [setDarkMode]);
-
-  // 알림 확인 (읽지 않은 알림만 카운트)
-  useEffect(() => {
-    const checkNotifications = async () => {
-      try {
-        // 읽은 알림 자동 삭제하고 확인
-        const response = await fetch('/api/notifications?cleanupRead=true');
-        if (response.ok) {
-          const data = await response.json();
-          setHasNotifications(data.length > 0);
-        }
-      } catch (error) {
-        console.error('Failed to check notifications:', error);
-      }
-    };
-    checkNotifications();
-  }, []);
 
   // 프로필 데이터 업데이트 (PUT 요청)
   const updateProfile = async (updatedData: Partial<UserProfile>): Promise<boolean> => {
@@ -215,7 +208,7 @@ export default function ProfilePage() {
             <img
               src={userProfile.avatarUrl || '/default-profile.svg'}
               alt="User profile picture"
-              className="object-cover w-28 h-28 rounded-full shadow-lg lg:w-40 lg:h-40 ring-4 ring-white dark:ring-gray-700 transition-all duration-300 group-hover:ring-[#D2B48C]/30"
+              className="object-cover w-20 h-20 rounded-full shadow-lg lg:w-40 lg:h-40 ring-4 ring-white dark:ring-gray-700 transition-all duration-300 group-hover:ring-[#D2B48C]/30"
               onError={(e) => {
                 // 이미지 로드 실패 시 기본 이미지로 대체
                 e.currentTarget.src = '/default-profile.svg';
@@ -223,19 +216,19 @@ export default function ProfilePage() {
             />
             <button
               onClick={() => setShowAvatarModal(true)} // ✅ 추가
-              className="absolute bottom-1 right-1 rounded-full p-2 shadow-lg active:scale-95 transition-all duration-300 lg:p-3 hover:shadow-xl hover:scale-110"
+              className="absolute bottom-0 right-0 rounded-full p-1.5 shadow-lg active:scale-95 transition-all duration-300 lg:p-3 hover:shadow-xl hover:scale-110"
               type="button"
               tabIndex={-1}
               style={{ background: 'linear-gradient(135deg, #D2B48C 0%, #B8996B 100%)' }}
             >
-              <svg className="w-5 h-5 text-white lg:w-6 lg:h-6" fill="currentColor" viewBox="0 0 256 256">
+              <svg className="w-4 h-4 text-white lg:w-6 lg:h-6" fill="currentColor" viewBox="0 0 256 256">
                 <path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,164.12V208a16,16,0,0,0,16,16H92.12A15.86,15.86,0,0,0,104.24,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.12,208H48V164.12L152,60.12l43.89,43.89Z" />
               </svg>
             </button>
           </div>
-          <div className="mt-5 lg:mt-0">
-            <h2 className="text-3xl font-bold lg:text-4xl text-[#2C2C2C] dark:text-gray-100">{userProfile.nickname || '무명'}</h2>
-            <p className="text-lg lg:text-xl mt-2 text-[#887563] dark:text-gray-400">{userProfile.name}</p>
+          <div className="mt-4 lg:mt-0">
+            <h2 className="text-xl font-bold lg:text-4xl text-[#2C2C2C] dark:text-gray-100">{userProfile.nickname || '무명'}</h2>
+            <p className="text-sm lg:text-xl mt-1 text-[#887563] dark:text-gray-400">{userProfile.name}</p>
           </div>
         </section>
 

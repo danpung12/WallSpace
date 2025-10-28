@@ -64,9 +64,12 @@ function AddStoreContent() {
             imageFile: File | null,
             imagePreview: string
         }[],
+        businessLicenseNumber: '',
+        businessLicenseFile: null as File | null,
     });
     const fileInputRef = useRef<HTMLInputElement>(null);
     const spaceFileInputRef = useRef<HTMLInputElement>(null);
+    const businessLicenseInputRef = useRef<HTMLInputElement>(null);
 
     // State for space editor modal
     const [isSpaceEditorOpen, setSpaceEditorOpen] = useState(false);
@@ -81,9 +84,39 @@ function AddStoreContent() {
         imagePreview: string
     } | null>(null);
 
+    // Error states for validation
+    const [errors, setErrors] = useState({
+        storeName: '',
+        address: '',
+        phone: '',
+        imageFiles: '',
+        spaces: '',
+    });
+
+    const [spaceErrors, setSpaceErrors] = useState({
+        imagePreview: '',
+        name: '',
+        width: '',
+        height: '',
+        price: '',
+        maxArtworks: '',
+    });
+
     const showScreen = (screenId: string, progressValue: number) => {
         setActiveScreen(screenId);
         setProgress(progressValue);
+    };
+
+    // SNS URL에서 아이콘 추출
+    const getSnsIconName = (url: string) => {
+        if (!url) return 'link';
+        if (url.includes('instagram.com')) return 'photo_camera';
+        if (url.includes('facebook.com')) return 'groups';
+        if (url.includes('twitter.com') || url.includes('x.com')) return 'tag';
+        if (url.includes('tiktok.com')) return 'videocam';
+        if (url.includes('youtube.com')) return 'play_circle';
+        if (url.includes('linkedin.com')) return 'work';
+        return 'link';
     };
 
     // Load existing location data in edit mode
@@ -150,6 +183,8 @@ function AddStoreContent() {
                         imageFiles: [],
                         imagePreviews: imagePreviews,
                         spaces: loadedSpaces,
+                        businessLicenseNumber: '',
+                        businessLicenseFile: null,
                     });
 
                     console.log('✅ Form data loaded successfully');
@@ -167,7 +202,72 @@ function AddStoreContent() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
+    // 전화번호 포맷팅
+    if (name === 'phone') {
+        const numbers = value.replace(/[^0-9]/g, '');
+        let formatted = numbers;
+        
+        if (numbers.length === 0) {
+            formatted = '';
+        }
+        // 02 (서울 지역번호)
+        else if (numbers.startsWith('02')) {
+            if (numbers.length <= 2) {
+                formatted = numbers;
+            } else if (numbers.length <= 5) {
+                formatted = numbers.slice(0, 2) + '-' + numbers.slice(2);
+            } else if (numbers.length <= 9) {
+                formatted = numbers.slice(0, 2) + '-' + numbers.slice(2, 5) + '-' + numbers.slice(5);
+            } else {
+                formatted = numbers.slice(0, 2) + '-' + numbers.slice(2, 6) + '-' + numbers.slice(6, 10);
+            }
+        }
+        // 010, 011, 016, 017, 018, 019 (휴대폰)
+        else if (numbers.startsWith('01')) {
+            if (numbers.length <= 3) {
+                formatted = numbers;
+            } else if (numbers.length <= 7) {
+                formatted = numbers.slice(0, 3) + '-' + numbers.slice(3);
+            } else if (numbers.length <= 11) {
+                formatted = numbers.slice(0, 3) + '-' + numbers.slice(3, 7) + '-' + numbers.slice(7);
+            } else {
+                formatted = numbers.slice(0, 3) + '-' + numbers.slice(3, 7) + '-' + numbers.slice(7, 11);
+            }
+        }
+        // 15xx, 16xx (대표번호)
+        else if (numbers.startsWith('15') || numbers.startsWith('16')) {
+            if (numbers.length <= 4) {
+                formatted = numbers;
+            } else if (numbers.length <= 8) {
+                formatted = numbers.slice(0, 4) + '-' + numbers.slice(4);
+            } else {
+                formatted = numbers.slice(0, 4) + '-' + numbers.slice(4, 8);
+            }
+        }
+        // 기타 지역번호 (031, 032, 033, 041, 042, 043, 051, 052, 053, 054, 055, 061, 062, 063, 064 등)
+        else {
+            if (numbers.length <= 3) {
+                formatted = numbers;
+            } else if (numbers.length <= 6) {
+                formatted = numbers.slice(0, 3) + '-' + numbers.slice(3);
+            } else if (numbers.length <= 10) {
+                formatted = numbers.slice(0, 3) + '-' + numbers.slice(3, 6) + '-' + numbers.slice(6);
+            } else {
+                formatted = numbers.slice(0, 3) + '-' + numbers.slice(3, 7) + '-' + numbers.slice(7, 11);
+            }
+        }
+        
+        setFormData(prev => ({ ...prev, [name]: formatted }));
+        setErrors(prev => ({ ...prev, phone: '' }));
+        return;
+    }
+    
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user types
+    if (name === 'storeName' || name === 'address') {
+        setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
     const handleOptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -267,6 +367,16 @@ function AddStoreContent() {
       imageFiles: newImageFiles,
       imagePreviews: newImagePreviews,
     }));
+  };
+
+  const handleBusinessLicenseChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFormData(prev => ({
+        ...prev,
+        businessLicenseFile: file,
+      }));
+    }
   };
 
   // Effect for cleaning up URLs on unmount
@@ -467,6 +577,16 @@ function AddStoreContent() {
 
     // --- Space Management Handlers ---
     const openSpaceEditor = (space: { id: number; name: string; width: string; height: string; price: string; maxArtworks: string; imageFile: File | null, imagePreview: string } | null = null) => {
+        // Reset space errors when opening modal
+        setSpaceErrors({
+            imagePreview: '',
+            name: '',
+            width: '',
+            height: '',
+            price: '',
+            maxArtworks: '',
+        });
+        
         if (space) {
             setCurrentSpace({ ...space });
         } else {
@@ -493,6 +613,10 @@ function AddStoreContent() {
         if (!currentSpace) return;
         const { name, value } = e.target;
         setCurrentSpace(prev => (prev ? { ...prev, [name]: value } : null));
+        // Clear error when user types
+        if (name in spaceErrors) {
+            setSpaceErrors(prev => ({ ...prev, [name]: '' }));
+        }
     };
 
     const handleSpaceFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -503,14 +627,61 @@ function AddStoreContent() {
             const reader = new FileReader();
             reader.onloadend = () => {
                 setCurrentSpace(prev => (prev ? { ...prev, imageFile: file, imagePreview: reader.result as string } : null));
+                setSpaceErrors(prev => ({ ...prev, imagePreview: '' }));
             };
             reader.readAsDataURL(file);
         }
     };
     
     const saveSpace = () => {
-        if (!currentSpace || !currentSpace.name || !currentSpace.width || !currentSpace.height || !currentSpace.price || !currentSpace.maxArtworks) {
-            alert('공간 이름, 가로, 세로 크기, 하루 당 비용, 예약 가능 작품 수를 모두 입력해주세요.');
+        if (!currentSpace) {
+            return;
+        }
+        
+        let hasError = false;
+        const newErrors = {
+            imagePreview: '',
+            name: '',
+            width: '',
+            height: '',
+            price: '',
+            maxArtworks: '',
+        };
+        
+        // 필수 필드 검증
+        if (!currentSpace.imagePreview) {
+            newErrors.imagePreview = '공간 사진을 등록해주세요';
+            hasError = true;
+        }
+        
+        if (!currentSpace.name.trim()) {
+            newErrors.name = '공간 이름을 입력해주세요';
+            hasError = true;
+        }
+        
+        if (!currentSpace.width) {
+            newErrors.width = '가로 크기를 입력해주세요';
+            hasError = true;
+        }
+        
+        if (!currentSpace.height) {
+            newErrors.height = '세로 크기를 입력해주세요';
+            hasError = true;
+        }
+        
+        if (!currentSpace.price) {
+            newErrors.price = '비용을 입력해주세요';
+            hasError = true;
+        }
+        
+        if (!currentSpace.maxArtworks) {
+            newErrors.maxArtworks = '작품 수를 입력해주세요';
+            hasError = true;
+        }
+
+        setSpaceErrors(newErrors);
+
+        if (hasError) {
             return;
         }
 
@@ -527,6 +698,14 @@ function AddStoreContent() {
         });
 
         closeSpaceEditor();
+        setSpaceErrors({
+            imagePreview: '',
+            name: '',
+            width: '',
+            height: '',
+            price: '',
+            maxArtworks: '',
+        });
     };
 
     const deleteSpace = (spaceId: number) => {
@@ -540,6 +719,94 @@ function AddStoreContent() {
             ...prev,
             spaces: prev.spaces.filter(s => s.id !== spaceId)
         }));
+    };
+
+    // Validation functions
+    const isStep1Valid = () => {
+        return formData.storeName.trim() !== '' && formData.address.trim() !== '';
+    };
+
+    const isStep2Valid = () => {
+        return formData.phone.trim() !== '';
+    };
+
+    const isStep3Valid = () => {
+        return formData.imageFiles.length > 0;
+    };
+
+    const isStep4Valid = () => {
+        return formData.spaces.length > 0;
+    };
+
+    const isSpaceValid = () => {
+        if (!currentSpace) return false;
+        return currentSpace.imagePreview !== '' &&
+               currentSpace.name.trim() !== '' &&
+               currentSpace.width !== '' &&
+               currentSpace.height !== '' &&
+               currentSpace.price !== '' &&
+               currentSpace.maxArtworks !== '';
+    };
+
+    // Handle next button clicks with validation
+    const handleStep1Next = () => {
+        const newErrors = {
+            storeName: formData.storeName.trim() ? '' : '업체명을 입력해주세요',
+            address: formData.address.trim() ? '' : '주소를 검색해주세요',
+            phone: '',
+            imageFiles: '',
+            spaces: '',
+        };
+        setErrors(newErrors);
+        
+        if (isStep1Valid()) {
+            showScreen('screen-step2', 50);
+        }
+    };
+
+    const handleStep2Next = () => {
+        const newErrors = {
+            storeName: '',
+            address: '',
+            phone: formData.phone.trim() ? '' : '연락처를 입력해주세요',
+            imageFiles: '',
+            spaces: '',
+        };
+        setErrors(newErrors);
+        
+        if (isStep2Valid()) {
+            showScreen('screen-step3', 75);
+        }
+    };
+
+    const handleStep3Next = () => {
+        const newErrors = {
+            storeName: '',
+            address: '',
+            phone: '',
+            imageFiles: formData.imageFiles.length > 0 ? '' : '가게 사진을 최소 1장 이상 등록해주세요',
+            spaces: '',
+        };
+        setErrors(newErrors);
+        
+        if (isStep3Valid()) {
+            showScreen('screen-step4', 100);
+        }
+    };
+
+    const handleStep4Next = () => {
+        const newErrors = {
+            storeName: '',
+            address: '',
+            phone: '',
+            imageFiles: '',
+            spaces: formData.spaces.length > 0 ? '' : '전시 공간을 최소 1개 이상 등록해주세요',
+        };
+        setErrors(newErrors);
+        
+        if (isStep4Valid()) {
+            showScreen('screen-confirm', 100);
+        }
     };
 
   return (
@@ -603,18 +870,50 @@ function AddStoreContent() {
                     position: relative;
                 }
 
+                .main-content {
+                    flex: 1;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                }
+
                 .screen {
                     display: none;
                     flex-direction: column;
-                    padding: 20px;
-                    box-sizing: border-box;
                     height: 100%;
-                    overflow-y: auto;
-                    padding-bottom: 120px; /* Space for the fixed button container */
+                    overflow: hidden;
                 }
 
                 .screen.active {
                     display: flex;
+                }
+
+                .screen-content-wrapper {
+                    flex: 1;
+                    overflow-y: auto;
+                    overflow-x: hidden;
+                    padding: 20px;
+                    padding-bottom: 120px; /* Space for fixed button container */
+                    box-sizing: border-box;
+                    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+                }
+
+                .screen::-webkit-scrollbar,
+                .screen-content-wrapper::-webkit-scrollbar {
+                    width: 4px;
+                }
+                .screen::-webkit-scrollbar-track,
+                .screen-content-wrapper::-webkit-scrollbar-track {
+                    background-color: transparent;
+                }
+                .screen::-webkit-scrollbar-thumb,
+                .screen-content-wrapper::-webkit-scrollbar-thumb {
+                    background-color: var(--border-color);
+                    border-radius: 2px;
+                }
+                .screen::-webkit-scrollbar-thumb:hover,
+                .screen-content-wrapper::-webkit-scrollbar-thumb:hover {
+                    background-color: var(--accent-color);
                 }
 
                 .screen h2 {
@@ -629,10 +928,19 @@ function AddStoreContent() {
                     display: flex;
                     align-items: center;
                     margin-bottom: 20px;
+                    margin-left: -20px;
+                    margin-right: -20px;
+                    margin-top: -20px;
+                    padding: 20px;
+                    padding-bottom: 16px;
                     font-weight: 700;
                     font-size: 1.1rem;
                     color: var(--text-color);
                     flex-shrink: 0;
+                    background-color: var(--surface-color);
+                    position: sticky;
+                    top: -20px;
+                    z-index: 20;
                 }
                 .header .back-btn {
                     background: none;
@@ -655,12 +963,17 @@ function AddStoreContent() {
                 }
                 
                 .progress-bar {
-                    width: 100%;
+                    width: calc(100% + 40px);
                     height: 8px;
                     background-color: var(--border-color);
-                    border-radius: 4px;
+                    border-radius: 0;
                     margin-bottom: 24px;
+                    margin-left: -20px;
+                    margin-right: -20px;
                     overflow: hidden;
+                    position: sticky;
+                    top: 64px;
+                    z-index: 19;
                 }
                 .progress-bar .progress {
                     width: ${progress}%;
@@ -714,17 +1027,17 @@ function AddStoreContent() {
                     display: flex;
                     gap: 10px;
                     padding: 20px;
-                    background: linear-gradient(to top, var(--surface-color) 80%, transparent);
+                    background: var(--surface-color);
+                    border-top: 1px solid var(--border-color);
                     position: absolute;
                     bottom: 0;
                     left: 0;
                     right: 0;
                     box-sizing: border-box;
+                    flex-shrink: 0;
+                    z-index: 10;
                 }
                 
-                #screen-start {
-                    padding-bottom: 120px; /* Override for button space */
-                }
                 #screen-start .screen-content-wrapper {
                     display: flex;
                     flex-direction: column;
@@ -870,6 +1183,12 @@ function AddStoreContent() {
                 .sns-input-group input {
                     flex-grow: 1;
                 }
+                .sns-icon {
+                    font-size: 1.5rem;
+                    color: var(--accent-color);
+                    margin-right: 12px;
+                    flex-shrink: 0;
+                }
 
                 .photo-uploader {
                     display: grid;
@@ -1007,20 +1326,33 @@ function AddStoreContent() {
                 }
                 .space-card-actions {
                     display: flex;
-                    gap: 8px;
+                    flex-direction: column;
+                    gap: 6px;
+                    align-items: stretch;
                 }
                  .space-card-actions button {
-                    background: none;
-                    border: 1px solid var(--border-color);
+                    background: white;
+                    border: 1px solid #E0E0E0;
                     color: var(--text-color);
-                    padding: 5px 10px;
-                    border-radius: 6px;
+                    padding: 6px 12px;
+                    border-radius: 8px;
                     cursor: pointer;
                     font-size: 0.85rem;
-                    transition: background-color 0.2s;
+                    font-weight: 500;
+                    transition: all 0.2s ease;
+                    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                    white-space: nowrap;
+                    width: 100%;
                 }
                  .space-card-actions button:hover {
-                    background-color: var(--border-color);
+                    background-color: #F8F9FA;
+                    border-color: #C0C0C0;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    transform: translateY(-1px);
+                 }
+                 .space-card-actions button:active {
+                    transform: translateY(0);
+                    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
                  }
 
                 .size-input-group {
@@ -1123,34 +1455,58 @@ function AddStoreContent() {
                 .confirm-section {
                     margin-bottom: 20px;
                     border: 1px solid var(--border-color);
-                    border-radius: var(--border-radius);
+                    border-radius: 12px;
                     overflow: hidden;
                     flex-shrink: 0;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                    transition: box-shadow 0.3s ease;
+                }
+                .confirm-section:hover {
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
                 }
                 .confirm-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    background-color: #f9f7f5;
-                    padding: 12px 15px;
+                    background: linear-gradient(135deg, #F9F7F5 0%, #F0EBE4 100%);
+                    padding: 14px 18px;
                     font-weight: 600;
                     border-bottom: 1px solid var(--border-color);
+                    font-size: 1rem;
+                }
+                .confirm-header span:first-child {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
                 }
                 .edit-btn {
                     color: var(--accent-color);
                     font-size: 0.9rem;
                     cursor: pointer;
                     font-weight: 500;
+                    padding: 4px 10px;
+                    border-radius: 6px;
+                    transition: background-color 0.2s ease;
+                }
+                .edit-btn:hover {
+                    background-color: rgba(168, 149, 135, 0.15);
                 }
                 .confirm-content {
-                    padding: 15px;
+                    padding: 18px;
                     font-size: 0.95rem;
-                    line-height: 1.7;
-                    background-color: #f9f7f5;
+                    line-height: 1.8;
+                    background-color: white;
                 }
-                .confirm-content p { margin: 0 0 5px; }
+                .confirm-content p { 
+                    margin: 0 0 10px;
+                    padding-left: 8px;
+                }
                 .confirm-content p:last-child { margin-bottom: 0; }
-                .confirm-content strong { color: var(--text-color); }
+                .confirm-content strong { 
+                    color: var(--accent-color);
+                    font-weight: 600;
+                    margin-right: 8px;
+                }
 
                 .pc-sidebar {
                     display: none;
@@ -1170,7 +1526,7 @@ function AddStoreContent() {
                     align-items: center;
                     cursor: pointer;
                     transition: all 0.2s ease;
-                    z-index: 10;
+                    z-index: 30;
                     font-size: 20px;
                     color: var(--text-color);
                 }
@@ -1244,29 +1600,9 @@ function AddStoreContent() {
                         font-weight: 700;
                     }
 
-                    .main-content {
-                        height: 100%;
-                        overflow: hidden;
-                        position: relative;
-                        display: flex;
-                        flex-direction: column;
-                    }
-                    .screen {
-                        padding: 0;
-                        padding-bottom: 0;
-                        overflow: hidden;
-                    }
-                    .screen.active {
-                        flex-grow: 1;
-                        display: flex;
-                        flex-direction: column;
-                    }
                     .screen-content-wrapper {
-                        flex-grow: 1;
-                        overflow-y: auto;
                         padding: 40px;
-                        display: flex;
-                        flex-direction: column;
+                        padding-bottom: 40px; /* Reset for PC */
                     }
                     .screen-content-wrapper > * {
                         width: 100%;
@@ -1276,8 +1612,11 @@ function AddStoreContent() {
                         font-size: 2.25rem;
                         margin-bottom: 40px;
                     }
-                     .screen .header, .screen .progress-bar {
-                        display: none; /* Hide mobile header and progress bar on PC */
+                     .screen .header {
+                        display: none; /* Hide mobile header on PC */
+                    }
+                    .screen .progress-bar {
+                        display: none; /* Hide mobile progress bar on PC */
                     }
                     #screen-start .screen-content-wrapper {
                         justify-content: center;
@@ -1304,6 +1643,13 @@ function AddStoreContent() {
                     .space-editor-overlay {
                         position: fixed;
                     }
+                    .space-editor-modal {
+                        max-width: 420px;
+                    }
+                    .space-editor-modal .btn {
+                        padding: 8px 16px;
+                        height: 80%;
+                    }
 
                     /* Make form elements wider on PC */
                     .form-group {
@@ -1326,7 +1672,8 @@ function AddStoreContent() {
                     }
                     .space-card-actions {
                         flex-direction: column;
-                        gap: 4px;
+                        gap: 6px;
+                        align-items: stretch;
                     }
                     .space-card-actions button {
                         width: 100%;
@@ -1413,7 +1760,10 @@ function AddStoreContent() {
                                 <div className="progress-bar"><div className="progress"></div></div>
                                 <h2>가게의 필수 정보를<br/>입력해주세요.</h2>
                                 <div className="form-group">
-                                    <label htmlFor="storeName">업체명</label>
+                                    <div style={{display: 'flex', alignItems: 'center', marginBottom: '8px'}}>
+                                        <label htmlFor="storeName" style={{marginBottom: 0}}>업체명</label>
+                                        {errors.storeName && <span style={{color: '#E74C3C', fontSize: '0.85rem', marginLeft: '8px'}}>{errors.storeName}</span>}
+                                    </div>
                                     <input type="text" id="storeName" name="storeName" placeholder="예) 델리카페 용인점" value={formData.storeName} onChange={handleChange} />
                                 </div>
                                 <div className="form-group">
@@ -1428,7 +1778,10 @@ function AddStoreContent() {
                             </select>
                                 </div>
                                 <div className="form-group">
-                                    <label htmlFor="address">가게 주소</label>
+                                    <div style={{display: 'flex', alignItems: 'center', marginBottom: '8px'}}>
+                                        <label htmlFor="address" style={{marginBottom: 0}}>가게 주소</label>
+                                        {errors.address && <span style={{color: '#E74C3C', fontSize: '0.85rem', marginLeft: '8px'}}>{errors.address}</span>}
+                                    </div>
                                     <div className="input-wrapper">
                                         <input type="text" id="address" name="address" placeholder="주소를 검색해주세요" value={formData.address} readOnly />
                                         <button type="button" className="inner-btn" onClick={handleAddressSearch}>주소 검색</button>
@@ -1436,7 +1789,15 @@ function AddStoreContent() {
                                     <input type="text" id="addressDetail" name="addressDetail" placeholder="상세주소 입력 (예: 2층 201호)" value={formData.addressDetail} onChange={handleChange} style={{marginTop: '10px'}}/>
                                 </div>
                             </div>
-                            <div className="btn-container"><button className="btn btn-primary" onClick={() => showScreen('screen-step2', 50)}>다음</button></div>
+                            <div className="btn-container">
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={handleStep1Next}
+                                    style={{opacity: isStep1Valid() ? 1 : 0.5, cursor: isStep1Valid() ? 'pointer' : 'not-allowed'}}
+                                >
+                                    다음
+                                </button>
+                            </div>
                         </div>
 
                         <div id="screen-step2" className={`screen ${activeScreen === 'screen-step2' ? 'active' : ''}`}>
@@ -1451,7 +1812,13 @@ function AddStoreContent() {
                                 </div>
                                 <div className="progress-bar"><div className="progress"></div></div>
                                 <h2>고객에게 보여줄<br/>상세 정보를 알려주세요.</h2>
-                                <div className="form-group"><label htmlFor="phone">연락처</label><input type="tel" id="phone" name="phone" placeholder="- 없이 숫자만 입력" value={formData.phone} onChange={handleChange} /></div>
+                                <div className="form-group">
+                                    <div style={{display: 'flex', alignItems: 'center', marginBottom: '8px'}}>
+                                        <label htmlFor="phone" style={{marginBottom: 0}}>연락처</label>
+                                        {errors.phone && <span style={{color: '#E74C3C', fontSize: '0.85rem', marginLeft: '8px'}}>{errors.phone}</span>}
+                                    </div>
+                                    <input type="tel" id="phone" name="phone" placeholder="010-1234-5678" value={formData.phone} onChange={handleChange} />
+                                </div>
                                 <div className="form-group">
                                     <label>가게 옵션 (중복 선택 가능)</label>
                                     <div className="options-grid">
@@ -1464,6 +1831,7 @@ function AddStoreContent() {
                                     <label>SNS 주소 (선택)</label>
                                     {formData.snsUrls.map((url, index) => (
                                         <div key={index} className="sns-input-group">
+                                            <span className="material-symbols-outlined sns-icon">{getSnsIconName(url)}</span>
                                             <input
                                                 type="url"
                                                 placeholder="https://instagram.com/..."
@@ -1482,7 +1850,16 @@ function AddStoreContent() {
                                 ))}
                                 </div>
                             </div>
-                            <div className="btn-container"><button className="btn btn-secondary" onClick={() => showScreen('screen-step1', 25)}>이전</button><button className="btn btn-primary" onClick={() => showScreen('screen-step3', 75)}>다음</button></div>
+                            <div className="btn-container">
+                                <button className="btn btn-secondary" onClick={() => showScreen('screen-step1', 25)}>이전</button>
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={handleStep2Next}
+                                    style={{opacity: isStep2Valid() ? 1 : 0.5, cursor: isStep2Valid() ? 'pointer' : 'not-allowed'}}
+                                >
+                                    다음
+                                </button>
+                            </div>
                         </div>
                         
                         <div id="screen-step3" className={`screen ${activeScreen === 'screen-step3' ? 'active' : ''}`}>
@@ -1498,11 +1875,17 @@ function AddStoreContent() {
                                 <div className="progress-bar"><div className="progress"></div></div>
                                 <h2>가게를 멋지게<br/>소개해주세요.</h2>
                                 <div className="form-group">
-                                    <label>가게 사진 (최대 4장)</label>
+                                    <div style={{display: 'flex', alignItems: 'center', marginBottom: '8px'}}>
+                                        <label style={{marginBottom: 0}}>가게 사진 (최대 4장)</label>
+                                        {errors.imageFiles && <span style={{color: '#E74C3C', fontSize: '0.85rem', marginLeft: '8px'}}>{errors.imageFiles}</span>}
+                                    </div>
                                     <input
                                         type="file"
                                         ref={fileInputRef}
-                                        onChange={handleFileChange}
+                                        onChange={(e) => {
+                                            handleFileChange(e);
+                                            setErrors(prev => ({ ...prev, imageFiles: '' }));
+                                        }}
                                         multiple
                                         accept="image/*"
                                         style={{ display: 'none' }}
@@ -1550,7 +1933,16 @@ function AddStoreContent() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="btn-container"><button className="btn btn-secondary" onClick={() => showScreen('screen-step2', 50)}>이전</button><button className="btn btn-primary" onClick={() => showScreen('screen-step4', 100)}>다음</button></div>
+                            <div className="btn-container">
+                                <button className="btn btn-secondary" onClick={() => showScreen('screen-step2', 50)}>이전</button>
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={handleStep3Next}
+                                    style={{opacity: isStep3Valid() ? 1 : 0.5, cursor: isStep3Valid() ? 'pointer' : 'not-allowed'}}
+                                >
+                                    다음
+                                </button>
+                            </div>
                         </div>
 
                         <div id="screen-step4" className={`screen ${activeScreen === 'screen-step4' ? 'active' : ''}`}>
@@ -1564,8 +1956,13 @@ function AddStoreContent() {
                                   <span className="title">가게 등록 (4/4)</span>
                                 </div>
                                 <div className="progress-bar"><div className="progress"></div></div>
-                                <h2>전시 공간을<br/>등록해주세요.</h2>
-                                <p style={{ color: 'var(--subtle-text-color)', marginTop: '-10px', fontSize: '0.9rem' }}>* 공간의 사진, 이름, 크기를 입력해주세요.</p>
+                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px'}}>
+                                    <div>
+                                        <h2 style={{margin: 0}}>전시 공간을<br/>등록해주세요.</h2>
+                                        <p style={{ color: 'var(--subtle-text-color)', marginTop: '8px', fontSize: '0.9rem' }}>* 공간의 사진, 이름, 크기를 입력해주세요.</p>
+                                    </div>
+                                    {errors.spaces && <span style={{color: '#E74C3C', fontSize: '0.85rem', marginTop: '4px'}}>{errors.spaces}</span>}
+                                </div>
                                 
                                 <div className="space-list">
                                     {formData.spaces.map(space => (
@@ -1573,20 +1970,31 @@ function AddStoreContent() {
                                             <img src={space.imagePreview || 'https://via.placeholder.com/70'} alt={space.name} className="space-card-img" />
                                             <div className="space-card-details">
                                                 <div className="space-card-name">{space.name}</div>
-                                                <div className="space-card-size">가로 {space.width}cm x 세로 {space.height}cm</div>
+                                                <div className="space-card-size" style={{whiteSpace: 'nowrap'}}>{space.width}cm × {space.height}cm</div>
                                                 <div className="space-card-size" style={{color: 'var(--accent-color)', fontWeight: '600'}}>{parseInt(space.price).toLocaleString()}원/일</div>
                                             </div>
                                             <div className="space-card-actions">
-                                                <button onClick={() => openSpaceEditor(space)}>수정</button>
-                                                <button onClick={() => deleteSpace(space.id)}>삭제</button>
+                                                <button onClick={() => openSpaceEditor(space)}>✏️ 수정</button>
+                                                <button onClick={() => deleteSpace(space.id)} style={{color: '#E74C3C'}}>🗑️ 삭제</button>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
-
-                                <button className="btn btn-secondary" onClick={() => openSpaceEditor(null)}>[+] 공간 추가하기</button>
+                                <button className="btn btn-secondary" onClick={() => {
+                                    openSpaceEditor(null);
+                                    setErrors(prev => ({ ...prev, spaces: '' }));
+                                }}>[+] 공간 추가하기</button>
                             </div>
-                            <div className="btn-container"><button className="btn btn-secondary" onClick={() => showScreen('screen-step3', 75)}>이전</button><button className="btn btn-primary" onClick={() => showScreen('screen-confirm', 100)}>등록 내용 확인하기</button></div>
+                            <div className="btn-container">
+                                <button className="btn btn-secondary" onClick={() => showScreen('screen-step3', 75)}>이전</button>
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={handleStep4Next}
+                                    style={{opacity: isStep4Valid() ? 1 : 0.5, cursor: isStep4Valid() ? 'pointer' : 'not-allowed'}}
+                                >
+                                    등록 내용 확인하기
+                                </button>
+                            </div>
                         </div>
 
                         {isSpaceEditorOpen && currentSpace && (
@@ -1600,6 +2008,10 @@ function AddStoreContent() {
                                         accept="image/*"
                                         style={{ display: 'none' }}
                                     />
+                                    <div style={{display: 'flex', alignItems: 'center', marginBottom: '8px'}}>
+                                        <label style={{marginBottom: 0, fontWeight: 600, fontSize: '0.9rem'}}>공간 사진</label>
+                                        {spaceErrors.imagePreview && <span style={{color: '#E74C3C', fontSize: '0.85rem', marginLeft: '8px'}}>{spaceErrors.imagePreview}</span>}
+                                    </div>
                                     <div className="space-photo-uploader" onClick={() => spaceFileInputRef.current?.click()}>
                                         {currentSpace.imagePreview ? (
                                             <img src={currentSpace.imagePreview} alt="Preview" />
@@ -1608,11 +2020,17 @@ function AddStoreContent() {
                                         )}
                                     </div>
                                     <div className="form-group">
-                                        <label htmlFor="spaceName">공간 이름</label>
+                                        <div style={{display: 'flex', alignItems: 'center', marginBottom: '8px'}}>
+                                            <label htmlFor="spaceName" style={{marginBottom: 0}}>공간 이름</label>
+                                            {spaceErrors.name && <span style={{color: '#E74C3C', fontSize: '0.85rem', marginLeft: '8px'}}>{spaceErrors.name}</span>}
+                                        </div>
                                         <input type="text" id="spaceName" name="name" value={currentSpace.name} onChange={handleSpaceChange} placeholder="예) 1층 메인홀" />
                                     </div>
                                     <div className="form-group">
-                                        <label>공간 크기 (cm)</label>
+                                        <div style={{display: 'flex', alignItems: 'center', marginBottom: '8px'}}>
+                                            <label style={{marginBottom: 0}}>공간 크기 (cm)</label>
+                                            {(spaceErrors.width || spaceErrors.height) && <span style={{color: '#E74C3C', fontSize: '0.85rem', marginLeft: '8px'}}>{spaceErrors.width || spaceErrors.height}</span>}
+                                        </div>
                                         <div className="size-input-group">
                                             <input type="number" name="width" value={currentSpace.width} onChange={handleSpaceChange} placeholder="가로" />
                                             <span>x</span>
@@ -1621,17 +2039,29 @@ function AddStoreContent() {
                                     </div>
                                     <div className="form-row">
                                         <div className="form-group">
-                                            <label htmlFor="spacePrice">하루 당 비용 (원)</label>
+                                            <div style={{display: 'flex', alignItems: 'center', marginBottom: '8px'}}>
+                                                <label htmlFor="spacePrice" style={{marginBottom: 0}}>하루 당 비용 (원)</label>
+                                                {spaceErrors.price && <span style={{color: '#E74C3C', fontSize: '0.85rem', marginLeft: '8px'}}>{spaceErrors.price}</span>}
+                                            </div>
                                             <input type="number" id="spacePrice" name="price" value={currentSpace.price} onChange={handleSpaceChange} placeholder="예) 250000" />
                                         </div>
                                         <div className="form-group">
-                                            <label htmlFor="spaceMaxArtworks">예약 가능 작품 수</label>
+                                            <div style={{display: 'flex', alignItems: 'center', marginBottom: '8px'}}>
+                                                <label htmlFor="spaceMaxArtworks" style={{marginBottom: 0}}>예약 가능 작품 수</label>
+                                                {spaceErrors.maxArtworks && <span style={{color: '#E74C3C', fontSize: '0.85rem', marginLeft: '8px'}}>{spaceErrors.maxArtworks}</span>}
+                                            </div>
                                             <input type="number" id="spaceMaxArtworks" name="maxArtworks" value={currentSpace.maxArtworks} onChange={handleSpaceChange} placeholder="예) 5" min="1" />
                                         </div>
                                     </div>
                                     <div className="btn-container" style={{ position: 'static', padding: '16px 0 0 0', background: 'none', marginTop: '8px' }}>
                                         <button className="btn btn-secondary" onClick={closeSpaceEditor}>취소</button>
-                                        <button className="btn btn-primary" onClick={saveSpace}>저장</button>
+                                        <button 
+                                            className="btn btn-primary" 
+                                            onClick={saveSpace}
+                                            style={{opacity: isSpaceValid() ? 1 : 0.5, cursor: isSpaceValid() ? 'pointer' : 'not-allowed'}}
+                                        >
+                                            저장
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -1649,7 +2079,13 @@ function AddStoreContent() {
                                 </div>
                                 <h2>사장님, 입력하신 내용이<br/>맞는지 확인해주세요.</h2>
                                 <div className="confirm-section">
-                                    <div className="confirm-header"><span>기본 정보</span><span className="edit-btn" onClick={() => showScreen('screen-step1', 25)}>수정</span></div>
+                                    <div className="confirm-header">
+                                        <span>
+                                            <span className="material-symbols-outlined" style={{fontSize: '1.2rem', color: 'var(--accent-color)'}}>store</span>
+                                            기본 정보
+                                        </span>
+                                        <span className="edit-btn" onClick={() => showScreen('screen-step1', 25)}>✏️ 수정</span>
+                                    </div>
                                     <div className="confirm-content">
                                         <p><strong>업체명:</strong> {formData.storeName || '미입력'}</p>
                                         <p><strong>업종:</strong> {formData.storeCategory}</p>
@@ -1657,7 +2093,13 @@ function AddStoreContent() {
                                     </div>
                                 </div>
                                 <div className="confirm-section">
-                                    <div className="confirm-header"><span>상세 정보</span><span className="edit-btn" onClick={() => showScreen('screen-step2', 50)}>수정</span></div>
+                                    <div className="confirm-header">
+                                        <span>
+                                            <span className="material-symbols-outlined" style={{fontSize: '1.2rem', color: 'var(--accent-color)'}}>info</span>
+                                            상세 정보
+                                        </span>
+                                        <span className="edit-btn" onClick={() => showScreen('screen-step2', 50)}>✏️ 수정</span>
+                                    </div>
                                     <div className="confirm-content">
                                         <p><strong>연락처:</strong> {formData.phone || '미입력'}</p>
                                         <p><strong>옵션:</strong> {Object.entries(formData.options).filter(([, value]) => value).map(([key]) => {
@@ -1668,16 +2110,55 @@ function AddStoreContent() {
                                         }).join(', ') || '없음'}</p>
                                     </div>
                                 </div>
-                                <div className="form-group" style={{ marginTop: '20px' }}>
-                                    <label>사업자 정보 (필수)</label>
-                                    <input type="text" placeholder="사업자등록번호 입력"/>
-                                    <button className="btn btn-secondary" style={{ marginTop: '10px', width: '100%' }}>📄 사업자등록증 사본 첨부</button>
+                                <div className="confirm-section">
+                                    <div className="confirm-header">
+                                        <span>
+                                            <span className="material-symbols-outlined" style={{fontSize: '1.2rem', color: 'var(--accent-color)'}}>business</span>
+                                            사업자 정보
+                                        </span>
+                                    </div>
+                                    <div className="confirm-content">
+                                        <div style={{ marginBottom: '16px' }}>
+                                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>사업자등록번호</label>
+                                            <input 
+                                                type="text" 
+                                                name="businessLicenseNumber"
+                                                placeholder="사업자등록번호 입력"
+                                                value={formData.businessLicenseNumber}
+                                                onChange={handleChange}
+                                                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>사업자등록증 사본</label>
+                                            <input
+                                                type="file"
+                                                ref={businessLicenseInputRef}
+                                                onChange={handleBusinessLicenseChange}
+                                                accept="image/*,.pdf"
+                                                style={{ display: 'none' }}
+                                            />
+                                            <button 
+                                                className="btn btn-secondary" 
+                                                style={{ marginTop: '0', width: '100%' }}
+                                                onClick={() => businessLicenseInputRef.current?.click()}
+                                                type="button"
+                                            >
+                                                📄 사업자등록증 사본 첨부
+                                            </button>
+                                            {formData.businessLicenseFile && (
+                                                <div style={{ marginTop: '8px', fontSize: '0.9rem', color: '#28a745', fontWeight: 500 }}>
+                                                    ✓ {formData.businessLicenseFile.name}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div className="btn-container">
                                 <button className="btn btn-secondary" onClick={() => showScreen('screen-step4', 100)} disabled={isSubmitting}>이전</button>
                                 <button className="btn btn-primary" onClick={handleSubmit} disabled={isSubmitting}>
-                                    {isSubmitting ? '등록 중...' : (mode === 'edit' ? '수정 완료하기' : '제출하고 등록 완료하기')}
+                                    {isSubmitting ? '등록 중...' : (mode === 'edit' ? '수정 완료하기' : '등록 완료하기')}
                                 </button>
                                 </div>
                         </div>

@@ -56,7 +56,12 @@ export async function GET() {
       },
     };
 
-    return NextResponse.json(userProfile);
+    // 프로필 데이터는 자주 변경되지 않으므로 캐싱
+    return NextResponse.json(userProfile, {
+      headers: {
+        'Cache-Control': 'private, s-maxage=30, stale-while-revalidate=60',
+      },
+    });
   } catch (error) {
     console.error('GET /api/profile error:', error);
     return NextResponse.json(

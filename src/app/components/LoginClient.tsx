@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect } from "react";
 import Image from 'next/image';
 import SelectTypeModal from './SelectTypeModal';
@@ -13,6 +13,7 @@ import AlertModal from './AlertModal';
 
 export default function LoginClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [modalState, setModalState] = useState<'none' | 'selectType' | 'artistSignUp' | 'guestSignUp' | 'findPassword'>('none');
   const [isDesktop, setIsDesktop] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -78,11 +79,19 @@ export default function LoginClient() {
       }
       
       if (user && profile) {
-        // user_type에 따라 다른 페이지로 리다이렉트
-        if (profile.user_type === 'guest') {
-          router.push('/guest');
+        // redirectTo 파라미터 확인
+        const redirectTo = searchParams.get('redirectTo');
+        
+        if (redirectTo) {
+          // redirectTo가 있으면 해당 경로로 이동
+          router.push(redirectTo);
         } else {
-          router.push('/');
+          // redirectTo가 없으면 user_type에 따라 다른 페이지로 리다이렉트
+          if (profile.user_type === 'guest') {
+            router.push('/guest');
+          } else {
+            router.push('/home');
+          }
         }
       }
     } catch (err) {
@@ -128,10 +137,16 @@ export default function LoginClient() {
         google: 'email,profile',
       };
 
+      // redirectTo 파라미터 확인
+      const redirectTo = searchParams.get('redirectTo');
+      const redirectUrl = redirectTo 
+        ? `${window.location.origin}${redirectTo}`
+        : `${window.location.origin}/onboarding`;
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
-          redirectTo: `${window.location.origin}/onboarding`,
+          redirectTo: redirectUrl,
           scopes: scopes[provider],
         },
       });

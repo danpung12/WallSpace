@@ -37,7 +37,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 });
     }
 
-    return NextResponse.json(notifications || []);
+    // 알림은 실시간성이 중요하므로 짧은 캐싱
+    return NextResponse.json(notifications || [], {
+      headers: {
+        'Cache-Control': 'private, s-maxage=10, stale-while-revalidate=30',
+      },
+    });
   } catch (error) {
     console.error('GET /api/notifications error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
