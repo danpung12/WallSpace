@@ -35,6 +35,16 @@ export async function middleware(request: NextRequest) {
   // 현재 경로
   const { pathname } = request.nextUrl
 
+  // 정적 파일 및 API 경로는 먼저 체크해서 제외 (가장 중요!)
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/static') ||
+    pathname.match(/\.(ico|png|jpg|jpeg|svg|webp|gif|css|js)$/)
+  ) {
+    return supabaseResponse
+  }
+
   // 공개 경로 (로그인 없이 접근 가능)
   const publicPaths = [
     '/login',
@@ -71,16 +81,6 @@ export async function middleware(request: NextRequest) {
     } catch (error) {
       console.error('Error checking profile:', error)
     }
-  }
-
-  // 정적 파일 및 API 경로 제외
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
-    pathname.startsWith('/static') ||
-    pathname.match(/\.(ico|png|jpg|jpeg|svg|webp|gif|css|js)$/)
-  ) {
-    return supabaseResponse
   }
 
   // 루트 경로 처리
