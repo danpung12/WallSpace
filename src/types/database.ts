@@ -204,10 +204,10 @@ export interface Database {
           updated_at?: string
         }
       }
-      bookings: {
+      reservations: {
         Row: {
           id: string
-          user_id: string | null
+          artist_id: string | null
           location_id: string | null
           space_id: string | null
           artwork_id: string | null
@@ -215,13 +215,13 @@ export interface Database {
           end_date: string
           status: 'pending' | 'confirmed' | 'cancelled' | 'completed'
           total_price: number | null
-          notes: string | null
+          rejection_reason: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          user_id?: string | null
+          artist_id?: string | null
           location_id?: string | null
           space_id?: string | null
           artwork_id?: string | null
@@ -229,13 +229,13 @@ export interface Database {
           end_date: string
           status?: 'pending' | 'confirmed' | 'cancelled' | 'completed'
           total_price?: number | null
-          notes?: string | null
+          rejection_reason?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          user_id?: string | null
+          artist_id?: string | null
           location_id?: string | null
           space_id?: string | null
           artwork_id?: string | null
@@ -243,7 +243,7 @@ export interface Database {
           end_date?: string
           status?: 'pending' | 'confirmed' | 'cancelled' | 'completed'
           total_price?: number | null
-          notes?: string | null
+          rejection_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -518,10 +518,10 @@ export interface Database {
           location_images: string[] | null
         }
       }
-      booking_details: {
+      reservation_details: {
         Row: {
           id: string
-          user_id: string | null
+          artist_id: string | null
           location_id: string | null
           space_id: string | null
           artwork_id: string | null
@@ -529,16 +529,20 @@ export interface Database {
           end_date: string
           status: string
           total_price: number | null
-          notes: string | null
+          rejection_reason: string | null
           created_at: string
           updated_at: string
-          user_name: string | null
-          user_email: string | null
+          artist_name: string | null
+          artist_nickname: string | null
           location_name: string | null
           location_address: string | null
           space_name: string | null
           artwork_title: string | null
           artwork_image: string | null
+          location?: any
+          space?: any
+          artwork?: any
+          artist?: any
         }
       }
       artist_artwork_stats: {
@@ -566,7 +570,8 @@ export type Profile = Database['public']['Tables']['profiles']['Row']
 export type Location = Database['public']['Tables']['locations']['Row']
 export type Space = Database['public']['Tables']['spaces']['Row']
 export type Artwork = Database['public']['Tables']['artworks']['Row']
-export type Booking = Database['public']['Tables']['bookings']['Row']
+export type Booking = Database['public']['Tables']['reservations']['Row']
+export type Reservation = Database['public']['Tables']['reservations']['Row']
 export type Review = Database['public']['Tables']['reviews']['Row']
 export type Category = Database['public']['Tables']['categories']['Row']
 export type Tag = Database['public']['Tables']['tags']['Row']
@@ -579,7 +584,8 @@ export type UserSetting = Database['public']['Tables']['user_settings']['Row']
 
 // 뷰 타입들
 export type LocationDetail = Database['public']['Views']['location_details']['Row']
-export type BookingDetail = Database['public']['Views']['booking_details']['Row']
+export type BookingDetail = Database['public']['Views']['reservation_details']['Row']
+export type ReservationDetail = Database['public']['Views']['reservation_details']['Row']
 export type ArtistArtworkStats = Database['public']['Views']['artist_artwork_stats']['Row']
 
 // 인서트 타입들
@@ -587,7 +593,8 @@ export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
 export type LocationInsert = Database['public']['Tables']['locations']['Insert']
 export type SpaceInsert = Database['public']['Tables']['spaces']['Insert']
 export type ArtworkInsert = Database['public']['Tables']['artworks']['Insert']
-export type BookingInsert = Database['public']['Tables']['bookings']['Insert']
+export type BookingInsert = Database['public']['Tables']['reservations']['Insert']
+export type ReservationInsert = Database['public']['Tables']['reservations']['Insert']
 export type ReviewInsert = Database['public']['Tables']['reviews']['Insert']
 
 // 업데이트 타입들
@@ -595,5 +602,6 @@ export type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
 export type LocationUpdate = Database['public']['Tables']['locations']['Update']
 export type SpaceUpdate = Database['public']['Tables']['spaces']['Update']
 export type ArtworkUpdate = Database['public']['Tables']['artworks']['Update']
-export type BookingUpdate = Database['public']['Tables']['bookings']['Update']
+export type BookingUpdate = Database['public']['Tables']['reservations']['Update']
+export type ReservationUpdate = Database['public']['Tables']['reservations']['Update']
 export type ReviewUpdate = Database['public']['Tables']['reviews']['Update']

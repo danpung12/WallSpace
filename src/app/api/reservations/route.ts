@@ -30,7 +30,8 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get('id');
     const status = searchParams.get('status');
     const locationId = searchParams.get('location_id');
-    console.log('📊 Query params:', { id, status, locationId });
+    const spaceId = searchParams.get('space_id');
+    console.log('📊 Query params:', { id, status, locationId, spaceId });
 
     // 특정 예약 ID로 조회
     if (id) {
@@ -63,9 +64,14 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Fetching reservations...');
     let query = supabase
       .from('reservations')
-      .select('*')
-      .eq('artist_id', user.id)
-      .order('created_at', { ascending: false });
+      .select('*');
+
+    // space_id로 조회할 때는 artist_id 체크 안함 (모든 예약 조회)
+    if (!spaceId) {
+      query = query.eq('artist_id', user.id);
+    }
+
+    query = query.order('created_at', { ascending: false });
 
     // 필터 적용
     if (status) {
@@ -73,6 +79,9 @@ export async function GET(request: NextRequest) {
     }
     if (locationId) {
       query = query.eq('location_id', locationId);
+    }
+    if (spaceId) {
+      query = query.eq('space_id', spaceId);
     }
 
     const { data: reservations, error: reservationsError } = await query;
@@ -92,48 +101,64 @@ export async function GET(request: NextRequest) {
       console.log('🔍 Enriching reservations with related data...');
       for (const reservation of reservations) {
         // Location 정보 가져오기 (이미지 포함)
-        const { data: location } = await supabase
-          .from('locations')
-          .select(`
-            *,
-            images:location_images(image_url)
-          `)
-          .eq('id', reservation.location_id)
-          .single();
-        
-        // 이미지 URL 배열로 변환
-        if (location && location.images) {
-          (location as any).images = (location.images as any[]).map(img => img.image_url);
+        if (reservation.location_id) {
+          const { data: location, error: locationError } = await supabase
+            .from('locations')
+            .select(`
+              *,
+              images:location_images(image_url)
+            `)
+            .eq('id', reservation.location_id)
+            .single();
+          
+          if (!locationError && location) {
+            // 이미지 URL 배열로 변환
+            if (location.images) {
+              (location as any).images = (location.images as any[]).map(img => img.image_url);
+            }
+            (reservation as any).location = location;
+          }
         }
         
         // Space 정보 가져오기
-        const { data: space } = await supabase
-          .from('spaces')
-          .select('*')
-          .eq('id', reservation.space_id)
-          .single();
+        if (reservation.space_id) {
+          const { data: space, error: spaceError } = await supabase
+            .from('spaces')
+            .select('*')
+            .eq('id', reservation.space_id)
+            .single();
+          
+          if (!spaceError && space) {
+            (reservation as any).space = space;
+          }
+        }
         
         // Artwork 정보 가져오기
-        const { data: artwork } = await supabase
-          .from('artworks')
-          .select('*')
-          .eq('id', reservation.artwork_id)
-          .single();
+        if (reservation.artwork_id) {
+          const { data: artwork, error: artworkError } = await supabase
+            .from('artworks')
+            .select('*')
+            .eq('id', reservation.artwork_id)
+            .single();
+          
+          if (!artworkError && artwork) {
+            (reservation as any).artwork = artwork;
+          }
+        }
         
         // Profile 정보 가져오기 (전화번호, 이메일, 필명 포함)
-        const { data: artist } = await supabase
-          .from('profiles')
-          .select('id, name, nickname, email, phone, avatar_url, user_type')
-          .eq('id', reservation.artist_id)
-          .single();
-        
-        console.log('👤 Artist profile:', artist);
-
-        // 예약 객체에 관련 데이터 추가
-        (reservation as any).location = location;
-        (reservation as any).space = space;
-        (reservation as any).artwork = artwork;
-        (reservation as any).artist = artist;
+        if (reservation.artist_id) {
+          const { data: artist, error: artistError } = await supabase
+            .from('profiles')
+            .select('id, name, nickname, email, phone, avatar_url, user_type')
+            .eq('id', reservation.artist_id)
+            .single();
+          
+          if (!artistError && artist) {
+            console.log('👤 Artist profile:', artist);
+            (reservation as any).artist = artist;
+          }
+        }
       }
       console.log('✅ Reservations enriched');
     }
@@ -220,7 +245,7 @@ export async function POST(request: NextRequest) {
     console.log('🔍 Fetching space:', space_id);
     const { data: space, error: spaceError } = await supabase
       .from('spaces')
-      .select('price, is_reserved')
+      .select('price')
       .eq('id', space_id)
       .single();
 
@@ -233,15 +258,7 @@ export async function POST(request: NextRequest) {
     }
     console.log('✅ Space found:', space);
 
-    // 이미 예약된 공간인지 확인
-    if (space.is_reserved) {
-      return NextResponse.json(
-        { error: 'Space is already reserved' },
-        { status: 409 }
-      );
-    }
-
-    // 날짜 중복 확인
+    // 날짜 중복 확인 (실제 예약 데이터로 체크)
     const { data: existingReservations } = await supabase
       .from('reservations')
       .select('id')

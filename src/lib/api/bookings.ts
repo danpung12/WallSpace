@@ -86,7 +86,7 @@ export const getBookingsByLocation = async (locationId: string): Promise<Booking
 export const createBooking = async (booking: BookingInsert): Promise<Booking | null> => {
   const supabase = createClient()
   const { data, error } = await supabase
-    .from('bookings')
+    .from('reservations')
     .insert(booking)
     .select()
     .single()
@@ -103,7 +103,7 @@ export const createBooking = async (booking: BookingInsert): Promise<Booking | n
 export const updateBooking = async (bookingId: string, updates: BookingUpdate): Promise<Booking | null> => {
   const supabase = createClient()
   const { data, error } = await supabase
-    .from('bookings')
+    .from('reservations')
     .update(updates)
     .eq('id', bookingId)
     .select()
@@ -229,7 +229,7 @@ export const checkBookingAvailability = async (
   const supabase = createClient()
   
   let query = supabase
-    .from('bookings')
+    .from('reservations')
     .select('id')
     .eq('space_id', spaceId)
     .in('status', ['pending', 'confirmed'])
@@ -254,11 +254,11 @@ export const getBookingStats = async (userId?: string) => {
   const supabase = createClient()
   
   let query = supabase
-    .from('bookings')
+    .from('reservations')
     .select('status, total_price')
   
   if (userId) {
-    query = query.eq('user_id', userId)
+    query = query.eq('artist_id', userId)
   }
   
   const { data, error } = await query

@@ -72,6 +72,7 @@ export default function DateBooking({
   isModal = false,
 }: DateBookingProps) {
   const [spaces, setSpaces] = useState<Space[]>([]);
+  const [bookedDates, setBookedDates] = useState<Set<string>>(new Set());
 
   const [viewDate, setViewDate] = useState(() => {
     const t = new Date();
@@ -92,6 +93,44 @@ export default function DateBooking({
       }
     }
   }, [location, initialSpace]);
+
+  // 선택된 공간의 예약된 날짜 가져오기
+  useEffect(() => {
+    const fetchBookedDates = async () => {
+      if (!selectedSpaceName || !location) return;
+
+      const selectedSpace = spaces.find((s) => s.name === selectedSpaceName);
+      if (!selectedSpace) return;
+
+      try {
+        // 해당 공간의 예약 정보 가져오기
+        const response = await fetch(`/api/reservations?space_id=${selectedSpace.id}`);
+        if (response.ok) {
+          const bookings = await response.json();
+          
+          // 예약된 날짜들을 Set에 추가
+          const dates = new Set<string>();
+          bookings.forEach((booking: any) => {
+            if (booking.status !== 'cancelled') {
+              const start = new Date(booking.start_date);
+              const end = new Date(booking.end_date);
+              
+              // 시작일부터 종료일까지 모든 날짜 추가
+              for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                dates.add(d.toISOString().split('T')[0]);
+              }
+            }
+          });
+          
+          setBookedDates(dates);
+        }
+      } catch (error) {
+        console.error('Failed to fetch booked dates:', error);
+      }
+    };
+
+    fetchBookedDates();
+  }, [selectedSpaceName, spaces, location]);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -117,11 +156,15 @@ export default function DateBooking({
     const cellDate = new Date(cell);
     cellDate.setHours(0, 0, 0, 0);
     
-    // 오늘 이전 날짜 또는 특정 비활성화 날짜
+    // 날짜를 YYYY-MM-DD 형식으로 변환
+    const cellDateStr = cellDate.toISOString().split('T')[0];
+    
+    // 오늘 이전 날짜, 특정 비활성화 날짜, 또는 예약된 날짜
     return cellDate < today || 
            (cell.getMonth() === month &&
             cell.getFullYear() === year &&
-            disabledDays.includes(cell.getDate()));
+            disabledDays.includes(cell.getDate())) ||
+           bookedDates.has(cellDateStr); // 예약된 날짜 체크
   };
 
   function onClickDay(cell: Date) {

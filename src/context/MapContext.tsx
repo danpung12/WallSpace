@@ -113,6 +113,9 @@ export function MapProvider({ children }: { children: ReactNode }) {
     const [parkingFilter, setParkingFilter] = useState(false);
     const [open24HoursFilter, setOpen24HoursFilter] = useState(false);
     const [petsAllowedFilter, setPetsAllowedFilter] = useState(false);
+    
+    // 예약 가능 여부를 추적하는 Map (location_id -> boolean)
+    const [locationAvailability, setLocationAvailability] = useState<Map<string, boolean>>(new Map());
 
     // Supabase 데이터 로드 함수
     const loadData = useCallback(async (isRetry = false) => {
@@ -190,6 +193,68 @@ export function MapProvider({ children }: { children: ReactNode }) {
     const hasRange = useMemo(() => !!(startDate && endDate), [startDate, endDate]);
     const headerLabel = useMemo(() => `${year}년 ${month + 1}월`, [year, month]);
 
+    // 날짜가 선택되었을 때 각 location의 예약 가능 여부 체크
+    useEffect(() => {
+        const checkAvailability = async () => {
+            if (!startDate || !endDate || locations.length === 0) {
+                setLocationAvailability(new Map());
+                return;
+            }
+
+            const availabilityMap = new Map<string, boolean>();
+            const startStr = startDate.toISOString().split('T')[0];
+            const endStr = endDate.toISOString().split('T')[0];
+
+            for (const location of locations) {
+                try {
+                    // location 객체에 이미 spaces 정보가 포함되어 있음
+                    const spaces = (location as any).spaces || [];
+                    
+                    // spaces가 없으면 예약 가능으로 표시
+                    if (spaces.length === 0) {
+                        availabilityMap.set(location.id, true);
+                        continue;
+                    }
+                    
+                    // 각 space의 예약 가능 여부 체크
+                    let hasAvailableSpace = false;
+                    
+                    for (const space of spaces) {
+                        const bookingsResponse = await fetch(`/api/reservations?space_id=${space.id}`);
+                        if (!bookingsResponse.ok) continue;
+                        
+                        const bookings = await bookingsResponse.json();
+                        
+                        // 선택한 날짜 범위와 겹치는 예약이 있는지 체크
+                        const hasConflict = bookings.some((booking: any) => {
+                            if (booking.status === 'cancelled') return false;
+                            
+                            const bookingStart = booking.start_date.split('T')[0];
+                            const bookingEnd = booking.end_date.split('T')[0];
+                            
+                            // 날짜 범위가 겹치는지 체크
+                            return !(endStr < bookingStart || startStr > bookingEnd);
+                        });
+                        
+                        if (!hasConflict) {
+                            hasAvailableSpace = true;
+                            break; // 하나라도 예약 가능하면 OK
+                        }
+                    }
+                    
+                    availabilityMap.set(location.id, hasAvailableSpace);
+                } catch (error) {
+                    console.error(`Error checking availability for location ${location.id}:`, error);
+                    availabilityMap.set(location.id, true); // 에러 시 기본적으로 예약 가능으로 표시
+                }
+            }
+            
+            setLocationAvailability(availabilityMap);
+        };
+
+        checkAvailability();
+    }, [startDate, endDate, locations]);
+
     const loadMarkers = useCallback((map: KakaoMap) => {
         const { kakao } = window;
         if (!kakao) return;
@@ -207,6 +272,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
         }
 
         console.log('Loading markers for locations:', locations.length);
+        const hasDateRange = !!(startDate && endDate);
 
         locations.forEach((place) => {
             const placePosition = new kakao.maps.LatLng(place.lat, place.lng);
@@ -222,15 +288,21 @@ export function MapProvider({ children }: { children: ReactNode }) {
             
             const contentNode = document.createElement('div');
             contentNode.className = 'custom-overlay-style';
-            contentNode.innerHTML = `<div class="font-bold">${place.name}</div><div style="color:${place.statusColor || '#3B82F6'};" class="text-xs mt-0.5">${place.statusText || '예약 가능'}</div>`;
+            
+            // 날짜가 선택되었고 예약 불가인 경우
+            const isAvailable = hasDateRange ? (locationAvailability.get(place.id) !== false) : true;
+            const statusText = hasDateRange && !isAvailable ? '예약 불가' : (place.statusText || '예약 가능');
+            const statusColor = hasDateRange && !isAvailable ? '#EF4444' : (place.statusColor || '#3B82F6');
+            
+            contentNode.innerHTML = `<div class="font-bold">${place.name}</div><div style="color:${statusColor};" class="text-xs mt-0.5">${statusText}</div>`;
             contentNode.onclick = handleClick;
             
             const overlay = new kakao.maps.CustomOverlay({ map, position: placePosition, content: contentNode, yAnchor: 2.2 });
             
             // Store marker and its associated data
-            markersRef.current.push({ marker, overlay, place });
+            markersRef.current.push({ marker, overlay, place, isAvailable });
         });
-    }, [locations]);
+    }, [locations, startDate, endDate, locationAvailability]);
 
     // Effect to reload markers when locations change
     useEffect(() => {
