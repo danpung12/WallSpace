@@ -9,11 +9,13 @@ import CancelModal from './components/CancelModal';
 import Header from "@/app/components/Header";
 import { useBottomNav } from '@/app/context/BottomNavContext';
 import Footer from '@/app/components/Footer';
+import { useMap } from '@/context/MapContext';
 
 function BookingDetailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { getReservationById, updateReservationStatus } = useReservations();
+  const { refreshLocations } = useMap();
   const [reservation, setReservation] = useState<Reservation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
@@ -132,9 +134,16 @@ function BookingDetailContent() {
 
   const handleBack = () => router.back();
   const handleCancelClick = () => setModalOpen(true);
-  const handleConfirmCancel = () => {
+  const handleConfirmCancel = async () => {
     if (reservation) {
-      updateReservationStatus(reservation.id, 'cancelled');
+      // 예약 취소
+      await updateReservationStatus(reservation.id, 'cancelled');
+      
+      // /map 페이지 장소 데이터 새로고침 (백그라운드)
+      refreshLocations().catch(err => {
+        console.error('Failed to refresh locations:', err);
+      });
+      
       // Go back to the dashboard to see the updated list
       router.push('/dashboard');
     }

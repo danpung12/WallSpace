@@ -118,7 +118,7 @@ export default function BookingModalPC({
 
         {/* Right Panel (Booking Steps) */}
         <div className="flex h-full w-full flex-col overflow-hidden rounded-r-2xl lg:w-1/2">
-             <div className="flex items-center justify-between p-4 border-b">
+             <div className="flex items-center justify-between p-4">
                 <h3 className="text-lg font-bold">
                     {step === 'date' ? '날짜 선택' : step === 'confirm' ? '예약 확인' : '예약 완료'}
                 </h3>

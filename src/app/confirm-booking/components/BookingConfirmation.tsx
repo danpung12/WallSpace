@@ -310,7 +310,7 @@ export default function BookingConfirmation({
                               <p>공간 이용료 ({durationDays}일)</p>
                               <p>{costDetails.spaceUsage.toLocaleString()}원</p>
                           </div>
-                          <div className="flex justify-between items-center mt-3 pt-3 border-t font-bold">
+                          <div className="flex justify-between items-center mt-3 pt-3 font-bold">
                               <p className="text-base">총 결제 금액</p>
                               <p className="text-lg text-[var(--primary-color)]">{costDetails.total.toLocaleString()}원</p>
                           </div>
@@ -328,7 +328,7 @@ export default function BookingConfirmation({
           <div className={isModal ? 'mt-auto pt-4' : ''}>
               {!isModal ? (
                    <footer
-                   className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white p-4 border-t border-gray-100"
+                   className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white p-4"
                   >
                       <button
                           onClick={handleConfirmBooking}
