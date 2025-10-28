@@ -46,6 +46,7 @@ export async function GET() {
       phone: profile.phone || '',
       dob: profile.dob || undefined,
       gender: profile.gender || undefined,
+      user_type: profile.user_type || 'artist', // user_type 추가
       notificationSettings: {
         comments: true,
         exhibitions: true,
@@ -137,6 +138,7 @@ export async function PUT(req: NextRequest) {
       phone: updatedProfile.phone || '',
       dob: updatedProfile.dob || undefined,
       gender: updatedProfile.gender || undefined,
+      user_type: updatedProfile.user_type || 'artist', // user_type 추가
       notificationSettings: updatedProfileData.notificationSettings,
       userSettings: updatedProfileData.userSettings,
     };

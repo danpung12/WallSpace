@@ -1711,26 +1711,46 @@ function AddStoreContent() {
                             1. 필수 정보
                         </div>
                         <div
-                            className={`pc-step ${activeScreen.includes('step2') ? 'active' : ''} ${progress >= 75 ? 'completed' : ''}`}
-                            onClick={() => showScreen('screen-step2', 50)}
+                            className={`pc-step ${activeScreen.includes('step2') ? 'active' : ''} ${progress >= 75 ? 'completed' : ''} ${progress < 50 ? 'disabled' : ''}`}
+                            onClick={() => {
+                                if (progress >= 25) {
+                                    showScreen('screen-step2', 50);
+                                }
+                            }}
+                            style={{ cursor: progress < 25 ? 'not-allowed' : 'pointer', opacity: progress < 25 ? 0.5 : 1 }}
                         >
                             2. 상세 정보
                         </div>
                         <div
-                            className={`pc-step ${activeScreen.includes('step3') ? 'active' : ''} ${progress >= 100 ? 'completed' : ''}`}
-                            onClick={() => showScreen('screen-step3', 75)}
+                            className={`pc-step ${activeScreen.includes('step3') ? 'active' : ''} ${progress >= 100 ? 'completed' : ''} ${progress < 75 ? 'disabled' : ''}`}
+                            onClick={() => {
+                                if (progress >= 50) {
+                                    showScreen('screen-step3', 75);
+                                }
+                            }}
+                            style={{ cursor: progress < 50 ? 'not-allowed' : 'pointer', opacity: progress < 50 ? 0.5 : 1 }}
                         >
                             3. 가게 소개
                         </div>
                         <div
-                            className={`pc-step ${activeScreen.includes('step4') ? 'active' : ''} ${activeScreen === 'screen-confirm' ? 'completed' : ''}`}
-                            onClick={() => showScreen('screen-step4', 100)}
+                            className={`pc-step ${activeScreen.includes('step4') ? 'active' : ''} ${activeScreen === 'screen-confirm' ? 'completed' : ''} ${progress < 100 ? 'disabled' : ''}`}
+                            onClick={() => {
+                                if (progress >= 75) {
+                                    showScreen('screen-step4', 100);
+                                }
+                            }}
+                            style={{ cursor: progress < 75 ? 'not-allowed' : 'pointer', opacity: progress < 75 ? 0.5 : 1 }}
                         >
                             4. 공간 등록
                         </div>
                          <div
-                            className={`pc-step ${activeScreen.includes('confirm') ? 'active' : ''}`}
-                            onClick={() => showScreen('screen-confirm', 100)}
+                            className={`pc-step ${activeScreen.includes('confirm') ? 'active' : ''} ${progress < 100 ? 'disabled' : ''}`}
+                            onClick={() => {
+                                if (progress >= 100 && isStep4Valid()) {
+                                    showScreen('screen-confirm', 100);
+                                }
+                            }}
+                            style={{ cursor: progress < 100 ? 'not-allowed' : 'pointer', opacity: progress < 100 ? 0.5 : 1 }}
                         >
                             최종 확인
                         </div>

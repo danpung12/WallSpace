@@ -14,12 +14,14 @@ import NotificationListModal from "../components/NotificationListModal";
 import { UserProfile } from "@/data/profile";
 import EditProfileModal from "../components/EditProfileModal";
 import { useDarkMode } from "../context/DarkModeContext"; // ✅ 다크모드 훅 추가
+import { useUserMode } from "../context/UserModeContext"; // ✅ UserMode 훅 추가
 import { useRouter } from "next/navigation"; // ✅ 라우터 추가
 import { logoutUser } from "@/lib/api/auth"; // ✅ 로그아웃 함수 추가
 
 export default function ProfilePage() {
   const router = useRouter(); // ✅ 라우터 초기화
   const { isDarkMode, setDarkMode } = useDarkMode(); // ✅ 다크모드 상태 가져오기
+  const { userMode } = useUserMode(); // ✅ 현재 사용자 모드 가져오기
   const [showChangePw, setShowChangePw] = useState(false);
   const [showNotiModal, setShowNotiModal] = useState(false);
   const [showUserSettingsModal, setShowUserSettingsModal] = useState(false); // ✅ 추가
@@ -227,8 +229,12 @@ export default function ProfilePage() {
             </button>
           </div>
           <div className="mt-4 lg:mt-0">
-            <h2 className="text-xl font-bold lg:text-4xl text-[#2C2C2C] dark:text-gray-100">{userProfile.nickname || '무명'}</h2>
-            <p className="text-sm lg:text-xl mt-1 text-[#887563] dark:text-gray-400">{userProfile.name}</p>
+            <h2 className="text-xl font-bold lg:text-4xl text-[#2C2C2C] dark:text-gray-100">
+              {userMode === 'manager' ? userProfile.name : (userProfile.nickname || '무명')}
+            </h2>
+            {userMode !== 'manager' && (
+              <p className="text-sm lg:text-xl mt-1 text-[#887563] dark:text-gray-400">{userProfile.name}</p>
+            )}
           </div>
         </section>
 
@@ -247,23 +253,25 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          {/* 닉네임 */}
-          <div className="group flex items-center p-3 lg:p-4 rounded-xl transition-all duration-200 hover:bg-gradient-to-r hover:from-[#F5F3EC] hover:to-[#FAF8F5] dark:hover:from-gray-700 dark:hover:to-gray-700 hover:shadow-sm hover:scale-[1.02]">
-            <div className="p-2.5 lg:p-3 rounded-xl bg-gradient-to-br from-[#D2B48C]/20 to-[#D2B48C]/10 group-hover:from-[#D2B48C]/30 group-hover:to-[#D2B48C]/20 transition-all duration-200">
-              <svg className="w-6 lg:w-7 h-6 lg:h-7 stroke-[#D2B48C]" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                />
-              </svg>
+          {/* 닉네임 - 작가 모드일 때만 표시 */}
+          {userMode !== 'manager' && (
+            <div className="group flex items-center p-3 lg:p-4 rounded-xl transition-all duration-200 hover:bg-gradient-to-r hover:from-[#F5F3EC] hover:to-[#FAF8F5] dark:hover:from-gray-700 dark:hover:to-gray-700 hover:shadow-sm hover:scale-[1.02]">
+              <div className="p-2.5 lg:p-3 rounded-xl bg-gradient-to-br from-[#D2B48C]/20 to-[#D2B48C]/10 group-hover:from-[#D2B48C]/30 group-hover:to-[#D2B48C]/20 transition-all duration-200">
+                <svg className="w-6 lg:w-7 h-6 lg:h-7 stroke-[#D2B48C]" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1 ml-3 lg:ml-4">
+                <p className="block text-[11px] font-bold mb-1 uppercase tracking-widest text-[#887563] dark:text-gray-400">필명</p>
+                <p className="text-sm lg:text-base font-bold text-[#2C2C2C] dark:text-gray-100">{userProfile.nickname || '무명'}</p>
+              </div>
             </div>
-            <div className="flex-1 ml-3 lg:ml-4">
-              <p className="block text-[11px] font-bold mb-1 uppercase tracking-widest text-[#887563] dark:text-gray-400">필명</p>
-              <p className="text-sm lg:text-base font-bold text-[#2C2C2C] dark:text-gray-100">{userProfile.nickname || '무명'}</p>
-            </div>
-          </div>
+          )}
 
           {/* 이름 */}
           <div className="group flex items-center p-3 lg:p-4 rounded-xl transition-all duration-200 hover:bg-gradient-to-r hover:from-[#F5F3EC] hover:to-[#FAF8F5] dark:hover:from-gray-700 dark:hover:to-gray-700 hover:shadow-sm hover:scale-[1.02]">
@@ -467,6 +475,7 @@ export default function ProfilePage() {
           setError(null);
         }}
         userProfile={userProfile}
+        userMode={userMode}
         onSave={async (updatedProfile) => {
           const success = await updateProfile(updatedProfile);
           if (success) {

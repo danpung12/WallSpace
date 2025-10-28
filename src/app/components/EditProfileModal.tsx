@@ -10,12 +10,13 @@ type EditProfileModalProps = {
   open: boolean;
   onClose: () => void;
   userProfile: UserProfile | null;
+  userMode?: 'artist' | 'manager';
   onSave: (updatedProfile: UserProfile) => void;
   error: string | null;
   setError: (error: string | null) => void;
 };
 
-export default function EditProfileModal({ open, onClose, userProfile: initialProfile, onSave, error, setError }: EditProfileModalProps) {
+export default function EditProfileModal({ open, onClose, userProfile: initialProfile, userMode, onSave, error, setError }: EditProfileModalProps) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(initialProfile);
   const { setIsNavVisible } = useBottomNav();
   
@@ -107,25 +108,27 @@ export default function EditProfileModal({ open, onClose, userProfile: initialPr
 
                   {/* Form */}
                   <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                    {/* 필명 */}
-                    <div className="space-y-2">
-                      <label htmlFor="nickname" className="flex items-center gap-2 text-sm font-semibold text-[#3D2C1D] dark:text-gray-200">
-                        <svg className="w-4 h-4 text-[#D2B48C]" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                        </svg>
-                        필명
-                      </label>
-                      <div className="relative group">
-                        <input
-                          id="nickname"
-                          type="text"
-                          value={userProfile?.nickname || ''}
-                          onChange={handleChange}
-                          placeholder="필명을 입력하세요"
-                          className="w-full px-4 py-3.5 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium text-[#2C2C2C] dark:text-gray-100 placeholder:text-gray-400 focus:border-[#D2B48C] focus:ring-4 focus:ring-[#D2B48C]/10 outline-none transition-all duration-200"
-                        />
+                    {/* 필명 - 작가 모드일 때만 표시 */}
+                    {userMode !== 'manager' && (
+                      <div className="space-y-2">
+                        <label htmlFor="nickname" className="flex items-center gap-2 text-sm font-semibold text-[#3D2C1D] dark:text-gray-200">
+                          <svg className="w-4 h-4 text-[#D2B48C]" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                          필명
+                        </label>
+                        <div className="relative group">
+                          <input
+                            id="nickname"
+                            type="text"
+                            value={userProfile?.nickname || ''}
+                            onChange={handleChange}
+                            placeholder="필명을 입력하세요"
+                            className="w-full px-4 py-3.5 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium text-[#2C2C2C] dark:text-gray-100 placeholder:text-gray-400 focus:border-[#D2B48C] focus:ring-4 focus:ring-[#D2B48C]/10 outline-none transition-all duration-200"
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* 이름 (읽기 전용) */}
                     <div className="space-y-2">
