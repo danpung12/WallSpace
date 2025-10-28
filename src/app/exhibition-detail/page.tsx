@@ -203,6 +203,7 @@ function ExhibitionDetailContent() {
           storeLocation: reservation.location?.address || '',
           storeImage: storeImage,
           address: reservation.location?.address || '',
+          spaceName: reservation.space_name || null,  // 예약 공간 추가
           startDate: reservation.start_date,
           endDate: reservation.end_date,
           description: reservation.artwork?.description || '작품 설명이 없습니다.',
@@ -383,6 +384,9 @@ function ExhibitionDetailContent() {
                        <div className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0" style={{ backgroundImage: `url("${exhibition.storeImage}")` }} />
                        <div className="flex-1 space-y-1">
                          <p className="text-base font-semibold">{exhibition.storeName}</p>
+                         {exhibition.spaceName && (
+                           <p className="text-sm font-medium text-[var(--primary-color)]">{exhibition.spaceName}</p>
+                         )}
                          <p className="text-sm text-[var(--text-secondary)]">{exhibition.storeLocation}</p>
                        </div>
                     </div>

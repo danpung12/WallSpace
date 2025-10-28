@@ -441,6 +441,7 @@ export default function MainPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [currentPlaceIndex, setCurrentPlaceIndex] = useState(0);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false); // 로딩 상태 추가
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showTopFade, setShowTopFade] = useState(false);
@@ -530,29 +531,31 @@ export default function MainPage() {
 
   // 알림 클릭 핸들러
   const handleNotificationClick = async (notification: Notification) => {
-    // 읽음 처리
-    if (!notification.is_read) {
-      try {
-        await fetch(`/api/notifications/${notification.id}`, { method: 'PATCH' });
-        setNotifications(prev => 
-          prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n)
-        );
-      } catch (err) {
-        console.error('Failed to mark notification as read:', err);
-      }
-    }
+    // 로딩 시작
+    setIsNavigating(true);
 
-    // 페이지 이동
-    if (notification.related_id) {
-      let path = '';
-      if (notification.type === 'reservation_request') {
-        path = `/manager-booking-approval?id=${notification.related_id}`;
-      } else if (notification.type === 'reservation_status_update') {
-        path = `/bookingdetail?id=${notification.related_id}`;
+    try {
+      // 읽음 처리
+      if (!notification.is_read) {
+        await fetch(`/api/notifications/${notification.id}`, { method: 'PATCH' });
       }
-      if (path) {
-        router.push(path);
+
+      // 페이지 이동
+      if (notification.related_id) {
+        let path = '';
+        if (notification.type === 'reservation_request') {
+          path = `/manager-booking-approval?id=${notification.related_id}`;
+        } else if (notification.type === 'reservation_status_update' || notification.type === 'reservation_confirmed') {
+          // 예약 승인 알림 - 전시중 상세 페이지로 이동
+          path = `/exhibition-detail?id=${notification.related_id}`;
+        }
+        if (path) {
+          router.push(path);
+        }
       }
+    } catch (err) {
+      console.error('Failed to process notification:', err);
+      setIsNavigating(false); // 오류 발생 시 로딩 종료
     }
   };
 
@@ -607,6 +610,17 @@ export default function MainPage() {
     <>
       <GlobalSwiperStyles />
       <Header /> {/* 2. Header 컴포넌트 추가 */}
+      
+      {/* 로딩 화면 */}
+      {isNavigating && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary-color)]"></div>
+            <p className="text-[var(--text-primary)] font-medium">로딩 중...</p>
+          </div>
+        </div>
+      )}
+      
       <div className="h-screen w-full lg:h-screen lg:overflow-hidden relative bg-[#e8e3da] dark:bg-[#1a1a1a] transition-colors duration-300 flex flex-col">
 
         <div className={`relative z-10 mx-auto w-full max-w-screen-2xl flex-grow flex flex-col lg:overflow-y-auto lg:scrollbar-hide lg:px-8 lg:pb-0 ${notifications.length === 0 ? 'lg:!pt-[40px]' : 'lg:pt-12'}`}

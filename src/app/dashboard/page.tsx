@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { CardTitle, CardDescription, CardHeader, CardContent, Card } from '@/app/map/components/ui/card';
 
@@ -682,6 +682,7 @@ ReservationCard.displayName = 'ReservationCard';
 // --- 메인 대시보드 페이지 ---
 export default function Dashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [editingArtwork, setEditingArtwork] = useState<Artwork | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
@@ -738,7 +739,7 @@ export default function Dashboard() {
     };
 
     fetchData();
-  }, [userMode]);
+  }, [userMode, searchParams]);
 
   // 중앙에 위치한 카드를 계산하고 해당 카드로 스크롤하는 함수
   const snapToCenter = useCallback(() => {

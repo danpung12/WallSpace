@@ -100,7 +100,7 @@ function ManagerBookingApprovalContent() {
       if (actionType === 'accept') {
         await updateReservationStatus(reservation.id, 'confirmed');
         setShowConfirmModal(false);
-        router.push('/dashboard');
+        router.push(`/dashboard?refresh=${Date.now()}`);
       }
     } catch (error) {
       console.error('Failed to confirm reservation:', error);

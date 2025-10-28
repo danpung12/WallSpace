@@ -46,6 +46,33 @@ export async function middleware(request: NextRequest) {
     '/verify-email',
   ]
 
+  // 소셜 로그인 사용자의 추가 정보 체크
+  if (user && pathname !== '/onboarding' && !publicPaths.includes(pathname)) {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('nickname, phone, name')
+        .eq('id', user.id)
+        .single()
+
+      // 소셜 로그인 사용자 (provider가 google 등)이고 추가 정보가 없으면 onboarding으로 리다이렉트
+      const provider = user.app_metadata?.provider || 'email'
+      
+      if (provider !== 'email' && profile) {
+        // nickname이나 phone이 없으면 추가 정보 입력 필요
+        const needsOnboarding = !profile.nickname || !profile.phone
+        
+        if (needsOnboarding) {
+          const url = request.nextUrl.clone()
+          url.pathname = '/onboarding'
+          return NextResponse.redirect(url)
+        }
+      }
+    } catch (error) {
+      console.error('Error checking profile:', error)
+    }
+  }
+
   // 정적 파일 및 API 경로 제외
   if (
     pathname.startsWith('/_next') ||

@@ -565,7 +565,7 @@ function AddStoreContent() {
             }
 
             alert(mode === 'edit' ? '가게 정보가 수정되었습니다!' : '가게 등록이 완료되었습니다!');
-            router.push('/dashboard');
+            router.push(`/dashboard?refresh=${Date.now()}`);
 
         } catch (error: any) {
             console.error('Error submitting store:', error);
