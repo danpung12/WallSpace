@@ -131,14 +131,33 @@ function ManagerBookingApprovalContent() {
     console.log('🚫 Rejecting reservation with reason:', rejectionReason);
     
     try {
-      // 거절 사유와 함께 업데이트
-      await updateReservationStatus(reservation.id, 'cancelled', rejectionReason);
+      // API로 직접 상태 업데이트 (빠름)
+      const response = await fetch('/api/reservations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          reservation_id: reservation.id,
+          status: 'cancelled',
+          rejection_reason: rejectionReason
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update reservation');
+      }
+
+      // 즉시 페이지 이동 (백그라운드 새로고침 없이)
       setShowRejectModal(false);
       setRejectionReason('');
       router.push('/dashboard');
+      
+      // 백그라운드에서 컨텍스트 새로고침 (기다리지 않음)
+      updateReservationStatus(reservation.id, 'cancelled', rejectionReason).catch(err => {
+        console.error('Background context update failed:', err);
+      });
     } catch (error) {
       console.error('Failed to reject reservation:', error);
-    } finally {
+      alert('예약 거절에 실패했습니다. 다시 시도해주세요.');
       setIsSubmitting(false);
     }
   };
@@ -151,13 +170,32 @@ function ManagerBookingApprovalContent() {
     
     try {
       if (actionType === 'accept') {
-        await updateReservationStatus(reservation.id, 'confirmed');
+        // API로 직접 상태 업데이트 (빠름)
+        const response = await fetch('/api/reservations', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            reservation_id: reservation.id,
+            status: 'confirmed'
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update reservation');
+        }
+
+        // 즉시 페이지 이동
         setShowConfirmModal(false);
         router.push(`/dashboard?refresh=${Date.now()}`);
+        
+        // 백그라운드에서 컨텍스트 새로고침 (기다리지 않음)
+        updateReservationStatus(reservation.id, 'confirmed').catch(err => {
+          console.error('Background context update failed:', err);
+        });
       }
     } catch (error) {
       console.error('Failed to confirm reservation:', error);
-    } finally {
+      alert('예약 승인에 실패했습니다. 다시 시도해주세요.');
       setIsSubmitting(false);
     }
   };

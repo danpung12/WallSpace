@@ -603,26 +603,25 @@ export default function HomePage() {
     setIsNavigating(true);
     
     try {
-      // 읽음 처리 및 삭제
+      // 읽음 처리 및 삭제 (백그라운드에서 비동기로)
       if (!notification.is_read) {
-        try {
-          await fetch(`/api/notifications/${notification.id}`, { method: 'PATCH' });
-        } catch (err) {
+        fetch(`/api/notifications/${notification.id}`, { method: 'PATCH' }).catch(err => {
           console.error('Failed to mark notification as read:', err);
-        }
+        });
       }
       
-      // 백그라운드에서 삭제
       fetch(`/api/notifications?id=${notification.id}`, {
         method: 'DELETE',
       }).catch(error => {
         console.error('Failed to delete notification:', error);
       });
 
-      // 예약 데이터 새로고침 (최신 데이터 확보)
-      await refreshReservations();
+      // 예약 데이터 새로고침을 백그라운드에서 실행 (기다리지 않음)
+      refreshReservations().catch(err => {
+        console.error('Background refresh failed:', err);
+      });
 
-      // 페이지 이동
+      // 페이지로 바로 이동 (상세 페이지에서 API 폴백으로 데이터 로드)
       if (notification.related_id) {
         let path = '';
         if (notification.type === 'reservation_request') {
