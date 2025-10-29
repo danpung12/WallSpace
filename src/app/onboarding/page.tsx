@@ -15,6 +15,8 @@ export default function OnboardingPage() {
   const [userType, setUserType] = useState<UserType>(null);
   const [gender, setGender] = useState<Gender>(null);
   const [ageRange, setAgeRange] = useState<AgeRange>(null);
+  const [nickname, setNickname] = useState('');
+  const [phone, setPhone] = useState('');
   const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
@@ -27,21 +29,30 @@ export default function OnboardingPage() {
         return;
       }
 
-      // 이미 프로필이 있으면 홈으로
+      // 프로필 체크 - 이미 완전한 프로필이 있으면 홈으로
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
-      if (profile) {
-        // 이미 프로필이 있으면 user_type에 따라 리다이렉트
+      if (profile && profile.nickname && profile.phone) {
+        // 이미 완전한 프로필이 있으면 user_type에 따라 리다이렉트
         if (profile.user_type === 'guest') {
           router.replace('/guest');
         } else {
           router.replace('/');
         }
         return;
+      }
+
+      // 기존 프로필 데이터가 있다면 필드 채우기
+      if (profile) {
+        if (profile.user_type) setUserType(profile.user_type);
+        if (profile.gender) setGender(profile.gender);
+        if (profile.age_range) setAgeRange(profile.age_range);
+        if (profile.nickname) setNickname(profile.nickname);
+        if (profile.phone) setPhone(profile.phone);
       }
 
       setUserData(user);
@@ -97,13 +108,35 @@ export default function OnboardingPage() {
       alert('사용자 타입을 선택해주세요.');
       return;
     }
-    if (!gender) {
-      alert('성별을 선택해주세요.');
-      return;
+    
+    // 게스트인 경우: 성별, 나이대 필수
+    if (userType === 'guest') {
+      if (!gender) {
+        alert('성별을 선택해주세요.');
+        return;
+      }
+      if (!ageRange) {
+        alert('나이대를 선택해주세요.');
+        return;
+      }
     }
-    if (!ageRange) {
-      alert('나이대를 선택해주세요.');
-      return;
+    
+    // 아티스트인 경우: 닉네임, 휴대폰 번호 필수
+    if (userType === 'artist') {
+      if (!nickname.trim()) {
+        alert('닉네임을 입력해주세요.');
+        return;
+      }
+      if (!phone.trim()) {
+        alert('휴대폰 번호를 입력해주세요.');
+        return;
+      }
+      // 휴대폰 번호 형식 검증
+      const phoneRegex = /^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/;
+      if (!phoneRegex.test(phone.replace(/[- ]/g, ''))) {
+        alert('올바른 휴대폰 번호 형식이 아닙니다. (예: 010-1234-5678)');
+        return;
+      }
     }
 
     setSaving(true);
@@ -116,22 +149,72 @@ export default function OnboardingPage() {
       const fullName = metadata.full_name || metadata.name || metadata.nickname || userData.email?.split('@')[0];
       const avatarUrl = metadata.avatar_url || metadata.picture || metadata.profile_image || '/default-profile.svg';
       
-      const { error } = await supabase.from('profiles').insert({
-        id: userData.id,
-        email: userData.email,
-        full_name: fullName,
-        nickname: '무명', // 기본 필명
-        avatar_url: avatarUrl, // 기본 프로필 사진
-        user_type: userType,
-        gender: gender,
-        age_range: ageRange,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+      // 프로필이 이미 있는지 확인
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', userData.id)
+        .single();
+
+      let error;
+      
+      if (existingProfile) {
+        // 기존 프로필 업데이트
+        const updateData: any = {
+          user_type: userType,
+          updated_at: new Date().toISOString(),
+        };
+        
+        // 게스트: 성별, 나이대 저장
+        if (userType === 'guest') {
+          updateData.gender = gender;
+          updateData.age_range = ageRange;
+          updateData.nickname = '무명'; // 게스트 기본 닉네임
+        }
+        
+        // 아티스트: 닉네임, 휴대폰 저장
+        if (userType === 'artist') {
+          updateData.nickname = nickname;
+          updateData.phone = phone;
+        }
+        
+        const updateResult = await supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('id', userData.id);
+        error = updateResult.error;
+      } else {
+        // 새 프로필 생성
+        const insertData: any = {
+          id: userData.id,
+          email: userData.email,
+          full_name: fullName,
+          avatar_url: avatarUrl,
+          user_type: userType,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        
+        // 게스트: 성별, 나이대 저장
+        if (userType === 'guest') {
+          insertData.gender = gender;
+          insertData.age_range = ageRange;
+          insertData.nickname = '무명'; // 게스트 기본 닉네임
+        }
+        
+        // 아티스트: 닉네임, 휴대폰 저장
+        if (userType === 'artist') {
+          insertData.nickname = nickname;
+          insertData.phone = phone;
+        }
+        
+        const insertResult = await supabase.from('profiles').insert(insertData);
+        error = insertResult.error;
+      }
 
       if (error) {
-        console.error('Profile creation error:', error);
-        alert('프로필 생성 중 오류가 발생했습니다.');
+        console.error('Profile save error:', error);
+        alert('프로필 저장 중 오류가 발생했습니다.');
         setSaving(false);
         return;
       }
@@ -198,70 +281,119 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        {/* 성별 선택 */}
-        <div className="mb-6">
-          <label className="block text-sm font-semibold text-[#3E352F] mb-3">
-            성별 <span className="text-red-500">*</span>
-          </label>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: 'male', label: '남성', emoji: '👨' },
-              { value: 'female', label: '여성', emoji: '👩' },
-              { value: 'other', label: '기타', emoji: '🙂' },
-            ].map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setGender(option.value as Gender)}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  gender === option.value
-                    ? 'border-[#D2B48C] bg-[#D2B48C]/10'
-                    : 'border-[#EAE5DE] hover:border-[#D2B48C]/50'
-                }`}
-              >
-                <div className="text-xl mb-1">{option.emoji}</div>
-                <div className="text-sm font-medium text-[#3E352F]">{option.label}</div>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* 게스트 선택 시: 성별, 나이대 */}
+        {userType === 'guest' && (
+          <>
+            {/* 성별 선택 */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-[#3E352F] mb-3">
+                성별 <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: 'male', label: '남성', emoji: '👨' },
+                  { value: 'female', label: '여성', emoji: '👩' },
+                  { value: 'other', label: '기타', emoji: '🙂' },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setGender(option.value as Gender)}
+                    className={`p-3 rounded-xl border-2 transition-all ${
+                      gender === option.value
+                        ? 'border-[#D2B48C] bg-[#D2B48C]/10'
+                        : 'border-[#EAE5DE] hover:border-[#D2B48C]/50'
+                    }`}
+                  >
+                    <div className="text-xl mb-1">{option.emoji}</div>
+                    <div className="text-sm font-medium text-[#3E352F]">{option.label}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        {/* 나이대 선택 */}
-        <div className="mb-8">
-          <label className="block text-sm font-semibold text-[#3E352F] mb-3">
-            나이대 <span className="text-red-500">*</span>
-          </label>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: '10s', label: '10대' },
-              { value: '20s', label: '20대' },
-              { value: '30s', label: '30대' },
-              { value: '40s', label: '40대' },
-              { value: '50s', label: '50대' },
-              { value: '60s+', label: '60대+' },
-            ].map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setAgeRange(option.value as AgeRange)}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  ageRange === option.value
-                    ? 'border-[#D2B48C] bg-[#D2B48C]/10'
-                    : 'border-[#EAE5DE] hover:border-[#D2B48C]/50'
-                }`}
-              >
-                <div className="text-sm font-medium text-[#3E352F]">{option.label}</div>
-              </button>
-            ))}
-          </div>
-        </div>
+            {/* 나이대 선택 */}
+            <div className="mb-8">
+              <label className="block text-sm font-semibold text-[#3E352F] mb-3">
+                나이대 <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: '10s', label: '10대' },
+                  { value: '20s', label: '20대' },
+                  { value: '30s', label: '30대' },
+                  { value: '40s', label: '40대' },
+                  { value: '50s', label: '50대' },
+                  { value: '60s+', label: '60대+' },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setAgeRange(option.value as AgeRange)}
+                    className={`p-3 rounded-xl border-2 transition-all ${
+                      ageRange === option.value
+                        ? 'border-[#D2B48C] bg-[#D2B48C]/10'
+                        : 'border-[#EAE5DE] hover:border-[#D2B48C]/50'
+                    }`}
+                  >
+                    <div className="text-sm font-medium text-[#3E352F]">{option.label}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* 아티스트 선택 시: 닉네임, 휴대폰 번호 */}
+        {userType === 'artist' && (
+          <>
+            {/* 닉네임 입력 */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-[#3E352F] mb-3">
+                닉네임 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                placeholder="닉네임을 입력하세요"
+                className="w-full px-4 py-3 rounded-xl border-2 border-[#EAE5DE] focus:border-[#D2B48C] focus:outline-none transition-all"
+                maxLength={20}
+              />
+            </div>
+
+            {/* 휴대폰 번호 입력 */}
+            <div className="mb-8">
+              <label className="block text-sm font-semibold text-[#3E352F] mb-3">
+                휴대폰 번호 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="010-1234-5678"
+                className="w-full px-4 py-3 rounded-xl border-2 border-[#EAE5DE] focus:border-[#D2B48C] focus:outline-none transition-all"
+                maxLength={13}
+              />
+              <p className="text-xs text-[#6B5E54] mt-2">하이픈(-)을 포함하여 입력해주세요</p>
+            </div>
+          </>
+        )}
 
         {/* 완료 버튼 */}
         <button
           onClick={handleComplete}
-          disabled={saving || !userType || !gender || !ageRange}
+          disabled={
+            saving || 
+            !userType || 
+            (userType === 'guest' && (!gender || !ageRange)) ||
+            (userType === 'artist' && (!nickname.trim() || !phone.trim()))
+          }
           className={`w-full h-14 rounded-full font-bold text-white transition-all ${
-            saving || !userType || !gender || !ageRange
+            saving || 
+            !userType || 
+            (userType === 'guest' && (!gender || !ageRange)) ||
+            (userType === 'artist' && (!nickname.trim() || !phone.trim()))
               ? 'bg-gray-300 cursor-not-allowed'
               : 'bg-[#D2B48C] hover:bg-[#A89587]'
           }`}

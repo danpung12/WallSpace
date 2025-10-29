@@ -30,3 +30,4 @@ SELECT '✅ is_available column added to artworks table!' as status;
 
 
 
+

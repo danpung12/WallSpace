@@ -36,3 +36,4 @@ USING (auth.uid() = artist_id);
 
 
 
+

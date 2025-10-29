@@ -25,3 +25,4 @@ UPDATE spaces SET current_reservations = 0 WHERE current_reservations IS NULL;
 
 
 
+

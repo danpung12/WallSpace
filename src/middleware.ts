@@ -61,16 +61,35 @@ export async function middleware(request: NextRequest) {
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('nickname, phone, name')
+        .select('user_type, gender, age_range, nickname, phone')
         .eq('id', user.id)
         .single()
 
-      // 소셜 로그인 사용자 (provider가 google 등)이고 추가 정보가 없으면 onboarding으로 리다이렉트
+      // 소셜 로그인 사용자 (provider가 google 등)
       const provider = user.app_metadata?.provider || 'email'
       
-      if (provider !== 'email' && profile) {
-        // nickname이나 phone이 없으면 추가 정보 입력 필요
-        const needsOnboarding = !profile.nickname || !profile.phone
+      if (provider !== 'email') {
+        // 프로필이 없으면 onboarding으로
+        if (!profile) {
+          const url = request.nextUrl.clone()
+          url.pathname = '/onboarding'
+          return NextResponse.redirect(url)
+        }
+        
+        // user_type이 없으면 onboarding으로
+        if (!profile.user_type) {
+          const url = request.nextUrl.clone()
+          url.pathname = '/onboarding'
+          return NextResponse.redirect(url)
+        }
+        
+        // 게스트: gender, age_range 필수
+        // 아티스트: nickname, phone 필수
+        const isGuest = profile.user_type === 'guest'
+        const isArtist = profile.user_type === 'artist'
+        
+        const needsOnboarding = (isGuest && (!profile.gender || !profile.age_range)) ||
+                                (isArtist && (!profile.nickname || !profile.phone))
         
         if (needsOnboarding) {
           const url = request.nextUrl.clone()
@@ -80,6 +99,13 @@ export async function middleware(request: NextRequest) {
       }
     } catch (error) {
       console.error('Error checking profile:', error)
+      // 에러 발생 시 (프로필 조회 실패) 소셜 로그인 사용자면 onboarding으로
+      const provider = user.app_metadata?.provider || 'email'
+      if (provider !== 'email') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/onboarding'
+        return NextResponse.redirect(url)
+      }
     }
   }
 
