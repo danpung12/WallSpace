@@ -77,6 +77,7 @@ function LocationDetailContent() {
   const [loadingReservations, setLoadingReservations] = useState(false);
   const [selectedReservationDetail, setSelectedReservationDetail] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [spaceReservationCounts, setSpaceReservationCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (locationId) {
@@ -84,6 +85,48 @@ function LocationDetailContent() {
       fetchCategories();
     }
   }, [locationId]);
+
+  // 각 공간의 실시간 예약 수 계산 (confirmed 상태만 카운트)
+  useEffect(() => {
+    const calculateReservationCounts = async () => {
+      if (!location?.spaces || location.spaces.length === 0) return;
+      
+      const counts: Record<string, number> = {};
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      for (const space of location.spaces) {
+        try {
+          const response = await fetch(`/api/reservations?space_id=${space.id}`);
+          if (response.ok) {
+            const data = await response.json();
+            // confirmed 상태이면서 예약 기간이 유효한 것만 카운트
+            const validCount = (data || []).filter((r: any) => {
+              // pending은 카운트 안 함 (여러 개 가능)
+              if (r.status !== 'confirmed') return false;
+              
+              // 예약 기간 체크
+              const endDate = new Date(r.end_date);
+              endDate.setHours(23, 59, 59, 999);
+              return endDate >= today;
+            }).length;
+            counts[space.id] = validCount;
+            console.log(`📊 Space ${space.name}: ${validCount} confirmed reservations`);
+          }
+        } catch (error) {
+          console.error(`Failed to fetch reservations for space ${space.id}:`, error);
+          counts[space.id] = 0;
+        }
+      }
+      
+      console.log('📊 Real-time reservation counts (confirmed only):', counts);
+      setSpaceReservationCounts(counts);
+    };
+    
+    if (location && !isLoading) {
+      calculateReservationCounts();
+    }
+  }, [locationId, isLoading]); // locationId가 변경되거나 로딩이 끝날 때 실행
 
   const fetchCategories = async () => {
     try {
@@ -129,7 +172,7 @@ function LocationDetailContent() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        // 필터링: 취소된 것 제외 + 예약 기간이 지난 것 제외
+        // 필터링: 취소된 것 제외 + 예약 기간이 지난 것 제외 (pending도 표시)
         const filteredReservations = (data || []).filter((r: any) => {
           console.log('🔍 Checking reservation:', {
             id: r.id.substring(0, 8),
@@ -157,7 +200,8 @@ function LocationDetailContent() {
             return false;
           }
           
-          console.log('✅ Including reservation:', r.id.substring(0, 8));
+          // pending(대기중)도 표시, confirmed(확정)도 표시
+          console.log('✅ Including reservation:', r.id.substring(0, 8), `(${r.status})`);
           return true;
         });
         
@@ -1040,8 +1084,8 @@ function LocationDetailContent() {
                                     <div>
                                       <div className="font-semibold text-gray-700 dark:text-gray-300">예약 현황</div>
                                       <div className="text-gray-600 dark:text-gray-400">
-                                        <span className={`font-bold ${(space.current_reservations || 0) >= (space.max_artworks || 1) ? 'text-red-500' : 'text-[#D2B48C]'}`}>
-                                          {space.current_reservations || 0}
+                                        <span className={`font-bold ${(spaceReservationCounts[space.id] ?? space.current_reservations ?? 0) >= (space.max_artworks || 1) ? 'text-red-500' : 'text-[#D2B48C]'}`}>
+                                          {spaceReservationCounts[space.id] ?? space.current_reservations ?? 0}
                                         </span>
                                         <span className="text-gray-500 mx-1">/</span>
                                         <span className="font-bold">{space.max_artworks || 1}</span>
@@ -1454,15 +1498,21 @@ function LocationDetailContent() {
                 </button>
               </div>
               {/* 예약 요약 */}
-              <div className="mt-4 flex gap-4 text-sm">
+              <div className="mt-4 flex gap-4 text-sm flex-wrap">
                 <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
-                  <span className="opacity-90">전체 예약: </span>
+                  <span className="opacity-90">전체: </span>
                   <span className="font-bold">{selectedSpaceReservations.length}건</span>
                 </div>
-                <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
-                  <span className="opacity-90">진행 중: </span>
+                <div className="bg-green-500/30 backdrop-blur-sm px-4 py-2 rounded-lg">
+                  <span className="opacity-90">확정: </span>
                   <span className="font-bold">
-                    {selectedSpaceReservations.filter(r => r.status === 'confirmed' || r.status === 'pending').length}건
+                    {selectedSpaceReservations.filter(r => r.status === 'confirmed').length}건
+                  </span>
+                </div>
+                <div className="bg-yellow-500/30 backdrop-blur-sm px-4 py-2 rounded-lg">
+                  <span className="opacity-90">대기중: </span>
+                  <span className="font-bold">
+                    {selectedSpaceReservations.filter(r => r.status === 'pending').length}건
                   </span>
                 </div>
               </div>
