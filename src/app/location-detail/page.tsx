@@ -91,6 +91,10 @@ function LocationDetailContent() {
     const calculateReservationCounts = async () => {
       if (!location?.spaces || location.spaces.length === 0) return;
       
+      // ✅ 로딩 시작 - 빈 객체로 초기화 (로딩 상태 표시용)
+      setSpaceReservationCounts({});
+      console.log('🔄 Loading space reservation counts...');
+      
       const counts: Record<string, number> = {};
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -876,7 +880,13 @@ function LocationDetailContent() {
                   <div className="space-y-4">
                     {location.spaces && location.spaces.length > 0 ? (
                       location.spaces.map((space) => {
-                        const isClosed = space.manually_closed || space.isReserved || (space.is_available === false);
+                        // ✅ 실시간 예약 수 기반으로 마감 여부 판단
+                        const isCountLoading = !(space.id in spaceReservationCounts);
+                        const currentReservations = spaceReservationCounts[space.id] ?? 0;
+                        const maxArtworks = space.max_artworks || 1;
+                        // 로딩 중일 때는 수동 마감만 체크, 로딩 완료 후에 예약 상태 기반 마감 판단
+                        const isFull = !isCountLoading && (currentReservations >= maxArtworks);
+                        const isClosed = space.manually_closed || isFull || (space.is_available === false);
                         const isEditing = editingSpaceId === space.id;
                         
                         return (
@@ -1084,12 +1094,21 @@ function LocationDetailContent() {
                                     <div>
                                       <div className="font-semibold text-gray-700 dark:text-gray-300">예약 현황</div>
                                       <div className="text-gray-600 dark:text-gray-400">
-                                        <span className={`font-bold ${(spaceReservationCounts[space.id] ?? space.current_reservations ?? 0) >= (space.max_artworks || 1) ? 'text-red-500' : 'text-[#D2B48C]'}`}>
-                                          {spaceReservationCounts[space.id] ?? space.current_reservations ?? 0}
-                                        </span>
-                                        <span className="text-gray-500 mx-1">/</span>
-                                        <span className="font-bold">{space.max_artworks || 1}</span>
-                                        <span className="text-gray-500 ml-1">명</span>
+                                        {isCountLoading ? (
+                                          <span className="flex items-center gap-1">
+                                            <div className="w-3 h-3 border-2 border-[#D2B48C] border-t-transparent rounded-full animate-spin"></div>
+                                            <span className="text-xs">로딩 중...</span>
+                                          </span>
+                                        ) : (
+                                          <>
+                                            <span className={`font-bold ${currentReservations >= maxArtworks ? 'text-red-500' : 'text-[#D2B48C]'}`}>
+                                              {currentReservations}
+                                            </span>
+                                            <span className="text-gray-500 mx-1">/</span>
+                                            <span className="font-bold">{maxArtworks}</span>
+                                            <span className="text-gray-500 ml-1">명</span>
+                                          </>
+                                        )}
                                       </div>
                                     </div>
                                   </div>

@@ -342,6 +342,60 @@ function ManagerDashboard({
   isLoadingLocations: boolean;
 }) {
   const { reservations } = useReservations(); // Get reservations from context
+  const [locationReservationCounts, setLocationReservationCounts] = useState<Record<string, { confirmed: number, total: number }>>({});
+
+  // 각 장소의 실시간 예약 수 계산
+  useEffect(() => {
+    const calculateLocationCounts = async () => {
+      if (!locations || locations.length === 0) return;
+      
+      const counts: Record<string, { confirmed: number, total: number }> = {};
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      for (const location of locations) {
+        if (!location.spaces || location.spaces.length === 0) {
+          counts[location.id] = { confirmed: 0, total: location.spaces?.length || 0 };
+          continue;
+        }
+        
+        let confirmedCount = 0;
+        const totalSpaces = location.spaces.length;
+        
+        // 각 공간의 예약 수 확인
+        for (const space of location.spaces) {
+          try {
+            const response = await fetch(`/api/reservations?space_id=${space.id}`);
+            if (response.ok) {
+              const data = await response.json();
+              // confirmed 상태이면서 유효한 예약 카운트
+              const spaceConfirmedCount = (data || []).filter((r: any) => {
+                if (r.status !== 'confirmed') return false;
+                const endDate = new Date(r.end_date);
+                endDate.setHours(23, 59, 59, 999);
+                return endDate >= today;
+              }).length;
+              
+              if (spaceConfirmedCount > 0) {
+                confirmedCount++;
+              }
+            }
+          } catch (error) {
+            console.error(`Failed to fetch reservations for space ${space.id}:`, error);
+          }
+        }
+        
+        counts[location.id] = { confirmed: confirmedCount, total: totalSpaces };
+        console.log(`📊 Location ${location.name}: ${confirmedCount}/${totalSpaces} spaces reserved`);
+      }
+      
+      setLocationReservationCounts(counts);
+    };
+    
+    if (locations && locations.length > 0) {
+      calculateLocationCounts();
+    }
+  }, [locations]);
 
   return (
     <>
@@ -398,9 +452,16 @@ function ManagerDashboard({
                             <div>
                                 <h3 className="font-bold text-lg text-[#3D2C1D] dark:text-gray-100">{location.name}</h3>
                                 <p className="text-sm text-[#8C7853] dark:text-gray-300 mt-1">{location.address}</p>
-                                <p className="text-sm font-bold text-[#3D2C1D] dark:text-gray-100 mt-2">
-                                    {location.reservedSlots}/{location.totalSlots} 공간 예약됨
-                                </p>
+                                <div className="text-sm font-bold text-[#3D2C1D] dark:text-gray-100 mt-2">
+                                    {locationReservationCounts[location.id] ? (
+                                      <span>{locationReservationCounts[location.id].confirmed}/{locationReservationCounts[location.id].total} 공간 예약됨</span>
+                                    ) : (
+                                      <span className="flex items-center gap-2">
+                                        <div className="w-3 h-3 border-2 border-[#D2B48C] border-t-transparent rounded-full animate-spin"></div>
+                                        로딩 중...
+                                      </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
