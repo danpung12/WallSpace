@@ -353,41 +353,45 @@ function ManagerDashboard({
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      for (const location of locations) {
+      // ⚡ 병렬 처리로 속도 개선
+      await Promise.all(locations.map(async (location) => {
         if (!location.spaces || location.spaces.length === 0) {
-          counts[location.id] = { confirmed: 0, total: location.spaces?.length || 0 };
-          continue;
+          counts[location.id] = { confirmed: 0, total: 0 };
+          return;
         }
         
-        let confirmedCount = 0;
-        const totalSpaces = location.spaces.length;
+        // ✅ 전체 예약 슬롯 수 계산 (각 공간의 max_artworks 합산)
+        const totalSlots = location.spaces.reduce((sum: number, space: any) => 
+          sum + (space.max_artworks || 1), 0
+        );
         
-        // 각 공간의 예약 수 확인
-        for (const space of location.spaces) {
+        // ⚡ 각 공간의 예약 수를 병렬로 조회
+        const spacePromises = location.spaces.map(async (space: any) => {
           try {
             const response = await fetch(`/api/reservations?space_id=${space.id}`);
             if (response.ok) {
               const data = await response.json();
-              // confirmed 상태이면서 유효한 예약 카운트
-              const spaceConfirmedCount = (data || []).filter((r: any) => {
+              // confirmed 상태이면서 유효한 예약만 카운트
+              return (data || []).filter((r: any) => {
                 if (r.status !== 'confirmed') return false;
                 const endDate = new Date(r.end_date);
                 endDate.setHours(23, 59, 59, 999);
                 return endDate >= today;
               }).length;
-              
-              if (spaceConfirmedCount > 0) {
-                confirmedCount++;
-              }
             }
+            return 0;
           } catch (error) {
             console.error(`Failed to fetch reservations for space ${space.id}:`, error);
+            return 0;
           }
-        }
+        });
         
-        counts[location.id] = { confirmed: confirmedCount, total: totalSpaces };
-        console.log(`📊 Location ${location.name}: ${confirmedCount}/${totalSpaces} spaces reserved`);
-      }
+        const spaceCounts = await Promise.all(spacePromises);
+        const confirmedCount = spaceCounts.reduce((sum, count) => sum + count, 0);
+        
+        counts[location.id] = { confirmed: confirmedCount, total: totalSlots };
+        console.log(`📊 Location ${location.name}: ${confirmedCount}/${totalSlots} reservations (${location.spaces.length} spaces)`);
+      }));
       
       setLocationReservationCounts(counts);
     };

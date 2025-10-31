@@ -95,11 +95,11 @@ function LocationDetailContent() {
       setSpaceReservationCounts({});
       console.log('🔄 Loading space reservation counts...');
       
-      const counts: Record<string, number> = {};
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      for (const space of location.spaces) {
+      // ⚡ 병렬 처리로 속도 개선
+      const spacePromises = location.spaces.map(async (space) => {
         try {
           const response = await fetch(`/api/reservations?space_id=${space.id}`);
           if (response.ok) {
@@ -114,14 +114,21 @@ function LocationDetailContent() {
               endDate.setHours(23, 59, 59, 999);
               return endDate >= today;
             }).length;
-            counts[space.id] = validCount;
             console.log(`📊 Space ${space.name}: ${validCount} confirmed reservations`);
+            return { spaceId: space.id, count: validCount };
           }
+          return { spaceId: space.id, count: 0 };
         } catch (error) {
           console.error(`Failed to fetch reservations for space ${space.id}:`, error);
-          counts[space.id] = 0;
+          return { spaceId: space.id, count: 0 };
         }
-      }
+      });
+      
+      const results = await Promise.all(spacePromises);
+      const counts: Record<string, number> = {};
+      results.forEach(({ spaceId, count }) => {
+        counts[spaceId] = count;
+      });
       
       console.log('📊 Real-time reservation counts (confirmed only):', counts);
       setSpaceReservationCounts(counts);
