@@ -27,32 +27,43 @@ const LogoutConfirmationModal: React.FC<LogoutConfirmationModalProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out ${
-        isOpen ? 'opacity-100' : 'opacity-0'
-      }`}
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className={`bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl w-full max-w-sm font-[Pretendard] text-[#3A2E27] dark:text-gray-100 transform transition-all duration-300 ease-in-out ${
-          isOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
-        }`}
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center transform transition-all"
         onClick={e => e.stopPropagation()}
       >
-        <h2 className="text-2xl font-bold mb-4 text-center">{title}</h2>
-        <p className="mb-8 text-base text-[#705D51] dark:text-gray-400 text-center">{message}</p>
-        <div className="flex justify-center space-x-4">
+        {/* 아이콘 (문의하기 제출완료와 동일한 스타일) */}
+        <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+        </div>
+        
+        {/* 제목 */}
+        <h2 className="text-2xl font-bold text-[#2C2C2C] dark:text-gray-100 mb-2">
+          {title}
+        </h2>
+        
+        {/* 메시지 */}
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          {message}
+        </p>
+        
+        {/* 버튼 */}
+        <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="w-full px-4 py-3 rounded-lg font-bold bg-[#EAE3D9] dark:bg-gray-700 text-[#3A2E27] dark:text-gray-100 hover:brightness-95 transition-all duration-300"
+            className="flex-1 px-6 py-3 rounded-xl bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold transition-all transform hover:scale-105"
           >
-            아니오
+            취소
           </button>
           <button
             onClick={onConfirm}
-            className="w-full px-4 py-3 rounded-lg font-bold text-white bg-[#D2B48C] dark:bg-[#B8996B] hover:brightness-95 transition-all duration-300"
+            className="flex-1 px-6 py-3 rounded-xl bg-[#D2B48C] hover:bg-[#C19A6B] text-white font-semibold transition-all transform hover:scale-105"
           >
-            예
+            로그아웃
           </button>
         </div>
       </div>

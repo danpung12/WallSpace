@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 // PATCH: Update space availability
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
     const supabase = await createClient();
@@ -15,7 +15,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const spaceId = params.id;
+    // Next.js 15+ params are async
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const spaceId = resolvedParams.id;
     const body = await request.json();
     const { manually_closed, max_artworks, width, height, price_per_day, image_url } = body;
 

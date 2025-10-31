@@ -78,6 +78,7 @@ function LocationDetailContent() {
   const [selectedReservationDetail, setSelectedReservationDetail] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [spaceReservationCounts, setSpaceReservationCounts] = useState<Record<string, number>>({});
+  const [showSpaceFullModal, setShowSpaceFullModal] = useState(false);
 
   useEffect(() => {
     if (locationId) {
@@ -196,18 +197,24 @@ function LocationDetailContent() {
     try {
       setLoadingReservations(true);
       setSelectedSpaceName(spaceName);
-      const response = await fetch(`/api/reservations?space_id=${spaceId}`);
+      
+      // 🚀 location_id로 한 번에 조회 후 특정 space만 필터링 (속도 개선 + 에러 방지)
+      const response = await fetch(`/api/reservations?location_id=${locationId}`);
       
       if (response.ok) {
-        const data = await response.json();
-        console.log('📦 Raw reservations data (total):', data?.length || 0);
-        console.log('📦 Full data:', data);
+        const allData = await response.json();
+        console.log('📦 Raw reservations data (all):', allData?.length || 0);
+        
+        // 이 space의 예약만 필터링
+        const spaceData = (allData || []).filter((r: any) => r.space_id === spaceId);
+        console.log('📦 Reservations for this space:', spaceData.length);
+        console.log('📦 Full data:', spaceData);
         
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
         // 필터링: 취소된 것 제외 + 예약 기간이 지난 것 제외 (pending도 표시)
-        const filteredReservations = (data || []).filter((r: any) => {
+        const filteredReservations = spaceData.filter((r: any) => {
           console.log('🔍 Checking reservation:', {
             id: r.id.substring(0, 8),
             status: r.status,
@@ -239,12 +246,16 @@ function LocationDetailContent() {
           return true;
         });
         
-        console.log('📊 Filtered reservations count:', filteredReservations.length);
-        console.log('📊 Filtered reservations:', filteredReservations.map(r => ({
-          id: r.id.substring(0, 8),
-          status: r.status,
-          artist: r.artist?.name
-        })));
+        console.log('📊 Filtered reservations:', {
+          total: spaceData.length,
+          filtered: filteredReservations.length,
+          cancelled: spaceData.filter((r: any) => r.status === 'cancelled').length,
+          expired: spaceData.filter((r: any) => {
+            const endDate = new Date(r.end_date);
+            endDate.setHours(23, 59, 59, 999);
+            return endDate < today;
+          }).length
+        });
         setSelectedSpaceReservations(filteredReservations);
         setShowReservationsModal(true);
       } else {
@@ -264,6 +275,21 @@ function LocationDetailContent() {
     try {
       // currentlyClosed가 true면 해제, false면 마감
       const newStatus = !currentlyClosed;
+      
+      // ✅ 마감 해제 시도 시 공간이 꽉 찼는지 확인
+      if (currentlyClosed && newStatus === false) {
+        // 해제하려고 할 때
+        const space = location?.spaces.find(s => s.id === spaceId);
+        const currentReservations = spaceReservationCounts[spaceId] ?? 0;
+        const maxArtworks = space?.max_artworks || 1;
+        
+        if (currentReservations >= maxArtworks) {
+          // 공간이 꽉 찬 상태면 안내창 표시
+          console.log('⚠️ Cannot unlock: Space is full', { currentReservations, maxArtworks });
+          setShowSpaceFullModal(true);
+          return;
+        }
+      }
       
       const response = await fetch(`/api/spaces/${spaceId}`, {
         method: 'PATCH',
@@ -285,7 +311,9 @@ function LocationDetailContent() {
         });
         alert(newStatus ? '공간을 마감했습니다.' : '마감을 해제했습니다.');
       } else {
-        throw new Error('Failed to update space status');
+        const errorData = await response.json();
+        console.error('Failed to update space:', errorData);
+        throw new Error(errorData.error || 'Failed to update space status');
       }
     } catch (error) {
       console.error('Failed to toggle space availability:', error);
@@ -1830,6 +1858,39 @@ function LocationDetailContent() {
                 닫기
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 공간 꽉 참 안내창 (문의하기 제출완료와 같은 디자인) */}
+      {showSpaceFullModal && (
+        <div
+          className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowSpaceFullModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-10 h-10 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-[#2C2C2C] dark:text-gray-100 mb-2">
+              마감 해제 불가
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              현재 예약이 꽉 찬 상태입니다.<br />
+              예약을 취소하거나 종료된 후에<br />
+              마감을 해제할 수 있습니다.
+            </p>
+            <button
+              onClick={() => setShowSpaceFullModal(false)}
+              className="w-full px-6 py-3 rounded-xl bg-[#D2B48C] hover:bg-[#C19A6B] text-white font-semibold transition-all transform hover:scale-105"
+            >
+              확인
+            </button>
           </div>
         </div>
       )}
