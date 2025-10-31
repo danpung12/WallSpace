@@ -93,14 +93,18 @@ function LocationDetailContent() {
       
       // ✅ 로딩 시작 - 빈 객체로 초기화 (로딩 상태 표시용)
       setSpaceReservationCounts({});
-      console.log('🔄 Loading space reservation counts...');
+      const startTime = performance.now();
+      console.log(`⏱️ [공간관리] Loading reservation counts for ${location.spaces.length} spaces...`);
       
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
       try {
         // 🚀 location_id로 한 번에 모든 예약 조회 (API 1번만!)
+        const fetchStart = performance.now();
         const response = await fetch(`/api/reservations?location_id=${locationId}`);
+        const fetchEnd = performance.now();
+        console.log(`⏱️ [공간관리] API fetch: ${(fetchEnd - fetchStart).toFixed(0)}ms`);
         if (!response.ok) {
           console.error('Failed to fetch reservations');
           // 실패 시 모든 공간을 0으로 초기화
@@ -138,6 +142,9 @@ function LocationDetailContent() {
         
         console.log('📊 Real-time reservation counts (confirmed only):', counts);
         setSpaceReservationCounts(counts);
+        
+        const endTime = performance.now();
+        console.log(`⏱️ [공간관리] ✅ Total time: ${(endTime - startTime).toFixed(0)}ms`);
         
       } catch (error) {
         console.error('Failed to fetch reservations:', error);

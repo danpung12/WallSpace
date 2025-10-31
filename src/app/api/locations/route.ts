@@ -15,17 +15,16 @@ async function processLocations(supabase: any, basicLocations: any[]) {
     return NextResponse.json([]);
   }
 
-  // 모든 관련 데이터를 한 번에 가져오기
+  // 모든 관련 데이터를 한 번에 가져오기 (예약 데이터는 제외 - 클라이언트에서 계산)
   const locationIds = basicLocations.map(loc => loc.id);
   
-  const [categoriesData, optionsData, imagesData, tagsData, snsData, spacesData, reservationsData] = await Promise.all([
+  const [categoriesData, optionsData, imagesData, tagsData, snsData, spacesData] = await Promise.all([
     supabase.from('categories').select('*'),
     supabase.from('location_options').select('*').in('location_id', locationIds),
     supabase.from('location_images').select('*').in('location_id', locationIds).order('sort_order'),
     supabase.from('location_tags').select('location_id, tag:tags(name)').in('location_id', locationIds),
     supabase.from('location_sns').select('*').in('location_id', locationIds),
     supabase.from('spaces').select('*').in('location_id', locationIds),
-    supabase.from('reservations').select('space_id, status').in('location_id', locationIds),
   ]);
 
   // 데이터를 location별로 그룹화
@@ -70,29 +69,11 @@ async function processLocations(supabase: any, basicLocations: any[]) {
     // SNS URL 배열 생성
     const snsUrls = location.sns?.map((s: any) => s.url) || [];
 
-    // spaces 데이터 변환
+    // spaces 데이터 변환 (예약 수는 클라이언트에서 실시간 계산)
     const spaces = location.spaces?.map((space: any) => {
       const maxArtworks = space.max_artworks || 1;
-      
-      // 이 space에 대한 현재 유효한 예약 수 계산 (confirmed 또는 pending 상태)
-      const activeReservations = reservationsData.data?.filter((r: any) => 
-        r.space_id === space.id && 
-        (r.status === 'confirmed' || r.status === 'pending')
-      ) || [];
-      const currentReservations = activeReservations.length;
-      
-      const isFullyBooked = currentReservations >= maxArtworks;
       const isManuallyClosed = space.manually_closed || false;
-      const isReserved = isFullyBooked || isManuallyClosed || (space.is_available === false);
-      
-      console.log(`Space ${space.name} (${space.id}):`, {
-        maxArtworks,
-        currentReservations,
-        isFullyBooked,
-        isManuallyClosed,
-        is_available: space.is_available,
-        isReserved
-      });
+      const isReserved = isManuallyClosed || (space.is_available === false);
       
       // images 배열이나 image_url 중 하나를 사용 (DB 스키마에 따라)
       const spaceImageUrl = space.image_url || 
@@ -103,13 +84,13 @@ async function processLocations(supabase: any, basicLocations: any[]) {
         id: space.id, // UUID 추가 (예약에 필수!)
         name: space.name,
         imageUrl: spaceImageUrl, // images 배열 또는 image_url 사용
-        isReserved, // 예약 마감, 수동 마감, 또는 비활성화
+        isReserved, // 수동 마감 또는 비활성화 (예약 마감은 클라이언트에서 계산)
         width: space.width || 0,
         height: space.height || 0,
         price: space.price_per_day || space.price || 0,
         price_per_day: space.price_per_day || space.price || 0,
         max_artworks: maxArtworks,
-        current_reservations: currentReservations,
+        current_reservations: 0, // 클라이언트에서 실시간 계산
         manually_closed: isManuallyClosed,
         is_available: space.is_available !== false,
       };

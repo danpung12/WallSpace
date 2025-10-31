@@ -349,6 +349,9 @@ function ManagerDashboard({
     const calculateLocationCounts = async () => {
       if (!locations || locations.length === 0) return;
       
+      const startTime = performance.now();
+      console.log(`⏱️ [Dashboard] Starting reservation count calculation for ${locations.length} locations...`);
+      
       const counts: Record<string, { confirmed: number, total: number }> = {};
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -367,7 +370,11 @@ function ManagerDashboard({
         
         try {
           // 🚀 location_id로 한 번에 모든 예약 조회 (공간이 10개여도 API 1번만!)
+          const fetchStart = performance.now();
           const response = await fetch(`/api/reservations?location_id=${location.id}`);
+          const fetchEnd = performance.now();
+          console.log(`⏱️ [Dashboard] Fetch for "${location.name}": ${(fetchEnd - fetchStart).toFixed(0)}ms`);
+          
           if (response.ok) {
             const allReservations = await response.json();
             
@@ -391,6 +398,8 @@ function ManagerDashboard({
       }));
       
       setLocationReservationCounts(counts);
+      const endTime = performance.now();
+      console.log(`⏱️ [Dashboard] ✅ Total time: ${(endTime - startTime).toFixed(0)}ms`);
     };
     
     if (locations && locations.length > 0) {

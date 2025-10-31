@@ -60,11 +60,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(reservation);
     }
 
-    // 예약 조회 쿼리 구성 (간단한 버전으로 먼저 시도)
+    // 예약 조회 쿼리 구성 (관련 데이터 JOIN으로 한 번에 조회)
     console.log('🔍 Fetching reservations...');
     let query = supabase
       .from('reservations')
-      .select('*');
+      .select(`
+        *,
+        location:locations(
+          *,
+          images:location_images(image_url)
+        ),
+        space:spaces(*),
+        artwork:artworks(*),
+        artist:profiles(id, name, nickname, email, phone, avatar_url, user_type)
+      `);
 
     // location_id로 조회할 때 (사장님이 자기 가게의 모든 예약 조회)
     if (locationId) {
@@ -137,71 +146,15 @@ export async function GET(request: NextRequest) {
       end_date: r.end_date
     })));
 
-    // 관련 데이터를 별도로 가져오기
+    // ⚡ JOIN으로 이미 모든 데이터를 가져왔으므로 추가 처리만 수행
     if (reservations && reservations.length > 0) {
-      console.log('🔍 Enriching reservations with related data...');
       for (const reservation of reservations) {
-        // Location 정보 가져오기 (이미지 포함)
-        if (reservation.location_id) {
-          const { data: location, error: locationError } = await supabase
-            .from('locations')
-            .select(`
-              *,
-              images:location_images(image_url)
-            `)
-            .eq('id', reservation.location_id)
-            .single();
-          
-          if (!locationError && location) {
-            // 이미지 URL 배열로 변환
-            if (location.images) {
-              (location as any).images = (location.images as any[]).map(img => img.image_url);
-            }
-            (reservation as any).location = location;
-          }
-        }
-        
-        // Space 정보 가져오기
-        if (reservation.space_id) {
-          const { data: space, error: spaceError } = await supabase
-            .from('spaces')
-            .select('*')
-            .eq('id', reservation.space_id)
-            .single();
-          
-          if (!spaceError && space) {
-            (reservation as any).space = space;
-          }
-        }
-        
-        // Artwork 정보 가져오기
-        if (reservation.artwork_id) {
-          const { data: artwork, error: artworkError } = await supabase
-            .from('artworks')
-            .select('*')
-            .eq('id', reservation.artwork_id)
-            .single();
-          
-          if (!artworkError && artwork) {
-            (reservation as any).artwork = artwork;
-          }
-        }
-        
-        // Profile 정보 가져오기 (전화번호, 이메일, 필명 포함)
-        if (reservation.artist_id) {
-          const { data: artist, error: artistError } = await supabase
-            .from('profiles')
-            .select('id, name, nickname, email, phone, avatar_url, user_type')
-            .eq('id', reservation.artist_id)
-            .single();
-          
-          if (!artistError && artist) {
-            console.log('👤 Artist profile:', artist);
-            (reservation as any).artist = artist;
-          }
+        // Location 이미지를 배열로 변환
+        if ((reservation as any).location?.images) {
+          (reservation as any).location.images = ((reservation as any).location.images as any[]).map(img => img.image_url);
         }
       }
-      console.log('✅ Reservations enriched');
+      console.log('✅ Reservations data processed');
     }
 
     return NextResponse.json(reservations);
