@@ -98,43 +98,59 @@ function LocationDetailContent() {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // ⚡ 병렬 처리로 속도 개선
-      const spacePromises = location.spaces.map(async (space) => {
-        try {
-          const response = await fetch(`/api/reservations?space_id=${space.id}`);
-          if (response.ok) {
-            const data = await response.json();
-            // confirmed 상태이면서 예약 기간이 유효한 것만 카운트
-            const validCount = (data || []).filter((r: any) => {
-              // pending은 카운트 안 함 (여러 개 가능)
-              if (r.status !== 'confirmed') return false;
-              
-              // 예약 기간 체크
-              const endDate = new Date(r.end_date);
-              endDate.setHours(23, 59, 59, 999);
-              return endDate >= today;
-            }).length;
-            console.log(`📊 Space ${space.name}: ${validCount} confirmed reservations`);
-            return { spaceId: space.id, count: validCount };
-          }
-          return { spaceId: space.id, count: 0 };
-        } catch (error) {
-          console.error(`Failed to fetch reservations for space ${space.id}:`, error);
-          return { spaceId: space.id, count: 0 };
+      try {
+        // 🚀 location_id로 한 번에 모든 예약 조회 (API 1번만!)
+        const response = await fetch(`/api/reservations?location_id=${locationId}`);
+        if (!response.ok) {
+          console.error('Failed to fetch reservations');
+          // 실패 시 모든 공간을 0으로 초기화
+          const counts: Record<string, number> = {};
+          location.spaces.forEach(space => {
+            counts[space.id] = 0;
+          });
+          setSpaceReservationCounts(counts);
+          return;
         }
-      });
-      
-      const results = await Promise.all(spacePromises);
-      const counts: Record<string, number> = {};
-      results.forEach(({ spaceId, count }) => {
-        counts[spaceId] = count;
-      });
-      
-      console.log('📊 Real-time reservation counts (confirmed only):', counts);
-      setSpaceReservationCounts(counts);
+        
+        const allReservations = await response.json();
+        console.log(`📦 Fetched ${allReservations.length} total reservations for location`);
+        
+        // 공간별로 예약 수 계산
+        const counts: Record<string, number> = {};
+        location.spaces.forEach((space) => {
+          // 이 공간의 confirmed & 유효한 예약만 필터링
+          const validCount = (allReservations || []).filter((r: any) => {
+            // 공간 ID 체크
+            if (r.space_id !== space.id) return false;
+            
+            // pending은 카운트 안 함 (여러 개 가능)
+            if (r.status !== 'confirmed') return false;
+            
+            // 예약 기간 체크
+            const endDate = new Date(r.end_date);
+            endDate.setHours(23, 59, 59, 999);
+            return endDate >= today;
+          }).length;
+          
+          counts[space.id] = validCount;
+          console.log(`📊 Space ${space.name}: ${validCount} confirmed reservations`);
+        });
+        
+        console.log('📊 Real-time reservation counts (confirmed only):', counts);
+        setSpaceReservationCounts(counts);
+        
+      } catch (error) {
+        console.error('Failed to fetch reservations:', error);
+        // 에러 시 모든 공간을 0으로 초기화
+        const counts: Record<string, number> = {};
+        location.spaces.forEach(space => {
+          counts[space.id] = 0;
+        });
+        setSpaceReservationCounts(counts);
+      }
     };
     
-    if (location && !isLoading) {
+    if (location && !isLoading && locationId) {
       calculateReservationCounts();
     }
   }, [locationId, isLoading]); // locationId가 변경되거나 로딩이 끝날 때 실행

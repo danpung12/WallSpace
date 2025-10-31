@@ -66,8 +66,29 @@ export async function GET(request: NextRequest) {
       .from('reservations')
       .select('*');
 
-    // space_id로 조회할 때 (사장님이 자기 공간의 예약 조회)
-    if (spaceId) {
+    // location_id로 조회할 때 (사장님이 자기 가게의 모든 예약 조회)
+    if (locationId) {
+      console.log('🏪 Fetching by location_id (manager view):', locationId);
+      // 사장님 권한 확인
+      const { data: location } = await supabase
+        .from('locations')
+        .select('manager_id')
+        .eq('id', locationId)
+        .single();
+      
+      if (location && location.manager_id === user.id) {
+        console.log('✅ Manager authorized for this location');
+        query = query.eq('location_id', locationId);
+      } else {
+        console.log('❌ Manager not authorized for this location');
+        return NextResponse.json(
+          { error: 'Unauthorized to view this location reservations' },
+          { status: 403 }
+        );
+      }
+    }
+    // space_id로 조회할 때 (사장님이 특정 공간의 예약 조회)
+    else if (spaceId) {
       console.log('🏪 Fetching by space_id (manager view):', spaceId);
       // 사장님 권한 확인: 해당 공간이 자신의 location에 속하는지 체크
       const { data: space } = await supabase
@@ -96,9 +117,6 @@ export async function GET(request: NextRequest) {
     // 필터 적용
     if (status) {
       query = query.eq('status', status);
-    }
-    if (locationId) {
-      query = query.eq('location_id', locationId);
     }
 
     const { data: reservations, error: reservationsError } = await query;
