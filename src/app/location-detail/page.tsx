@@ -71,6 +71,10 @@ function LocationDetailContent() {
   const [editingSpaceId, setEditingSpaceId] = useState<string | null>(null);
   const [spaceEditValues, setSpaceEditValues] = useState<any>({});
   const [uploadingSpaceImage, setUploadingSpaceImage] = useState<string | null>(null);
+  const [showReservationsModal, setShowReservationsModal] = useState(false);
+  const [selectedSpaceReservations, setSelectedSpaceReservations] = useState<any[]>([]);
+  const [selectedSpaceName, setSelectedSpaceName] = useState<string>('');
+  const [loadingReservations, setLoadingReservations] = useState(false);
 
   useEffect(() => {
     if (locationId) {
@@ -106,6 +110,28 @@ function LocationDetailContent() {
       console.error('Failed to fetch location:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleViewSpaceReservations = async (spaceId: string, spaceName: string) => {
+    try {
+      setLoadingReservations(true);
+      setSelectedSpaceName(spaceName);
+      const response = await fetch(`/api/reservations?space_id=${spaceId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedSpaceReservations(data || []);
+        setShowReservationsModal(true);
+      } else {
+        console.error('Failed to fetch reservations');
+        alert('예약 정보를 불러오는데 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Error fetching reservations:', error);
+      alert('예약 정보를 불러오는데 실패했습니다.');
+    } finally {
+      setLoadingReservations(false);
     }
   };
 
@@ -978,30 +1004,42 @@ function LocationDetailContent() {
                                   </div>
                                 </div>
 
-                                <button
-                                  onClick={() => handleToggleSpaceAvailability(space.id, space.manually_closed || false)}
-                                  className={`w-full sm:w-auto px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-sm ${
-                                    space.manually_closed
-                                      ? 'bg-green-500 hover:bg-green-600 text-white'
-                                      : 'bg-red-500 hover:bg-red-600 text-white'
-                                  }`}
-                                >
-                                  {space.manually_closed ? (
-                                    <>
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-                                      </svg>
-                                      마감 해제
-                                    </>
-                                  ) : (
-                                    <>
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                      </svg>
-                                      마감하기
-                                    </>
-                                  )}
-                                </button>
+                                <div className="flex gap-2 flex-wrap">
+                                  <button
+                                    onClick={() => handleViewSpaceReservations(space.id, space.name)}
+                                    disabled={loadingReservations}
+                                    className="flex-1 sm:flex-initial px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-sm bg-[#D2B48C] hover:bg-[#C19A6B] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                    </svg>
+                                    {loadingReservations ? '로딩 중...' : '예약현황'}
+                                  </button>
+                                  <button
+                                    onClick={() => handleToggleSpaceAvailability(space.id, space.manually_closed || false)}
+                                    className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-sm ${
+                                      space.manually_closed
+                                        ? 'bg-green-500 hover:bg-green-600 text-white'
+                                        : 'bg-red-500 hover:bg-red-600 text-white'
+                                    }`}
+                                  >
+                                    {space.manually_closed ? (
+                                      <>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                                        </svg>
+                                        마감 해제
+                                      </>
+                                    ) : (
+                                      <>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
+                                        마감하기
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
                               </>
                             )}
                               </div>
@@ -1341,6 +1379,187 @@ function LocationDetailContent() {
         </div>
       </div>
     </div>
+
+      {/* 예약현황 모달 */}
+      {showReservationsModal && (
+        <div
+          className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowReservationsModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-3xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-2xl transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 헤더 */}
+            <div className="bg-gradient-to-r from-[#D2B48C] to-[#C19A6B] p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold mb-1">예약 현황</h3>
+                  <p className="text-white/90 text-sm">{selectedSpaceName}</p>
+                </div>
+                <button
+                  onClick={() => setShowReservationsModal(false)}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              {/* 예약 요약 */}
+              <div className="mt-4 flex gap-4 text-sm">
+                <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
+                  <span className="opacity-90">전체 예약: </span>
+                  <span className="font-bold">{selectedSpaceReservations.length}건</span>
+                </div>
+                <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
+                  <span className="opacity-90">진행 중: </span>
+                  <span className="font-bold">
+                    {selectedSpaceReservations.filter(r => r.status === 'confirmed' || r.status === 'pending').length}건
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 컨텐츠 */}
+            <div className="p-6 overflow-y-auto max-h-[calc(85vh-180px)]" style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#D2B48C #F5F5F5'
+            }}>
+              <style jsx>{`
+                div::-webkit-scrollbar {
+                  width: 8px;
+                }
+                div::-webkit-scrollbar-track {
+                  background: #F5F5F5;
+                  border-radius: 4px;
+                }
+                div::-webkit-scrollbar-thumb {
+                  background-color: #D2B48C;
+                  border-radius: 4px;
+                }
+                div::-webkit-scrollbar-thumb:hover {
+                  background-color: #C19A6B;
+                }
+              `}</style>
+
+              {selectedSpaceReservations.length === 0 ? (
+                <div className="text-center py-12">
+                  <svg className="w-20 h-20 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">예약이 없습니다</p>
+                  <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">이 공간에 대한 예약이 아직 없습니다.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {selectedSpaceReservations.map((reservation) => {
+                    const statusStyles = {
+                      confirmed: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300', label: '확정' },
+                      pending: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-300', label: '대기중' },
+                      completed: { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-600 dark:text-gray-400', label: '종료' },
+                      cancelled: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300', label: '취소' },
+                    };
+                    const status = statusStyles[reservation.status as keyof typeof statusStyles] || statusStyles.pending;
+
+                    return (
+                      <div
+                        key={reservation.id}
+                        className="border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:shadow-lg transition-all bg-white dark:bg-gray-800"
+                      >
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          {/* 작품 이미지 */}
+                          <div
+                            className="w-full sm:w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg bg-cover bg-center flex-shrink-0"
+                            style={{
+                              backgroundImage: `url("${reservation.artwork?.image_url || 'https://via.placeholder.com/200'}")`
+                            }}
+                          />
+
+                          {/* 예약 정보 */}
+                          <div className="flex-1 space-y-3">
+                            {/* 상태 & 예약 ID */}
+                            <div className="flex items-center justify-between">
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${status.bg} ${status.text}`}>
+                                {status.label}
+                              </span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                예약 ID: {reservation.id.substring(0, 8).toUpperCase()}
+                              </span>
+                            </div>
+
+                            {/* 작가 정보 */}
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="w-10 h-10 rounded-full bg-gradient-to-br from-[#D2B48C] to-[#C19A6B] flex items-center justify-center text-white font-bold flex-shrink-0"
+                                style={reservation.artist?.avatar_url ? {
+                                  backgroundImage: `url("${reservation.artist.avatar_url}")`,
+                                  backgroundSize: 'cover',
+                                  backgroundPosition: 'center'
+                                } : {}}
+                              >
+                                {!reservation.artist?.avatar_url && (reservation.artist?.nickname || reservation.artist?.name || 'U').substring(0, 1).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="font-bold text-gray-900 dark:text-gray-100">
+                                  {reservation.artist?.nickname || reservation.artist?.name || '작가 정보 없음'}
+                                </p>
+                                {reservation.artist?.phone && (
+                                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    📞 {reservation.artist.phone}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 작품 정보 */}
+                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                              <p className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                                {reservation.artwork?.title || '작품 정보 없음'}
+                              </p>
+                              {reservation.artwork?.dimensions && (
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  📏 크기: {reservation.artwork.dimensions}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* 예약 기간 & 가격 */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                              <div className="flex items-center gap-2">
+                                <svg className="w-5 h-5 text-[#D2B48C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <div>
+                                  <p className="text-gray-500 dark:text-gray-400 text-xs">예약 기간</p>
+                                  <p className="font-medium text-gray-900 dark:text-gray-100">
+                                    {new Date(reservation.start_date).toLocaleDateString('ko-KR')} ~ {new Date(reservation.end_date).toLocaleDateString('ko-KR')}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <svg className="w-5 h-5 text-[#D2B48C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div>
+                                  <p className="text-gray-500 dark:text-gray-400 text-xs">총 금액</p>
+                                  <p className="font-bold text-[#D2B48C]">
+                                    {(reservation.total_price || 0).toLocaleString()}원
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 삭제 확인 모달 */}
       {showDeleteConfirm && (

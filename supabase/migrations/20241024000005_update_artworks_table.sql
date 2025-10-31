@@ -4,6 +4,12 @@ ADD COLUMN IF NOT EXISTS description TEXT;
 
 -- Update RLS policies for artworks to allow insert
 DROP POLICY IF EXISTS "Artists can manage own artworks" ON artworks;
+DROP POLICY IF EXISTS "Anyone can view artworks" ON artworks;
+
+-- Allow anyone (including unauthenticated users) to view artworks
+CREATE POLICY "Anyone can view artworks"
+ON artworks FOR SELECT
+USING (true);
 
 -- Allow artists to insert their own artworks
 CREATE POLICY "Artists can insert own artworks"
@@ -26,6 +32,9 @@ USING (auth.uid() = artist_id);
 CREATE POLICY "Artists can delete own artworks"
 ON artworks FOR DELETE
 USING (auth.uid() = artist_id);
+
+
+
 
 
 

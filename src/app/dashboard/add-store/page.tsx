@@ -34,9 +34,11 @@ function AddStoreContent() {
     // mode가 'edit'이면 screen-step1부터 시작, 나머지는 screen-start
     const initialScreen = mode === 'edit' ? 'screen-step1' : 'screen-start';
     const initialProgress = mode === 'edit' ? 25 : 0;
+    const initialMaxReached = mode === 'edit' ? 'screen-step4' : 'screen-start'; // edit 모드면 모든 단계 접근 가능
     
     const [activeScreen, setActiveScreen] = useState(initialScreen);
     const [progress, setProgress] = useState(initialProgress);
+    const [maxScreenReached, setMaxScreenReached] = useState(initialMaxReached); // 도달한 최대 단계 추적
   const [formData, setFormData] = useState({
     storeName: '',
         storeCategory: 'cafe',
@@ -102,9 +104,22 @@ function AddStoreContent() {
         maxArtworks: '',
     });
 
+    // 화면 순서 정의
+    const screenOrder = ['screen-start', 'screen-step1', 'screen-step2', 'screen-step3', 'screen-step4', 'screen-confirm'];
+
     const showScreen = (screenId: string, progressValue: number) => {
+        // 현재 도달한 최대 단계보다 앞으로 가려는 시도 방지
+        const targetIndex = screenOrder.indexOf(screenId);
+        const maxReachedIndex = screenOrder.indexOf(maxScreenReached);
+        
+        // 이미 도달한 단계까지만 이동 가능 (뒤로 가기나 이미 완료한 단계로만 이동)
+        if (targetIndex <= maxReachedIndex) {
         setActiveScreen(screenId);
         setProgress(progressValue);
+        } else {
+            // 아직 도달하지 않은 다음 단계로 가려는 시도는 무시
+            console.log('아직 이전 단계를 완료하지 않았습니다.');
+        }
     };
 
     // SNS URL에서 아이콘 추출
@@ -760,6 +775,7 @@ function AddStoreContent() {
         setErrors(newErrors);
         
         if (isStep1Valid()) {
+            setMaxScreenReached('screen-step2'); // 다음 단계 잠금 해제
             showScreen('screen-step2', 50);
         }
     };
@@ -775,6 +791,7 @@ function AddStoreContent() {
         setErrors(newErrors);
         
         if (isStep2Valid()) {
+            setMaxScreenReached('screen-step3'); // 다음 단계 잠금 해제
             showScreen('screen-step3', 75);
         }
     };
@@ -790,6 +807,7 @@ function AddStoreContent() {
         setErrors(newErrors);
         
         if (isStep3Valid()) {
+            setMaxScreenReached('screen-step4'); // 다음 단계 잠금 해제
             showScreen('screen-step4', 100);
         }
     };
@@ -805,6 +823,7 @@ function AddStoreContent() {
         setErrors(newErrors);
         
         if (isStep4Valid()) {
+            setMaxScreenReached('screen-confirm'); // 다음 단계 잠금 해제
             showScreen('screen-confirm', 100);
         }
     };
@@ -862,7 +881,7 @@ function AddStoreContent() {
                     height: 100vh;
                     max-height: 850px;
                     background-color: var(--surface-color);
-                    border-radius: 20px;
+                    border-radius: 0;
                     box-shadow: 0 4px 30px rgba(0,0,0,0.1);
                     overflow: hidden;
                     display: flex;
@@ -920,6 +939,7 @@ function AddStoreContent() {
                     font-size: 1.8rem;
                     font-weight: 700;
                     line-height: 1.4;
+                    margin-top: 32px;
                     margin-bottom: 24px;
                     color: var(--text-color);
                 }
@@ -927,20 +947,21 @@ function AddStoreContent() {
                 .header {
                     display: flex;
                     align-items: center;
-                    margin-bottom: 20px;
+                    margin-bottom: 0;
                     margin-left: -20px;
                     margin-right: -20px;
-                    margin-top: -20px;
+                    margin-top: -40px;
                     padding: 20px;
-                    padding-bottom: 16px;
+                    padding-top: 40px;
+                    padding-bottom: 0;
                     font-weight: 700;
                     font-size: 1.1rem;
+                    background-color: #FFFFFF;
+                    position: sticky;
+                    top: -40px;
+                    z-index: 20;
                     color: var(--text-color);
                     flex-shrink: 0;
-                    background-color: var(--surface-color);
-                    position: sticky;
-                    top: -20px;
-                    z-index: 20;
                 }
                 .header .back-btn {
                     background: none;
@@ -964,22 +985,35 @@ function AddStoreContent() {
                 
                 .progress-bar {
                     width: calc(100% + 40px);
-                    height: 8px;
-                    background-color: var(--border-color);
+                    height: 26px;
                     border-radius: 0;
-                    margin-bottom: 24px;
+                    margin-bottom: 20px;
                     margin-left: -20px;
                     margin-right: -20px;
-                    overflow: hidden;
+                    margin-top: 0;
                     position: sticky;
-                    top: 64px;
-                    z-index: 19;
+                    top: 52px;
+                    z-index: 20;
+                    background: linear-gradient(to bottom, #FFFFFF 0%, #FFFFFF 20px, transparent 20px, transparent 100%);
+                }
+                .progress-bar::before {
+                    content: '';
+                    position: absolute;
+                    top: 12px;
+                    left: 0;
+                    right: 0;
+                    height: 6px;
+                    background-color: var(--border-color);
                 }
                 .progress-bar .progress {
                     width: ${progress}%;
-                    height: 100%;
+                    height: 6px;
                     background-color: var(--accent-color);
                     transition: width 0.3s ease;
+                    position: absolute;
+                    top: 12px;
+                    left: 0;
+                    z-index: 1;
                 }
 
                 .form-group { margin-bottom: 20px; }
@@ -1028,7 +1062,7 @@ function AddStoreContent() {
                     gap: 10px;
                     padding: 20px;
                     background: var(--surface-color);
-                    border-top: 1px solid var(--border-color);
+                    border-top: none;
                     position: absolute;
                     bottom: 0;
                     left: 0;
@@ -1705,52 +1739,52 @@ function AddStoreContent() {
                     <div className="pc-sidebar">
                         <h1>{mode === 'edit' ? '가게 수정' : '가게 등록'}</h1>
                         <div
-                            className={`pc-step ${activeScreen.includes('step1') ? 'active' : ''} ${progress >= 50 ? 'completed' : ''}`}
+                            className={`pc-step ${activeScreen.includes('step1') ? 'active' : ''} ${screenOrder.indexOf(maxScreenReached) > screenOrder.indexOf('screen-step1') ? 'completed' : ''}`}
                             onClick={() => showScreen('screen-step1', 25)}
+                            style={{ 
+                                cursor: screenOrder.indexOf(maxScreenReached) >= screenOrder.indexOf('screen-step1') ? 'pointer' : 'not-allowed', 
+                                opacity: screenOrder.indexOf(maxScreenReached) >= screenOrder.indexOf('screen-step1') ? 1 : 0.4 
+                            }}
                         >
                             1. 필수 정보
                         </div>
                         <div
-                            className={`pc-step ${activeScreen.includes('step2') ? 'active' : ''} ${progress >= 75 ? 'completed' : ''} ${progress < 50 ? 'disabled' : ''}`}
-                            onClick={() => {
-                                if (progress >= 25) {
-                                    showScreen('screen-step2', 50);
-                                }
+                            className={`pc-step ${activeScreen.includes('step2') ? 'active' : ''} ${screenOrder.indexOf(maxScreenReached) > screenOrder.indexOf('screen-step2') ? 'completed' : ''}`}
+                            onClick={() => showScreen('screen-step2', 50)}
+                            style={{ 
+                                cursor: screenOrder.indexOf(maxScreenReached) >= screenOrder.indexOf('screen-step2') ? 'pointer' : 'not-allowed', 
+                                opacity: screenOrder.indexOf(maxScreenReached) >= screenOrder.indexOf('screen-step2') ? 1 : 0.4 
                             }}
-                            style={{ cursor: progress < 25 ? 'not-allowed' : 'pointer', opacity: progress < 25 ? 0.5 : 1 }}
                         >
                             2. 상세 정보
                         </div>
                         <div
-                            className={`pc-step ${activeScreen.includes('step3') ? 'active' : ''} ${progress >= 100 ? 'completed' : ''} ${progress < 75 ? 'disabled' : ''}`}
-                            onClick={() => {
-                                if (progress >= 50) {
-                                    showScreen('screen-step3', 75);
-                                }
+                            className={`pc-step ${activeScreen.includes('step3') ? 'active' : ''} ${screenOrder.indexOf(maxScreenReached) > screenOrder.indexOf('screen-step3') ? 'completed' : ''}`}
+                            onClick={() => showScreen('screen-step3', 75)}
+                            style={{ 
+                                cursor: screenOrder.indexOf(maxScreenReached) >= screenOrder.indexOf('screen-step3') ? 'pointer' : 'not-allowed', 
+                                opacity: screenOrder.indexOf(maxScreenReached) >= screenOrder.indexOf('screen-step3') ? 1 : 0.4 
                             }}
-                            style={{ cursor: progress < 50 ? 'not-allowed' : 'pointer', opacity: progress < 50 ? 0.5 : 1 }}
                         >
                             3. 가게 소개
                         </div>
                         <div
-                            className={`pc-step ${activeScreen.includes('step4') ? 'active' : ''} ${activeScreen === 'screen-confirm' ? 'completed' : ''} ${progress < 100 ? 'disabled' : ''}`}
-                            onClick={() => {
-                                if (progress >= 75) {
-                                    showScreen('screen-step4', 100);
-                                }
+                            className={`pc-step ${activeScreen.includes('step4') ? 'active' : ''} ${screenOrder.indexOf(maxScreenReached) > screenOrder.indexOf('screen-step4') ? 'completed' : ''}`}
+                            onClick={() => showScreen('screen-step4', 100)}
+                            style={{ 
+                                cursor: screenOrder.indexOf(maxScreenReached) >= screenOrder.indexOf('screen-step4') ? 'pointer' : 'not-allowed', 
+                                opacity: screenOrder.indexOf(maxScreenReached) >= screenOrder.indexOf('screen-step4') ? 1 : 0.4 
                             }}
-                            style={{ cursor: progress < 75 ? 'not-allowed' : 'pointer', opacity: progress < 75 ? 0.5 : 1 }}
                         >
                             4. 공간 등록
                         </div>
                          <div
-                            className={`pc-step ${activeScreen.includes('confirm') ? 'active' : ''} ${progress < 100 ? 'disabled' : ''}`}
-                            onClick={() => {
-                                if (progress >= 100 && isStep4Valid()) {
-                                    showScreen('screen-confirm', 100);
-                                }
+                            className={`pc-step ${activeScreen.includes('confirm') ? 'active' : ''}`}
+                            onClick={() => showScreen('screen-confirm', 100)}
+                            style={{ 
+                                cursor: screenOrder.indexOf(maxScreenReached) >= screenOrder.indexOf('screen-confirm') ? 'pointer' : 'not-allowed', 
+                                opacity: screenOrder.indexOf(maxScreenReached) >= screenOrder.indexOf('screen-confirm') ? 1 : 0.4 
                             }}
-                            style={{ cursor: progress < 100 ? 'not-allowed' : 'pointer', opacity: progress < 100 ? 0.5 : 1 }}
                         >
                             최종 확인
                         </div>
@@ -1763,7 +1797,10 @@ function AddStoreContent() {
                                 <p>몇 가지 정보만 입력하면<br/>사장님의 가게를 더 많은 고객에게<br/>알릴 수 있습니다!</p>
                             </div>
                             <div className="btn-container">
-                                <button className="btn btn-primary" onClick={() => showScreen('screen-step1', 25)}>{mode === 'edit' ? '정보 수정 시작하기' : '가게 등록 시작하기'}</button>
+                                <button className="btn btn-primary" onClick={() => {
+                                    setMaxScreenReached('screen-step1'); // 첫 단계 잠금 해제
+                                    showScreen('screen-step1', 25);
+                                }}>{mode === 'edit' ? '정보 수정 시작하기' : '가게 등록 시작하기'}</button>
                             </div>
                         </div>
 
@@ -1895,9 +1932,14 @@ function AddStoreContent() {
                                 <div className="progress-bar"><div className="progress"></div></div>
                                 <h2>가게를 멋지게<br/>소개해주세요.</h2>
                                 <div className="form-group">
-                                    <div style={{display: 'flex', alignItems: 'center', marginBottom: '8px'}}>
-                                        <label style={{marginBottom: 0}}>가게 사진 (최대 4장)</label>
-                                        {errors.imageFiles && <span style={{color: '#E74C3C', fontSize: '0.85rem', marginLeft: '8px'}}>{errors.imageFiles}</span>}
+                                    <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px'}}>
+                                        <label style={{marginBottom: 0}}>
+                                            가게 사진 
+                                            <span style={{fontSize: '0.85rem', color: 'var(--subtle-text-color)', marginLeft: '8px'}}>
+                                                ({formData.imageFiles.length}/4)
+                                            </span>
+                                        </label>
+                                        {errors.imageFiles && <span style={{color: '#E74C3C', fontSize: '0.85rem'}}>{errors.imageFiles}</span>}
                                     </div>
                                     <input
                                         type="file"
@@ -1910,19 +1952,190 @@ function AddStoreContent() {
                                         accept="image/*"
                                         style={{ display: 'none' }}
                                     />
-                                    <div className="photo-uploader">
+                                    
+                                    {/* 메인 업로드 영역 */}
+                                    {formData.imageFiles.length === 0 ? (
+                                        <div 
+                                            className="photo-upload-main"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            style={{
+                                                border: '2px dashed var(--border-color)',
+                                                borderRadius: '16px',
+                                                padding: '48px 24px',
+                                                textAlign: 'center',
+                                                cursor: 'pointer',
+                                                backgroundColor: '#FAFAF8',
+                                                transition: 'all 0.3s ease',
+                                                marginBottom: '16px'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.borderColor = 'var(--accent-color)';
+                                                e.currentTarget.style.backgroundColor = '#F9F7F5';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.borderColor = 'var(--border-color)';
+                                                e.currentTarget.style.backgroundColor = '#FAFAF8';
+                                            }}
+                                        >
+                                            <div style={{fontSize: '3rem', marginBottom: '16px'}}>📸</div>
+                                            <h3 style={{fontSize: '1.1rem', fontWeight: '600', color: 'var(--text-color)', marginBottom: '8px'}}>
+                                                가게 사진을 추가해주세요
+                                            </h3>
+                                            <p style={{fontSize: '0.9rem', color: 'var(--subtle-text-color)', marginBottom: '16px'}}>
+                                                최대 4장까지 등록 가능합니다
+                                            </p>
+                                            <div style={{
+                                                display: 'inline-block',
+                                                padding: '10px 24px',
+                                                backgroundColor: 'var(--accent-color)',
+                                                color: 'white',
+                                                borderRadius: '8px',
+                                                fontSize: '0.95rem',
+                                                fontWeight: '600'
+                                            }}>
+                                                사진 선택하기
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {/* 업로드된 사진 그리드 */}
+                                            <div style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: 'repeat(2, 1fr)',
+                                                gap: '12px',
+                                                marginBottom: '16px'
+                                            }}>
                                         {formData.imagePreviews.map((src, index) => (
-                                            <div key={index} className="photo-preview">
-                                                <img src={src} alt={`preview ${index}`} />
-                                                <button onClick={() => removeImage(index)} className="remove-photo-btn">×</button>
+                                                    <div 
+                                                        key={index}
+                                                        style={{
+                                                            position: 'relative',
+                                                            aspectRatio: '4/3',
+                                                            borderRadius: '12px',
+                                                            overflow: 'hidden',
+                                                            border: index === 0 ? '2px solid var(--accent-color)' : '1px solid var(--border-color)',
+                                                            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                                            transition: 'all 0.2s ease'
+                                                        }}
+                                                        onMouseEnter={(e) => {
+                                                            e.currentTarget.style.transform = 'scale(1.02)';
+                                                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.currentTarget.style.transform = 'scale(1)';
+                                                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+                                                        }}
+                                                    >
+                                                        <img 
+                                                            src={src} 
+                                                            alt={`preview ${index + 1}`}
+                                                            style={{
+                                                                width: '100%',
+                                                                height: '100%',
+                                                                objectFit: 'cover'
+                                                            }}
+                                                        />
+                                                        {index === 0 && (
+                                                            <div style={{
+                                                                position: 'absolute',
+                                                                top: '8px',
+                                                                left: '8px',
+                                                                backgroundColor: 'var(--accent-color)',
+                                                                color: 'white',
+                                                                padding: '4px 10px',
+                                                                borderRadius: '6px',
+                                                                fontSize: '0.75rem',
+                                                                fontWeight: '600'
+                                                            }}>
+                                                                대표
+                                                            </div>
+                                                        )}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                removeImage(index);
+                                                            }}
+                                                            style={{
+                                                                position: 'absolute',
+                                                                top: '8px',
+                                                                right: '8px',
+                                                                width: '28px',
+                                                                height: '28px',
+                                                                borderRadius: '50%',
+                                                                backgroundColor: 'rgba(0,0,0,0.6)',
+                                                                color: 'white',
+                                                                border: 'none',
+                                                                cursor: 'pointer',
+                                                                fontSize: '1.2rem',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                e.currentTarget.style.backgroundColor = 'rgba(231,76,60,0.9)';
+                                                                e.currentTarget.style.transform = 'scale(1.1)';
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.6)';
+                                                                e.currentTarget.style.transform = 'scale(1)';
+                                                            }}
+                                                        >
+                                                            ×
+                                                        </button>
                                             </div>
                                         ))}
+                                            </div>
+                                            
+                                            {/* 추가 버튼 */}
                                         {formData.imageFiles.length < 4 && (
-                                            <div className="photo-item" onClick={() => fileInputRef.current?.click()}>
-                                                {formData.imageFiles.length === 0 ? <>📸<br/>대표 사진</> : '+'}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    style={{
+                                                        width: '100%',
+                                                        padding: '16px',
+                                                        border: '2px dashed var(--border-color)',
+                                                        borderRadius: '12px',
+                                                        backgroundColor: 'transparent',
+                                                        color: 'var(--text-color)',
+                                                        fontSize: '0.95rem',
+                                                        fontWeight: '600',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s ease',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        gap: '8px'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.borderColor = 'var(--accent-color)';
+                                                        e.currentTarget.style.backgroundColor = '#F9F7F5';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.borderColor = 'var(--border-color)';
+                                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                                    }}
+                                                >
+                                                    <span style={{fontSize: '1.5rem'}}>+</span>
+                                                    <span>사진 추가하기 ({4 - formData.imageFiles.length}장 더 가능)</span>
+                                                </button>
+                                            )}
+                                            
+                                            {/* 도움말 */}
+                                            <div style={{
+                                                marginTop: '12px',
+                                                padding: '12px',
+                                                backgroundColor: '#F9F7F5',
+                                                borderRadius: '8px',
+                                                fontSize: '0.85rem',
+                                                color: 'var(--subtle-text-color)',
+                                                lineHeight: '1.5'
+                                            }}>
+                                                <span style={{fontWeight: '600', color: 'var(--text-color)'}}>💡 Tip:</span> 첫 번째 사진이 대표 사진으로 설정됩니다
                             </div>
+                                        </>
                         )}
-                                    </div>
                                 </div>
                                 <div className="form-group"><label htmlFor="description">가게 설명</label><textarea id="description" name="description" value={formData.description} onChange={handleChange} placeholder="우리 가게만의 특징과 분위기를 자유롭게 적어주세요."></textarea></div>
                                 <div className="form-group">
@@ -1976,9 +2189,9 @@ function AddStoreContent() {
                                   <span className="title">가게 등록 (4/4)</span>
                                 </div>
                                 <div className="progress-bar"><div className="progress"></div></div>
-                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px'}}>
+                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px', marginTop: '32px'}}>
                                     <div>
-                                        <h2 style={{margin: 0}}>전시 공간을<br/>등록해주세요.</h2>
+                                        <h2 style={{margin: 0, marginBottom: '24px'}}>전시 공간을<br/>등록해주세요.</h2>
                                         <p style={{ color: 'var(--subtle-text-color)', marginTop: '8px', fontSize: '0.9rem' }}>* 공간의 사진, 이름, 크기를 입력해주세요.</p>
                                     </div>
                                     {errors.spaces && <span style={{color: '#E74C3C', fontSize: '0.85rem', marginTop: '4px'}}>{errors.spaces}</span>}

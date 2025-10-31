@@ -490,6 +490,46 @@ export interface Database {
           updated_at?: string
         }
       }
+      inquiries: {
+        Row: {
+          id: string
+          user_id: string
+          subject: 'payment_error' | 'reservation_error' | 'general' | 'other'
+          content: string
+          status: 'pending' | 'in_progress' | 'resolved' | 'closed'
+          admin_reply: string | null
+          created_at: string
+          updated_at: string
+          resolved_at: string | null
+          user?: {
+            email: string
+            name: string | null
+            nickname: string | null
+          }
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          subject: 'payment_error' | 'reservation_error' | 'general' | 'other'
+          content: string
+          status?: 'pending' | 'in_progress' | 'resolved' | 'closed'
+          admin_reply?: string | null
+          created_at?: string
+          updated_at?: string
+          resolved_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          subject?: 'payment_error' | 'reservation_error' | 'general' | 'other'
+          content?: string
+          status?: 'pending' | 'in_progress' | 'resolved' | 'closed'
+          admin_reply?: string | null
+          created_at?: string
+          updated_at?: string
+          resolved_at?: string | null
+        }
+      }
     }
     Views: {
       location_details: {

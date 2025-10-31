@@ -152,6 +152,21 @@ const ArtworkDetailModal: React.FC<ArtworkDetailModalProps> = ({ isOpen, onClose
                 )}
               </div>
             </div>
+
+            {/* Share Button */}
+            <div className="pt-4">
+              <button
+                onClick={() => {
+                  const artworkUrl = `${window.location.origin}/artwork/${artwork.id}`;
+                  navigator.clipboard.writeText(artworkUrl);
+                  alert('작품 링크가 복사되었습니다!');
+                }}
+                className="w-full bg-gradient-to-r from-[#D2B48C] to-[#C19A6B] hover:from-[#C19A6B] hover:to-[#B8996B] text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg"
+              >
+                <span className="material-symbols-outlined">share</span>
+                작품 링크 공유하기
+              </button>
+            </div>
           </div>
         </div>
       </div>

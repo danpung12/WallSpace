@@ -111,13 +111,7 @@ export default function LocationDetailPage({
           >
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
-          <h1 className="mr-auto ml-4 text-lg font-bold">{place.name}</h1>
-          <button
-            className="rounded-full p-2 hover:bg-gray-200"
-            aria-label="문의하기"
-          >
-            <span className="material-symbols-outlined text-gray-700">call</span>
-          </button>
+          <h1 className="ml-4 text-lg font-bold">{place.name}</h1>
         </header>
 
         {/* Close button for PC */}
@@ -233,10 +227,6 @@ export default function LocationDetailPage({
                     <span className="material-symbols-outlined mt-px text-xl">location_on</span>
                     <span className="font-medium">{place.address}</span>
                   </div>
-                  <div className="flex items-start gap-3 text-theme-brown-darkest">
-                    <span className="material-symbols-outlined mt-px text-xl">call</span>
-                    <a href={`tel:${place.phone}`} className="font-medium hover:underline">{place.phone}</a>
-                  </div>
                   {place.snsUrls?.[0] && (
                     <div className="flex items-start gap-3 text-theme-brown-darkest">
                       <span className="material-symbols-outlined mt-px text-xl">link</span>
@@ -313,10 +303,6 @@ export default function LocationDetailPage({
                   <div className="flex items-start gap-3 text-theme-brown-darkest">
                     <span className="material-symbols-outlined mt-px text-xl">location_on</span>
                     <span className="font-medium">{place.address}</span>
-                  </div>
-                  <div className="flex items-start gap-3 text-theme-brown-darkest">
-                    <span className="material-symbols-outlined mt-px text-xl">call</span>
-                    <a href={`tel:${place.phone}`} className="font-medium hover:underline">{place.phone}</a>
                   </div>
                   {place.snsUrls?.[0] && (
                     <div className="flex items-start gap-3 text-theme-brown-darkest">

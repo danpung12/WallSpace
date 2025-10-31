@@ -54,6 +54,7 @@ export async function middleware(request: NextRequest) {
     '/find-password',
     '/reset-password',
     '/verify-email',
+    '/artwork', // 작품 상세 페이지는 공개
   ]
 
   // 소셜 로그인 사용자의 추가 정보 체크

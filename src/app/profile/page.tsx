@@ -5,7 +5,6 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Header from "../components/Header"; // 1. Header 컴포넌트 임포트
 import ChangePasswordModal from "../components/ChangePasswordModal";
-import NotificationSettingsModal from "../components/NotificationSettingsModal";
 import UserSettingsModal from "../components/UserSettingsModal"; // ✅ 추가
 import AvatarUploadModal from "../components/AvatarUploadModal"; // ✅ 추가
 import LogoutConfirmationModal from "../components/LogoutConfirmationModal"; // ✅ 로그아웃 모달 추가
@@ -13,6 +12,7 @@ import AlertModal from "../components/AlertModal"; // ✅ 알림 모달 추가
 import NotificationListModal from "../components/NotificationListModal";
 import { UserProfile } from "@/data/profile";
 import EditProfileModal from "../components/EditProfileModal";
+import InquiryModal from "../components/InquiryModal"; // ✅ 문의하기 모달 추가
 import { useDarkMode } from "../context/DarkModeContext"; // ✅ 다크모드 훅 추가
 import { useUserMode } from "../context/UserModeContext"; // ✅ UserMode 훅 추가
 import { useRouter } from "next/navigation"; // ✅ 라우터 추가
@@ -25,7 +25,6 @@ export default function ProfilePage() {
   const { userMode } = useUserMode(); // ✅ 현재 사용자 모드 가져오기
   const { updateProfile: updateGlobalProfile } = useUserProfile(); // ✅ 전역 프로필 업데이트 함수
   const [showChangePw, setShowChangePw] = useState(false);
-  const [showNotiModal, setShowNotiModal] = useState(false);
   const [showUserSettingsModal, setShowUserSettingsModal] = useState(false); // ✅ 추가
   const [showAvatarModal, setShowAvatarModal] = useState(false); // ✅ 추가
   const [showEditModal, setShowEditModal] = useState(false);
@@ -37,6 +36,20 @@ export default function ProfilePage() {
   const [showAlertModal, setShowAlertModal] = useState(false); // 알림 모달
   const [showNotificationList, setShowNotificationList] = useState(false);
   const [hasNotifications, setHasNotifications] = useState(false);
+  const [showInquiryModal, setShowInquiryModal] = useState(false); // ✅ 문의하기 모달 상태 추가
+  const [isMobile, setIsMobile] = useState(false); // ✅ 모바일 감지 상태 추가
+
+  // ✅ 모바일 감지
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024); // lg breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // 프로필 및 알림 병렬 로드 (최적화)
   useEffect(() => {
@@ -53,7 +66,8 @@ export default function ProfilePage() {
         if (profileResponse.ok) {
           const data: UserProfile = await profileResponse.json();
           setUserProfile(data);
-          if (data.userSettings?.darkMode !== undefined) {
+          // 초기 로드 시에만 다크모드 설정 (이후 변경은 UserSettingsModal에서 처리)
+          if (data.userSettings?.darkMode !== undefined && !userProfile) {
             setDarkMode(data.userSettings.darkMode);
           }
         } else {
@@ -159,6 +173,19 @@ export default function ProfilePage() {
     } catch (err) {
       console.error('로그아웃 중 오류:', err);
       alert('로그아웃 중 오류가 발생했습니다.');
+    }
+  };
+
+  // ✅ 문의하기 클릭 핸들러 (PC는 모달, 모바일은 새 창)
+  const handleInquiryClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (isMobile) {
+      // 모바일: 새 창으로 열기
+      router.push('/inquiry');
+    } else {
+      // PC: 모달 열기
+      setShowInquiryModal(true);
     }
   };
 
@@ -355,28 +382,6 @@ export default function ProfilePage() {
               </svg>
             </button>
 
-            {/* 사용자 알림 설정 */}
-            <button
-              type="button"
-              onClick={() => setShowNotiModal(true)}
-              className="group flex items-center p-4 lg:p-5 rounded-xl hover:bg-gradient-to-r hover:from-[#F5F3EC] hover:to-[#FAF8F5] dark:hover:from-gray-700 dark:hover:to-gray-700 transition-all duration-200 w-full hover:shadow-sm hover:scale-[1.01]"
-            >
-              <div className="p-2.5 lg:p-3 bg-gradient-to-br from-[#D2B48C]/20 to-[#D2B48C]/10 rounded-xl transition-all duration-200 group-hover:from-[#D2B48C]/30 group-hover:to-[#D2B48C]/20 group-active:scale-95">
-                <svg className="w-6 lg:w-7 h-6 lg:h-7 stroke-[#D2B48C]" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                  />
-                </svg>
-              </div>
-              <span className="ml-4 lg:ml-5 font-bold text-sm lg:text-base text-[#2C2C2C] dark:text-gray-100">사용자 알림 설정</span>
-              <svg className="ml-auto w-5 lg:w-6 h-5 lg:h-6 transition-transform duration-200 group-hover:translate-x-1 text-[#887563] dark:text-gray-400" fill="currentColor" viewBox="0 0 256 256">
-                <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z" />
-              </svg>
-            </button>
-
             {/* 사용자 설정 */}
             <button
               type="button"
@@ -400,6 +405,28 @@ export default function ProfilePage() {
                 </svg>
               </div>
               <span className="ml-4 lg:ml-5 font-bold text-sm lg:text-base text-[#2C2C2C] dark:text-gray-100">사용자 설정</span>
+              <svg className="ml-auto w-5 lg:w-6 h-5 lg:h-6 transition-transform duration-200 group-hover:translate-x-1 text-[#887563] dark:text-gray-400" fill="currentColor" viewBox="0 0 256 256">
+                <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z" />
+              </svg>
+            </button>
+
+            {/* 문의하기 */}
+            <button
+              type="button"
+              onClick={handleInquiryClick}
+              className="group flex items-center p-4 lg:p-5 rounded-xl hover:bg-gradient-to-r hover:from-[#F5F3EC] hover:to-[#FAF8F5] dark:hover:from-gray-700 dark:hover:to-gray-700 transition-all duration-200 w-full hover:shadow-sm hover:scale-[1.01]"
+            >
+              <div className="p-2.5 lg:p-3 bg-gradient-to-br from-[#D2B48C]/20 to-[#D2B48C]/10 rounded-xl transition-all duration-200 group-hover:from-[#D2B48C]/30 group-hover:to-[#D2B48C]/20 group-active:scale-95">
+                <svg className="w-6 lg:w-7 h-6 lg:h-7 stroke-[#D2B48C]" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                  />
+                </svg>
+              </div>
+              <span className="ml-4 lg:ml-5 font-bold text-sm lg:text-base text-[#2C2C2C] dark:text-gray-100">문의하기</span>
               <svg className="ml-auto w-5 lg:w-6 h-5 lg:h-6 transition-transform duration-200 group-hover:translate-x-1 text-[#887563] dark:text-gray-400" fill="currentColor" viewBox="0 0 256 256">
                 <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z" />
               </svg>
@@ -439,27 +466,23 @@ export default function ProfilePage() {
           setShowChangePw(false);
         }}
       />
-      <NotificationSettingsModal
-        open={showNotiModal}
-        onClose={() => setShowNotiModal(false)}
-        initialSettings={userProfile.notificationSettings}
-        onSave={(settings) => {
-          console.log("알림 설정 저장 요청:", settings);
-          updateProfile({ notificationSettings: settings });
-          setShowNotiModal(false);
-        }}
-      />
-      {/* ✅ 사용자 설정 모달 추가 */}
+      {/* ✅ 사용자 설정 모달 (알림 설정 포함) */}
       <UserSettingsModal
         open={showUserSettingsModal}
         onClose={() => setShowUserSettingsModal(false)}
-        initialSettings={{ darkMode: isDarkMode }}
-        onSave={(settings) => {
+        initialSettings={{ 
+          darkMode: isDarkMode,
+          notifications: userProfile.notificationSettings
+        }}
+        onSave={async (settings) => {
           console.log("사용자 설정 저장 요청:", settings);
-          // 다크모드 Context 업데이트
+          // 먼저 다크모드 Context 업데이트 (즉시 UI 반영)
           setDarkMode(settings.darkMode);
-          // 프로필에도 저장
-          updateProfile({ userSettings: settings });
+          // 프로필에도 저장 (비동기로 처리되지만 기다리지 않음)
+          updateProfile({ 
+            userSettings: { darkMode: settings.darkMode },
+            notificationSettings: settings.notifications
+          });
           setShowUserSettingsModal(false);
         }}
       />
@@ -517,6 +540,16 @@ export default function ProfilePage() {
             }
           });
         }} 
+      />
+
+      {/* ✅ 문의하기 모달 (PC 전용) */}
+      <InquiryModal 
+        open={showInquiryModal} 
+        onClose={() => setShowInquiryModal(false)}
+        onSubmit={() => {
+          console.log('문의가 접수되었습니다.');
+          // 문의 성공 후 추가 작업이 필요하면 여기서 처리
+        }}
       />
     </div>
   );

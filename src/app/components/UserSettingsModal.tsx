@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from "react";
 // 타입 선언
 export type UserSettings = {
   darkMode: boolean;
+  notifications: {
+    comments: boolean;
+    exhibitions: boolean;
+    messages: boolean;
+  };
 };
 
 type UserSettingsModalProps = {
@@ -56,6 +61,17 @@ function UserSettingsModal({
     setSettings((prev) => ({ ...prev, darkMode: !prev.darkMode }));
   }
 
+  // 알림 설정 토글 핸들러
+  function handleToggleNotification(key: keyof UserSettings['notifications']) {
+    setSettings((prev) => ({
+      ...prev,
+      notifications: {
+        ...prev.notifications,
+        [key]: !prev.notifications[key],
+      },
+    }));
+  }
+
   function handleSave() {
     onSave?.(settings);
     onClose();
@@ -74,32 +90,75 @@ function UserSettingsModal({
         className={`
           w-full max-w-md bg-white dark:bg-gray-800 shadow-lg
           transition-all duration-300 ease-in-out
-          ${isDesktop ? 'rounded-2xl' : 'rounded-t-3xl'}
+          ${isDesktop ? 'rounded-2xl max-h-[90vh]' : 'rounded-t-3xl max-h-[85vh]'}
           ${open 
             ? (isDesktop ? 'scale-100 opacity-100' : 'translate-y-0') 
             : (isDesktop ? 'scale-95 opacity-0' : 'translate-y-full')
           }
+          overflow-hidden flex flex-col
         `}
         style={{
           fontFamily: "'Pretendard', sans-serif",
         }}
       >
         {!isDesktop && (
-          <div className="flex items-center justify-center w-full h-8 pt-3">
+          <div className="flex items-center justify-center w-full h-8 pt-3 flex-shrink-0">
             <div className="h-1.5 w-10 rounded-full bg-[#EAE5DE] dark:bg-gray-600 cursor-pointer" onClick={onClose}></div>
           </div>
         )}
-        <div className="p-6 pt-4">
+        <div className="p-6 pt-4 overflow-y-auto flex-1">
           <h1 className="text-2xl font-bold mb-6 text-[#3E352F] dark:text-gray-100">사용자 설정</h1>
-          <div className="space-y-4">
-            <SettingItem
-              label="다크 모드"
-              desc="화면을 어두운 테마로 표시합니다."
-              checked={settings.darkMode}
-              onChange={handleToggleDarkMode}
-            />
+          
+          {/* 알림 설정 섹션 */}
+          <div className="mb-6">
+            <h2 className="text-sm font-bold text-[#6B5E54] dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+              </svg>
+              알림 설정
+            </h2>
+            <div className="space-y-4">
+              <SettingItem
+                label="댓글 알림"
+                desc="내 작업에 새로운 댓글이 달리면 알림을 받습니다."
+                checked={settings.notifications.comments}
+                onChange={() => handleToggleNotification("comments")}
+              />
+              <SettingItem
+                label="전시 알림"
+                desc="새로운 전시에 대한 알림을 받습니다."
+                checked={settings.notifications.exhibitions}
+                onChange={() => handleToggleNotification("exhibitions")}
+              />
+              <SettingItem
+                label="메시지 알림"
+                desc="다른 사용자로부터 메시지를 받으면 알림을 받습니다."
+                checked={settings.notifications.messages}
+                onChange={() => handleToggleNotification("messages")}
+              />
+            </div>
           </div>
-          <div className="flex gap-3 mt-8">
+
+          {/* 테마 설정 섹션 */}
+          <div>
+            <h2 className="text-sm font-bold text-[#6B5E54] dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4zm1 14a1 1 0 100-2 1 1 0 000 2zm5-1.757l4.9-4.9a2 2 0 000-2.828L13.485 5.1a2 2 0 00-2.828 0L10 5.757v8.486zM16 18H9.071l6-6H16a2 2 0 012 2v2a2 2 0 01-2 2z" clipRule="evenodd" />
+              </svg>
+              테마 설정
+            </h2>
+            <div className="space-y-4">
+              <SettingItem
+                label="다크 모드"
+                desc="화면을 어두운 테마로 표시합니다."
+                checked={settings.darkMode}
+                onChange={handleToggleDarkMode}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="p-6 pt-4 border-t border-[#EAE5DE] dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0">
+          <div className="flex gap-3">
             <button
               type="button"
               className="bg-[#F5F1EC] dark:bg-gray-700 text-[#3E352F] dark:text-gray-100 rounded-full px-6 py-3 font-bold text-sm w-full hover:bg-[#EAE5DE] dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-[#A89587] dark:focus:ring-gray-600 focus:ring-opacity-50 transition-colors"
@@ -116,7 +175,7 @@ function UserSettingsModal({
             </button>
           </div>
         </div>
-        {!isDesktop && <div className="h-8 bg-white dark:bg-gray-800"></div>}
+        {!isDesktop && <div className="h-8 bg-white dark:bg-gray-800 flex-shrink-0"></div>}
       </div>
     </div>
   );

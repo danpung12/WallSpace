@@ -151,7 +151,7 @@ const HeaderContent = memo(function HeaderContent({
             {nickname && (
               <div className="flex items-center space-x-4 ml-4 pl-4 border-l border-gray-300">
                 <Link
-                  href="/profile"
+                  href={isGuestMode ? "/guest/profile" : "/profile"}
                   className="text-sm font-medium text-[#3D2C1D] hover:text-[#5D4C3D] transition-colors">
                   {nickname} 님
                 </Link>

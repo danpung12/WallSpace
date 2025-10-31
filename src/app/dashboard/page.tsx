@@ -348,7 +348,7 @@ function ManagerDashboard({
       <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-8">
         <div className="lg:col-span-3 space-y-6">
   {/* 내 가게 카드 */}
-  <section className={`${cardBgClass} dark:bg-gray-700 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-600 ${locations.length === 0 && !isLoadingLocations ? 'relative min-h-[400px] flex items-center justify-center' : ''}`}>
+  <section className={`${cardBgClass} dark:bg-gray-700 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-600 ${locations.length === 0 && !isLoadingLocations ? 'relative min-h-[340px] flex items-center justify-center' : ''}`}>
       <div className={`flex items-center justify-between ${locations.length === 0 && !isLoadingLocations ? 'absolute top-4 left-4 right-4' : 'mb-4'}`}>
           <h2 className="text-2xl font-bold text-[#3D2C1D] dark:text-gray-100">내 가게</h2>
           {locations.length > 0 && (
@@ -640,6 +640,7 @@ const ReservationCard = React.memo(({ reservation, userType }: { reservation: an
   const artworkImage = reservation.artwork?.image_url || reservation.artwork?.images?.[0] || 'https://picsum.photos/200/200';
   const artworkTitle = reservation.artwork?.title || '제목 없음';
   const locationName = reservation.location?.name || '장소 정보 없음';
+  const spaceName = reservation.space?.name || '';
   const artistName = reservation.artist?.nickname || reservation.artist?.name || '작가 정보 없음';
   const startDate = reservation.start_date ? new Date(reservation.start_date).toLocaleDateString('ko-KR') : '';
   const endDate = reservation.end_date ? new Date(reservation.end_date).toLocaleDateString('ko-KR') : '';
@@ -661,6 +662,11 @@ const ReservationCard = React.memo(({ reservation, userType }: { reservation: an
             : locationName
           }
         </h3>
+        {userType === 'artist' && spaceName && (
+          <p className="text-sm text-[#8C7853] dark:text-gray-300 mt-1">
+            📍 {spaceName}
+          </p>
+        )}
         <p className="text-sm text-[#8C7853] dark:text-gray-300 mt-2">
           {period}
         </p>

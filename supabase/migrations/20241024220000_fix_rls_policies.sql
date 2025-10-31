@@ -227,3 +227,6 @@ COMMENT ON POLICY "Managers can upload location images" ON storage.objects IS
 
 
 
+
+
+

@@ -137,7 +137,6 @@ export default function EditProfileModal({ open, onClose, userProfile: initialPr
                           <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                         </svg>
                         이름
-                        <span className="ml-auto text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">읽기 전용</span>
                       </label>
                       <div className="relative">
                         <input
@@ -184,7 +183,6 @@ export default function EditProfileModal({ open, onClose, userProfile: initialPr
                           <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                         </svg>
                         전화번호
-                        <span className="ml-auto text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">읽기 전용</span>
                       </label>
                       <div className="relative">
                         <input

@@ -19,6 +19,7 @@ function BookingDetailContent() {
   const [reservation, setReservation] = useState<Reservation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const { setIsNavVisible } = useBottomNav();
 
   useEffect(() => {
@@ -251,6 +252,15 @@ function BookingDetailContent() {
                          <div className="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0" style={{ backgroundImage: `url("${(reservation as any).locationImage || 'https://picsum.photos/200/200'}")` }} />
                          <div className="flex-1 space-y-1">
                            <p className="text-base font-semibold">{reservation.storeName}</p>
+                           {(reservation as any).space?.name && (
+                             <p className="text-sm text-[var(--text-secondary)] flex items-center gap-1">
+                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                               </svg>
+                               {(reservation as any).space.name}
+                             </p>
+                           )}
                          </div>
                       </div>
                     </div>
@@ -282,7 +292,12 @@ function BookingDetailContent() {
                         <span className="text-2xl font-bold text-[var(--primary-color)]">{totalCost.toLocaleString()}원</span>
                     </div>
                     <div className="pt-4 space-y-3 lg:px-2">
-                        <button className="bg-[var(--primary-color)] text-white py-3 px-6 rounded-lg w-full hover:opacity-90 transition-opacity">영수증 보기</button>
+                        <button 
+                          onClick={() => setShowReceiptModal(true)}
+                          className="bg-[var(--primary-color)] text-white py-3 px-6 rounded-lg w-full hover:opacity-90 transition-opacity"
+                        >
+                          영수증 보기
+                        </button>
                         {/* Desktop-only cancel button */}
                         <button
                             onClick={handleCancelClick}
@@ -319,6 +334,136 @@ function BookingDetailContent() {
       )}
 
       <CancelModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} onConfirm={handleConfirmCancel} />
+      
+      {/* 영수증 모달 */}
+      {showReceiptModal && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowReceiptModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 헤더 */}
+            <div className="bg-gradient-to-r from-[#D2B48C] to-[#C19A6B] p-6 rounded-t-2xl text-white">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-2xl font-bold">영수증</h3>
+                <button
+                  onClick={() => setShowReceiptModal(false)}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="text-sm opacity-90">
+                <p>예약 ID: {reservation.short_id || reservation.id.substring(0, 8).toUpperCase()}</p>
+                <p className="mt-1">발급일: {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              </div>
+            </div>
+
+            {/* 내용 */}
+            <div className="p-6 space-y-6">
+              {/* 예약 정보 */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-gray-900 dark:text-gray-100 text-lg pb-2 border-b-2 border-[#D2B48C]">
+                  예약 정보
+                </h4>
+                
+                {/* 작가 정보 */}
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">예약자</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">{reservation.artistName}</p>
+                </div>
+
+                {/* 작품 정보 */}
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">작품</p>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-16 h-16 rounded-lg bg-cover bg-center flex-shrink-0"
+                      style={{ backgroundImage: `url("${reservation.image}")` }}
+                    />
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">&ldquo;{reservation.artworkTitle}&rdquo;</p>
+                  </div>
+                </div>
+
+                {/* 장소 & 공간 정보 */}
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">전시 장소</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">{reservation.storeName}</p>
+                  {(reservation as any).space?.name && (
+                    <p className="text-sm text-[#8C7853] dark:text-gray-400 mt-1">
+                      📍 {(reservation as any).space.name}
+                    </p>
+                  )}
+                </div>
+
+                {/* 예약 기간 */}
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">예약 기간</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">{formattedPeriod}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">({durationDays}일)</p>
+                </div>
+              </div>
+
+              {/* 결제 정보 */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-gray-900 dark:text-gray-100 text-lg pb-2 border-b-2 border-[#D2B48C]">
+                  결제 내역
+                </h4>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">일일 요금</span>
+                    <span className="text-gray-900 dark:text-gray-100">{reservation.price.toLocaleString()}원</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">이용 일수</span>
+                    <span className="text-gray-900 dark:text-gray-100">{durationDays}일</span>
+                  </div>
+                  
+                  <div className="border-t-2 border-dashed border-gray-300 dark:border-gray-600 my-3" />
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-bold text-gray-900 dark:text-gray-100">총 결제 금액</span>
+                    <span className="text-2xl font-bold text-[#D2B48C]">{totalCost.toLocaleString()}원</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 상태 */}
+              <div className="bg-gradient-to-r from-[#D2B48C]/10 to-[#C19A6B]/10 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">예약 상태</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    reservation.status === 'confirmed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                    : reservation.status === 'pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                    : reservation.status === 'completed' ? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                  }`}>
+                    {reservation.status === 'confirmed' ? '확정'
+                      : reservation.status === 'pending' ? '확인 중'
+                      : reservation.status === 'completed' ? '완료'
+                      : '취소됨'
+                    }
+                  </span>
+                </div>
+              </div>
+
+              {/* 닫기 버튼 */}
+              <button
+                onClick={() => setShowReceiptModal(false)}
+                className="w-full py-3 bg-[#D2B48C] hover:bg-[#C19A6B] text-white font-semibold rounded-lg transition-colors"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
