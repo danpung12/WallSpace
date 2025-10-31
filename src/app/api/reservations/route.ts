@@ -66,8 +66,28 @@ export async function GET(request: NextRequest) {
       .from('reservations')
       .select('*');
 
-    // space_id로 조회할 때는 artist_id 체크 안함 (모든 예약 조회)
-    if (!spaceId) {
+    // space_id로 조회할 때 (사장님이 자기 공간의 예약 조회)
+    if (spaceId) {
+      console.log('🏪 Fetching by space_id (manager view):', spaceId);
+      // 사장님 권한 확인: 해당 공간이 자신의 location에 속하는지 체크
+      const { data: space } = await supabase
+        .from('spaces')
+        .select('location_id, locations(manager_id)')
+        .eq('id', spaceId)
+        .single();
+      
+      if (space && (space as any).locations?.manager_id === user.id) {
+        console.log('✅ Manager authorized for this space');
+        query = query.eq('space_id', spaceId);
+      } else {
+        console.log('❌ Manager not authorized for this space');
+        return NextResponse.json(
+          { error: 'Unauthorized to view this space reservations' },
+          { status: 403 }
+        );
+      }
+    } else {
+      // 일반 조회 (작가가 자신의 예약 조회)
       query = query.eq('artist_id', user.id);
     }
 
@@ -79,9 +99,6 @@ export async function GET(request: NextRequest) {
     }
     if (locationId) {
       query = query.eq('location_id', locationId);
-    }
-    if (spaceId) {
-      query = query.eq('space_id', spaceId);
     }
 
     const { data: reservations, error: reservationsError } = await query;
@@ -95,6 +112,12 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('✅ Reservations fetched:', reservations?.length || 0);
+    console.log('📊 Reservations summary:', reservations?.map(r => ({
+      id: r.id.substring(0, 8),
+      status: r.status,
+      start_date: r.start_date,
+      end_date: r.end_date
+    })));
 
     // 관련 데이터를 별도로 가져오기
     if (reservations && reservations.length > 0) {

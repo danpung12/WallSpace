@@ -123,27 +123,56 @@ function LocationDetailContent() {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('📦 Raw reservations data (total):', data?.length || 0);
+        console.log('📦 Full data:', data);
+        
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        // 필터링: 취소된 것 제외, 예약 기간이 지나지 않은 것만 표시
+        // 필터링: 취소된 것 제외 + 예약 기간이 지난 것 제외
         const filteredReservations = (data || []).filter((r: any) => {
+          console.log('🔍 Checking reservation:', {
+            id: r.id.substring(0, 8),
+            status: r.status,
+            start_date: r.start_date,
+            end_date: r.end_date,
+            artist: r.artist?.name || r.artist?.nickname
+          });
+          
           // 취소된 예약 제외
-          if (r.status === 'cancelled') return false;
+          if (r.status === 'cancelled') {
+            console.log('❌ Filtered out (cancelled):', r.id.substring(0, 8));
+            return false;
+          }
           
           // 예약 종료일이 오늘 이전이면 제외
           const endDate = new Date(r.end_date);
           endDate.setHours(23, 59, 59, 999);
-          if (endDate < today) return false;
+          if (endDate < today) {
+            console.log('❌ Filtered out (expired - end date before today):', {
+              id: r.id.substring(0, 8),
+              end_date: r.end_date,
+              today: today.toISOString()
+            });
+            return false;
+          }
           
+          console.log('✅ Including reservation:', r.id.substring(0, 8));
           return true;
         });
         
+        console.log('📊 Filtered reservations count:', filteredReservations.length);
+        console.log('📊 Filtered reservations:', filteredReservations.map(r => ({
+          id: r.id.substring(0, 8),
+          status: r.status,
+          artist: r.artist?.name
+        })));
         setSelectedSpaceReservations(filteredReservations);
         setShowReservationsModal(true);
       } else {
-        console.error('Failed to fetch reservations');
-        alert('예약 정보를 불러오는데 실패했습니다.');
+        const errorData = await response.json();
+        console.error('Failed to fetch reservations:', errorData);
+        alert('예약 정보를 불러오는데 실패했습니다: ' + (errorData.error || '알 수 없는 오류'));
       }
     } catch (error) {
       console.error('Error fetching reservations:', error);
@@ -1480,11 +1509,19 @@ function LocationDetailContent() {
                     const status = statusStyles[reservation.status as keyof typeof statusStyles] || statusStyles.pending;
 
                     const handleClick = () => {
+                      console.log('🖱️ Clicked reservation:', {
+                        id: reservation.id,
+                        status: reservation.status,
+                        artist: reservation.artist?.name
+                      });
+                      
                       if (reservation.status === 'pending') {
                         // 대기중이면 상세 페이지로 이동
-                        window.location.href = `/manager-booking-approval?id=${encodeURIComponent(reservation.id)}`;
+                        console.log('➡️ Navigating to approval page with ID:', reservation.id);
+                        router.push(`/manager-booking-approval?id=${encodeURIComponent(reservation.id)}`);
                       } else {
                         // 그 외에는 상세 모달 표시
+                        console.log('📄 Opening detail modal');
                         setSelectedReservationDetail(reservation);
                         setShowDetailModal(true);
                       }
