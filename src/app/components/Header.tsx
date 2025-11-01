@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUserMode } from '../context/UserModeContext';
-import { useState, memo, useCallback, useMemo } from 'react';
+import { useState, memo, useCallback, useMemo, useEffect } from 'react';
 import { UserProfile } from '@/data/profile';
 import LogoutConfirmationModal from './LogoutConfirmationModal';
+import NotificationListModal from './NotificationListModal';
 import { createClient } from '@/lib/supabase/client';
 import { useUserProfile } from '@/context/UserProfileContext';
 
@@ -120,15 +121,19 @@ const HeaderContent = memo(function HeaderContent({
   isGuestMode,
   userMode,
   nickname,
+  unreadCount,
   onModeChange,
-  onLogout
+  onLogout,
+  onNotificationClick
 }: {
   isHomePage: boolean;
   isGuestMode: boolean;
   userMode: 'artist' | 'manager';
   nickname: string | null;
+  unreadCount: number;
   onModeChange: (mode: 'artist' | 'manager') => void;
   onLogout: () => void;
+  onNotificationClick: () => void;
 }) {
   return (
     <header className="hidden lg:block border-b border-gray-200 bg-white sticky top-0 z-40">
@@ -149,7 +154,25 @@ const HeaderContent = memo(function HeaderContent({
               <UserModeToggle userMode={userMode} onModeChange={onModeChange} />
             )}
             {nickname && (
-              <div className="flex items-center space-x-4 ml-4 pl-4 border-l border-gray-300">
+              <div className="flex items-center space-x-3 ml-4 pl-4 border-l border-gray-300">
+                {/* 알림 드롭다운 */}
+                <div className="relative">
+                  <button
+                    onClick={onNotificationClick}
+                    className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    aria-label="알림"
+                  >
+                    <svg className="w-5 h-5 text-[#3D2C1D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    {unreadCount > 0 && (
+                      <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
+                
                 <Link
                   href={isGuestMode ? "/guest/profile" : "/profile"}
                   className="text-sm font-medium text-[#3D2C1D] hover:text-[#5D4C3D] transition-colors">
@@ -174,7 +197,8 @@ const HeaderContent = memo(function HeaderContent({
     prevProps.userMode === nextProps.userMode &&
     prevProps.nickname === nextProps.nickname &&
     prevProps.isHomePage === nextProps.isHomePage &&
-    prevProps.isGuestMode === nextProps.isGuestMode
+    prevProps.isGuestMode === nextProps.isGuestMode &&
+    prevProps.unreadCount === nextProps.unreadCount
   );
 });
 
@@ -183,9 +207,41 @@ function Header() {
   const router = useRouter();
   const { userProfile } = useUserProfile(); // Context에서 가져옴 (캐싱됨)
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
   const isHomePage = pathname === '/' || pathname === '/guest/home';
   const isGuestMode = pathname.startsWith('/guest');
+
+  // 알림 개수 로드
+  useEffect(() => {
+    const loadUnreadCount = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user || isGuestMode) {
+          setUnreadCount(0);
+          return;
+        }
+
+        const response = await fetch('/api/notifications');
+        if (response.ok) {
+          const data = await response.json();
+          const unread = data.filter((n: any) => !n.is_read).length;
+          setUnreadCount(unread);
+        }
+      } catch (error) {
+        console.error('Failed to load notification count:', error);
+      }
+    };
+
+    loadUnreadCount();
+    
+    // 30초마다 업데이트
+    const interval = setInterval(loadUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [isGuestMode]);
 
   const handleLogout = useCallback(() => {
     setShowConfirm(true);
@@ -205,6 +261,28 @@ function Header() {
 
   const handleCloseModal = useCallback(() => {
     setShowConfirm(false);
+  }, []);
+
+  const handleNotificationClick = useCallback(() => {
+    setShowNotificationModal(true);
+  }, []);
+
+  const handleCloseNotificationModal = useCallback(() => {
+    setShowNotificationModal(false);
+    // 모달 닫을 때 알림 개수 다시 로드
+    const loadUnreadCount = async () => {
+      try {
+        const response = await fetch('/api/notifications');
+        if (response.ok) {
+          const data = await response.json();
+          const unread = data.filter((n: any) => !n.is_read).length;
+          setUnreadCount(unread);
+        }
+      } catch (error) {
+        console.error('Failed to reload notification count:', error);
+      }
+    };
+    loadUnreadCount();
   }, []);
 
   // user_type을 데이터베이스에 업데이트하는 함수
@@ -251,8 +329,10 @@ function Header() {
         isGuestMode={isGuestMode}
         userMode={userMode}
         nickname={nickname}
+        unreadCount={unreadCount}
         onModeChange={handleUserModeChange}
         onLogout={handleLogout}
+        onNotificationClick={handleNotificationClick}
       />
       <LogoutConfirmationModal
         isOpen={showConfirm}
@@ -260,6 +340,10 @@ function Header() {
         onConfirm={handleConfirmLogout}
         title="로그아웃"
         message="정말 로그아웃 하시겠습니까?"
+      />
+      <NotificationListModal
+        open={showNotificationModal}
+        onClose={handleCloseNotificationModal}
       />
     </>
   );

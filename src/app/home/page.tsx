@@ -623,14 +623,14 @@ export default function MainPage() {
       
       <div className="h-screen w-full lg:h-screen lg:overflow-hidden relative bg-[#e8e3da] dark:bg-[#1a1a1a] transition-colors duration-300 flex flex-col">
 
-        <div className={`relative z-10 mx-auto w-full max-w-screen-2xl flex-grow flex flex-col lg:overflow-y-auto lg:scrollbar-hide lg:px-8 lg:pb-0 ${notifications.length === 0 ? 'lg:!pt-[40px]' : 'lg:pt-12'}`}
+        <div className="relative z-10 mx-auto w-full max-w-screen-2xl flex-grow flex flex-col lg:overflow-y-auto lg:scrollbar-hide lg:px-8 lg:pb-0 lg:!pt-[40px]"
           style={{
             paddingTop: 'clamp(1rem, 3.79vh, 2rem)',
             paddingBottom: notifications.length > 0 ? 'clamp(1.5rem, 5.69vh, 3rem)' : '0' // 알림 있을 때만 여유 공간
           }}>
           <div className="lg:flex lg:h-full lg:gap-8 flex-grow flex flex-col lg:flex-row">
-            {/* 모바일: 항상 표시, PC: 알림 있을 때만 표시 */}
-            <div className={`lg:w-1/3 ${notifications.length === 0 ? 'lg:hidden' : ''}`}>
+            {/* 모바일: 항상 표시, PC: 숨김 (Header에 알림 아이콘 있음) */}
+            <div className="lg:hidden">
               <section className="sm:px-6 lg:sticky lg:top-12 lg:px-0"
                 style={{
                   paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
@@ -691,10 +691,10 @@ export default function MainPage() {
               </section>
             </div>
 
-            <div className={`lg:mt-0 lg:flex lg:flex-col ${notifications.length > 0 ? 'lg:w-2/3' : 'lg:w-full'} flex-grow flex flex-col ${notifications.length === 0 ? 'justify-end lg:justify-start' : ''}`}
+            <div className="lg:mt-0 lg:flex lg:flex-col lg:w-full flex-grow flex flex-col justify-end lg:justify-start"
               style={{
                 marginTop: notifications.length > 0 ? 'clamp(1rem, 3.79vh, 2rem)' : 'clamp(1rem, 3vh, 2rem)',
-                marginBottom: notifications.length > 0 ? '0' : 'clamp(12rem, 30vh, 22rem)'
+                marginBottom: 'clamp(12rem, 30vh, 22rem)'
               }}>
               <div className="flex items-baseline sm:px-6 lg:px-0"
                 style={{
@@ -717,7 +717,7 @@ export default function MainPage() {
                 </p>
               </div>
 
-              <div className={`lg:min-h-0 lg:flex-1 ${notifications.length === 0 ? 'pb-[calc(48px+env(safe-area-inset-bottom))] lg:pb-0' : ''}`}>
+              <div className="lg:min-h-0 lg:flex-1 pb-[calc(48px+env(safe-area-inset-bottom))] lg:pb-0">
                 <div ref={scrollContainerRef} className="h-full w-full overflow-y-auto scrollbar-hide">
                   <RecommendedPlaces
                     onSlideChange={setCurrentPlaceIndex}

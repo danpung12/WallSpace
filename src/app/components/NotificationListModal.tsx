@@ -189,27 +189,29 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[999] bg-black/50 flex items-start lg:items-center justify-center pt-16 lg:pt-0"
-      onClick={onClose}
-    >
+    <>
+      {/* 모바일: 전체 화면 오버레이 */}
       <div
-        className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-h-[80vh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-[999] bg-black/50 flex items-start justify-center pt-16 lg:hidden"
+        onClick={onClose}
       >
-        {/* Header */}
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-[#3D2C1D] dark:text-gray-100">알림</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-          >
-            <span className="material-symbols-outlined text-gray-600 dark:text-gray-400">close</span>
-          </button>
-        </div>
+        <div
+          className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-h-[80vh] overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-[#3D2C1D] dark:text-gray-100">알림</h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            >
+              <span className="material-symbols-outlined text-gray-600 dark:text-gray-400">close</span>
+            </button>
+          </div>
 
-        {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(80vh-72px)] custom-scrollbar">
+          {/* Content */}
+          <div className="overflow-y-auto max-h-[calc(80vh-72px)] custom-scrollbar">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-500 dark:text-gray-400">로딩 중...</div>
@@ -266,6 +268,90 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
               ))}
             </div>
           )}
+          </div>
+        </div>
+      </div>
+
+      {/* PC: 드롭다운 (배경 오버레이 없음) */}
+      <div className="hidden lg:block">
+        {/* 투명 배경 클릭 시 닫기 */}
+        <div
+          className="fixed inset-0 z-[998]"
+          onClick={onClose}
+        />
+        
+        {/* 드롭다운 메뉴 */}
+        <div
+          className="fixed top-16 right-8 z-[999] w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-5rem)] overflow-hidden animate-fadeIn"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-[#3D2C1D] dark:text-gray-100">알림</h2>
+            <button
+              onClick={onClose}
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            >
+              <span className="material-symbols-outlined text-gray-600 dark:text-gray-400 text-xl">close</span>
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="overflow-y-auto max-h-[calc(100vh-8rem)] custom-scrollbar">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-gray-500 dark:text-gray-400">로딩 중...</div>
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 px-4">
+                <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">
+                  notifications_off
+                </span>
+                <p className="text-gray-500 dark:text-gray-400">알림이 없습니다</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {notifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    onClick={() => handleNotificationClick(notification)}
+                    className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                      !notification.is_read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl flex-shrink-0">
+                        {getIcon(notification.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-semibold text-[#3D2C1D] dark:text-gray-100 text-sm">
+                            {notification.title}
+                          </h3>
+                          {!notification.is_read && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          {notification.message}
+                        </p>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-gray-500 dark:text-gray-500">
+                            {formatTime(notification.created_at)}
+                          </span>
+                          {notification.type === 'reservation_cancelled' && notification.rejection_reason && (
+                            <span className="text-xs text-[#D2B48C] dark:text-[#E8C8A0] font-medium">
+                              자세히 보기
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -321,7 +407,7 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
