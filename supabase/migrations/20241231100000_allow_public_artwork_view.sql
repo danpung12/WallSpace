@@ -16,3 +16,4 @@ CREATE POLICY "Users can view all profiles"
 ON profiles FOR SELECT
 USING (true);
 
+

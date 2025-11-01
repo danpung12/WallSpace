@@ -114,3 +114,4 @@ COMMENT ON COLUMN public.inquiries.content IS '문의 내용';
 COMMENT ON COLUMN public.inquiries.status IS '처리 상태 (pending, in_progress, resolved, closed)';
 COMMENT ON COLUMN public.inquiries.admin_reply IS '관리자 답변';
 
+
