@@ -1225,7 +1225,6 @@ function LocationDetailContent() {
                                     )}
                                   </button>
                                 </div>
-                                </div>
                               </>
                             )}
                               </div>
