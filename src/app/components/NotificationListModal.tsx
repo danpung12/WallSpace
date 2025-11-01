@@ -280,18 +280,18 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
         </div>
       )}
 
-      {/* PC: 중앙 모달 */}
+      {/* PC: 드롭다운 */}
       {open && (
         <div className="hidden lg:block">
-          {/* 배경 오버레이 */}
+          {/* 투명 배경 클릭 시 닫기 */}
           <div
-            className="fixed inset-0 z-[998] bg-black/50"
+            className="fixed inset-0 z-[998]"
             onClick={onClose}
           />
           
           {/* 드롭다운 메뉴 */}
           <div
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[999] w-96 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-8rem)] overflow-hidden animate-fadeIn"
+            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[999] w-96 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-8rem)] overflow-hidden animate-fadeIn"
             onClick={(e) => e.stopPropagation()}
           >
           {/* Header */}
