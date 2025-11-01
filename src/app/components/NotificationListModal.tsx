@@ -34,12 +34,13 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
     console.log('🚨 selectedRejection:', selectedRejection);
   }, [showRejectionModal, selectedRejection]);
 
-  // 알림 목록 가져오기
+  // 알림 목록 가져오기 (open이 true로 변경될 때만)
   useEffect(() => {
-    if (open) {
+    if (open && notifications.length === 0) {
+      // 처음 열 때만 fetch
       fetchNotifications();
     }
-  }, [open]);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -282,7 +283,7 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
         
         {/* 드롭다운 메뉴 */}
         <div
-          className="fixed top-16 right-8 z-[999] w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-5rem)] overflow-hidden animate-fadeIn"
+          className="fixed top-16 right-4 z-[999] w-96 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-5rem)] overflow-hidden animate-fadeIn"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

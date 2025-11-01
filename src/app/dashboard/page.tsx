@@ -484,11 +484,11 @@ function ManagerDashboard({
 </div>
       <div className="lg:col-span-3 space-y-6">
         {/* 예약 요청 카드 */}
-        <section className={`${cardBgClass} dark:bg-gray-700 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-600 ${reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').length === 0 ? 'relative min-h-[400px] flex items-center justify-center' : ''}`}>
-          <h2 className={`text-2xl font-bold text-[#3D2C1D] dark:text-gray-100 ${reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').length === 0 ? 'absolute top-4 left-4 right-4' : 'mb-4'}`}>예약 요청</h2>
+        <section className={`${cardBgClass} dark:bg-gray-700 rounded-xl shadow-md p-4 border border-gray-100 dark:border-gray-600 ${reservations.filter(r => r.status === 'pending').length === 0 ? 'relative min-h-[400px] flex items-center justify-center' : ''}`}>
+          <h2 className={`text-2xl font-bold text-[#3D2C1D] dark:text-gray-100 ${reservations.filter(r => r.status === 'pending').length === 0 ? 'absolute top-4 left-4 right-4' : 'mb-4'}`}>예약 요청</h2>
           <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4">
-            {reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').length > 0 ? (
-              reservations.filter(r => r.status === 'confirmed' || r.status === 'pending').map(reservation => (
+            {reservations.filter(r => r.status === 'pending').length > 0 ? (
+              reservations.filter(r => r.status === 'pending').map(reservation => (
                 <Link
                   href={`/manager-booking-approval?id=${encodeURIComponent(reservation.id)}`}
                   className="block"

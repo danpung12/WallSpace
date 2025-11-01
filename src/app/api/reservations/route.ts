@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
           *,
           location:locations(*, images:location_images(image_url)),
           space:spaces(*),
-          artwork:artworks(*)
+          artwork:artworks(*),
+          artist:profiles!reservations_artist_id_fkey(id, name, nickname, phone, email, avatar_url)
         `)
         .eq('id', id)
         .single();
@@ -94,7 +95,8 @@ export async function GET(request: NextRequest) {
           images:location_images(image_url)
         ),
         space:spaces(*),
-        artwork:artworks(*)
+        artwork:artworks(*),
+        artist:profiles!reservations_artist_id_fkey(id, name, nickname, phone, email, avatar_url)
       `);
 
     // location_id로 조회할 때 (사장님이 자기 가게의 모든 예약 조회)

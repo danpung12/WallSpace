@@ -333,8 +333,8 @@ function ManagerBookingApprovalContent() {
                   <h4 className="text-lg font-bold text-[#3D2C1D] dark:text-gray-100">
                     &ldquo;{(reservation as any).artworkTitle || '작품 제목 없음'}&rdquo;
                   </h4>
-                  <p className="text-sm text-[#887563] dark:text-gray-400 mt-1">
-                    작가: {(reservation as any).artistName || '작가 정보 없음'}
+                  <p className="text-sm text-[#887563] dark:text-gray-300 mt-1">
+                    작가: {(reservation as any).artistDisplayName || (reservation as any).artistName || '작가 정보 없음'}
                   </p>
                   <p className="text-lg font-bold text-[#3D2C1D] dark:text-gray-100 mt-3">
                     {((reservation as any).price || 0).toLocaleString()}원 / 일
@@ -351,10 +351,18 @@ function ManagerBookingApprovalContent() {
                   className="w-28 h-28 lg:w-32 lg:h-32 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0"
                   style={{ backgroundImage: `url("${(reservation as any).locationImage || 'https://picsum.photos/200/200'}")` }}
                 />
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 space-y-2">
                   <p className="font-bold text-lg text-[#3D2C1D] dark:text-gray-100">{(reservation as any).storeName || '장소 정보 없음'}</p>
+                  {(reservation as any).space?.name && (
+                    <p className="text-sm text-[#8C7853] dark:text-gray-300 flex items-center gap-1">
+                      <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                      </svg>
+                      {(reservation as any).space.name}
+                    </p>
+                  )}
                   {(reservation as any).locationAddress && (
-                    <p className="text-sm text-[#887563] dark:text-gray-400 mt-1">
+                    <p className="text-sm text-[#887563] dark:text-gray-400">
                       {(reservation as any).locationAddress}
                     </p>
                   )}
