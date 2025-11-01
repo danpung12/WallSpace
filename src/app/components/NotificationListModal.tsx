@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 interface Notification {
@@ -27,6 +27,8 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
     reason: string;
     title: string;
   } | null>(null);
+  const lastFetchTime = useRef<number>(0);
+  const FETCH_COOLDOWN = 30000; // 30초 쿨다운
 
   // 디버깅: 모달 상태 변경 감지
   useEffect(() => {
@@ -34,10 +36,19 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
     console.log('🚨 selectedRejection:', selectedRejection);
   }, [showRejectionModal, selectedRejection]);
 
-  // 알림 목록 가져오기 (open이 true로 변경될 때만)
+  // 알림 목록 가져오기 (변경사항이 있을 때만)
   useEffect(() => {
-    if (open && notifications.length === 0) {
-      // 처음 열 때만 fetch
+    if (open) {
+      const now = Date.now();
+      const timeSinceLastFetch = now - lastFetchTime.current;
+      
+      // 30초 이내에 fetch했으면 스킵
+      if (timeSinceLastFetch < FETCH_COOLDOWN && notifications.length > 0) {
+        console.log('⏭️ 최근에 불러왔으므로 스킵');
+        return;
+      }
+      
+      // 처음이거나 30초 이상 지났으면 fetch
       fetchNotifications();
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -63,6 +74,7 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
         });
         console.log('🔔 === END DEBUG ===');
         setNotifications(data);
+        lastFetchTime.current = Date.now(); // 마지막 fetch 시간 업데이트
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);

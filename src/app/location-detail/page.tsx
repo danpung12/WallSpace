@@ -197,9 +197,13 @@ function LocationDetailContent() {
     try {
       setLoadingReservations(true);
       setSelectedSpaceName(spaceName);
+      setShowReservationsModal(true); // 모달을 먼저 열어서 빠른 피드백
       
       // 🚀 location_id로 한 번에 조회 후 특정 space만 필터링 (속도 개선 + 에러 방지)
-      const response = await fetch(`/api/reservations?location_id=${locationId}`);
+      const response = await fetch(`/api/reservations?location_id=${locationId}`, {
+        // 캐시 활성화로 반복 요청 속도 개선
+        next: { revalidate: 10 }
+      });
       
       if (response.ok) {
         const allData = await response.json();
@@ -257,11 +261,11 @@ function LocationDetailContent() {
           }).length
         });
         setSelectedSpaceReservations(filteredReservations);
-        setShowReservationsModal(true);
       } else {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: '서버 응답 오류' }));
         console.error('Failed to fetch reservations:', errorData);
-        alert('예약 정보를 불러오는데 실패했습니다: ' + (errorData.error || '알 수 없는 오류'));
+        setShowReservationsModal(false); // 에러 시 모달 닫기
+        alert(`예약 정보를 불러오는데 실패했습니다.\n\n오류: ${errorData.error || '알 수 없는 오류'}\n\n잠시 후 다시 시도해주세요.`);
       }
     } catch (error) {
       console.error('Error fetching reservations:', error);
@@ -950,7 +954,7 @@ function LocationDetailContent() {
                         return (
                           <div
                             key={space.id}
-                            className={`border-2 rounded-xl overflow-hidden transition-all ${
+                            className={`relative border-2 rounded-xl overflow-hidden transition-all ${
                               isClosed
                                 ? 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 opacity-75'
                                 : 'bg-white dark:bg-gray-800 border-[#D2B48C] shadow-md hover:shadow-lg'
@@ -1172,7 +1176,20 @@ function LocationDetailContent() {
                                   </div>
                                 </div>
 
-                                <div className="flex gap-2 flex-wrap">
+                                {/* 모바일: 예약현황 버튼을 오른쪽 상단에 배치 */}
+                                <button
+                                  onClick={() => handleViewSpaceReservations(space.id, space.name)}
+                                  disabled={loadingReservations}
+                                  className="sm:hidden absolute top-4 right-4 p-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 text-xs bg-[#D2B48C] hover:bg-[#C19A6B] text-white disabled:opacity-50 disabled:cursor-not-allowed shadow-md z-10"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                  </svg>
+                                  {loadingReservations ? '...' : '예약'}
+                                </button>
+
+                                {/* PC: 기존 버튼 레이아웃 유지 */}
+                                <div className="hidden sm:flex gap-2 flex-wrap">
                                   <button
                                     onClick={() => handleViewSpaceReservations(space.id, space.name)}
                                     disabled={loadingReservations}
@@ -1207,6 +1224,7 @@ function LocationDetailContent() {
                                       </>
                                     )}
                                   </button>
+                                </div>
                                 </div>
                               </>
                             )}
