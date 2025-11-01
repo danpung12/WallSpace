@@ -122,18 +122,22 @@ const HeaderContent = memo(function HeaderContent({
   userMode,
   nickname,
   unreadCount,
+  showNotificationModal,
   onModeChange,
   onLogout,
-  onNotificationClick
+  onNotificationClick,
+  onNotificationClose
 }: {
   isHomePage: boolean;
   isGuestMode: boolean;
   userMode: 'artist' | 'manager';
   nickname: string | null;
   unreadCount: number;
+  showNotificationModal: boolean;
   onModeChange: (mode: 'artist' | 'manager') => void;
   onLogout: () => void;
   onNotificationClick: () => void;
+  onNotificationClose: () => void;
 }) {
   return (
     <header className="hidden lg:block border-b border-gray-200 bg-white sticky top-0 z-40">
@@ -156,7 +160,7 @@ const HeaderContent = memo(function HeaderContent({
             {nickname && (
               <div className="flex items-center space-x-3 ml-4 pl-4 border-l border-gray-300">
                 {/* 알림 드롭다운 */}
-                <div className="relative">
+                <div className="relative" id="notification-container">
                   <button
                     onClick={onNotificationClick}
                     className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -171,6 +175,12 @@ const HeaderContent = memo(function HeaderContent({
                       </span>
                     )}
                   </button>
+                  
+                  {/* 알림창을 여기에 렌더링 */}
+                  <NotificationListModal
+                    open={showNotificationModal}
+                    onClose={onNotificationClose}
+                  />
                 </div>
                 
                 <Link
@@ -198,7 +208,8 @@ const HeaderContent = memo(function HeaderContent({
     prevProps.nickname === nextProps.nickname &&
     prevProps.isHomePage === nextProps.isHomePage &&
     prevProps.isGuestMode === nextProps.isGuestMode &&
-    prevProps.unreadCount === nextProps.unreadCount
+    prevProps.unreadCount === nextProps.unreadCount &&
+    prevProps.showNotificationModal === nextProps.showNotificationModal
   );
 });
 
@@ -330,9 +341,11 @@ function Header() {
         userMode={userMode}
         nickname={nickname}
         unreadCount={unreadCount}
+        showNotificationModal={showNotificationModal}
         onModeChange={handleUserModeChange}
         onLogout={handleLogout}
         onNotificationClick={handleNotificationClick}
+        onNotificationClose={handleCloseNotificationModal}
       />
       <LogoutConfirmationModal
         isOpen={showConfirm}
@@ -340,10 +353,6 @@ function Header() {
         onConfirm={handleConfirmLogout}
         title="로그아웃"
         message="정말 로그아웃 하시겠습니까?"
-      />
-      <NotificationListModal
-        open={showNotificationModal}
-        onClose={handleCloseNotificationModal}
       />
     </>
   );

@@ -187,15 +187,14 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
     }
   };
 
-  if (!open) return null;
-
   return (
     <>
       {/* 모바일: 전체 화면 오버레이 */}
-      <div
-        className="fixed inset-0 z-[999] bg-black/50 flex items-start justify-center pt-16 lg:hidden"
-        onClick={onClose}
-      >
+      {open && (
+        <div
+          className="fixed inset-0 z-[999] bg-black/50 flex items-start justify-center pt-16 lg:hidden"
+          onClick={onClose}
+        >
         <div
           className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-h-[80vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
@@ -271,21 +270,23 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
           )}
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* PC: 드롭다운 (배경 오버레이 없음) */}
-      <div className="hidden lg:block">
-        {/* 투명 배경 클릭 시 닫기 */}
-        <div
-          className="fixed inset-0 z-[998]"
-          onClick={onClose}
-        />
-        
-        {/* 드롭다운 메뉴 */}
-        <div
-          className="fixed top-16 right-4 z-[999] w-96 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-5rem)] overflow-hidden animate-fadeIn"
-          onClick={(e) => e.stopPropagation()}
-        >
+      {open && (
+        <div className="hidden lg:block">
+          {/* 투명 배경 클릭 시 닫기 */}
+          <div
+            className="fixed inset-0 z-[998]"
+            onClick={onClose}
+          />
+          
+          {/* 드롭다운 메뉴 */}
+          <div
+            className="absolute top-full right-0 mt-2 z-[999] w-96 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-5rem)] overflow-hidden animate-fadeIn"
+            onClick={(e) => e.stopPropagation()}
+          >
           {/* Header */}
           <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
             <h2 className="text-lg font-bold text-[#3D2C1D] dark:text-gray-100">알림</h2>
@@ -354,7 +355,8 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
             )}
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* 거절 사유 팝업 */}
       {showRejectionModal && selectedRejection && (
