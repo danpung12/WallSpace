@@ -14,6 +14,7 @@ export default function ArtworkDetailPage() {
   const [artist, setArtist] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     const fetchArtwork = async () => {
@@ -100,23 +101,8 @@ export default function ArtworkDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F1EC] dark:bg-gray-900">
-      {/* 헤더 */}
-      <header className="sticky top-0 z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            <svg className="w-6 h-6 text-[#2C2C2C] dark:text-gray-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h1 className="text-xl font-bold text-[#2C2C2C] dark:text-gray-100">작품 상세</h1>
-        </div>
-      </header>
-
       {/* 메인 컨텐츠 */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* 작품 이미지 */}
           <div className="relative aspect-square bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
@@ -144,11 +130,11 @@ export default function ArtworkDetailPage() {
           <div className="space-y-6">
             {/* 작품명 */}
             <div>
-              <h2 className="text-4xl font-bold text-[#2C2C2C] dark:text-gray-100 mb-2">
+              <h2 className="text-5xl font-bold text-[#2C2C2C] dark:text-gray-100 mb-4 leading-tight">
                 {artwork.title}
               </h2>
               {artwork.category && (
-                <span className="inline-block bg-[#D2B48C]/20 text-[#8B6F47] dark:bg-[#D2B48C]/10 dark:text-[#D2B48C] px-3 py-1 rounded-full text-sm font-medium">
+                <span className="inline-block bg-[#D2B48C]/20 text-[#8B6F47] dark:bg-[#D2B48C]/10 dark:text-[#D2B48C] px-4 py-2 rounded-full text-base font-medium">
                   {artwork.category}
                 </span>
               )}
@@ -156,17 +142,17 @@ export default function ArtworkDetailPage() {
 
             {/* 작가 정보 */}
             {artist && (
-              <div className="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-4 p-5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                 {artist.avatar_url ? (
                   <Image
                     src={artist.avatar_url}
                     alt={artist.nickname || artist.name || '작가'}
-                    width={60}
-                    height={60}
+                    width={64}
+                    height={64}
                     className="rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-15 h-15 rounded-full bg-gradient-to-br from-[#D2B48C] to-[#B8996B] flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#D2B48C] to-[#B8996B] flex items-center justify-center">
                     <span className="text-white text-2xl font-bold">
                       {(artist.nickname || artist.name || '?')[0].toUpperCase()}
                     </span>
@@ -174,68 +160,93 @@ export default function ArtworkDetailPage() {
                 )}
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">작가</p>
-                  <p className="text-lg font-bold text-[#2C2C2C] dark:text-gray-100">
+                  <p className="text-xl font-bold text-[#2C2C2C] dark:text-gray-100">
                     {artist.nickname || artist.name || '익명'}
                   </p>
                 </div>
               </div>
             )}
 
-            {/* 작품 상세 정보 */}
-            <div className="space-y-4 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-              {/* 치수 */}
-              {artwork.dimensions && (
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-[#D2B48C]/20 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-[#8B6F47]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">치수</p>
-                    <p className="text-lg text-[#2C2C2C] dark:text-gray-100">{artwork.dimensions}</p>
-                  </div>
-                </div>
-              )}
+            {/* 작품 설명 */}
+            {artwork.description && (
+              <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <p className="text-lg text-[#2C2C2C] dark:text-gray-100 leading-relaxed whitespace-pre-wrap">
+                  {artwork.description}
+                </p>
+              </div>
+            )}
 
-              {/* 가격 */}
-              {artwork.price !== null && artwork.price !== undefined && (
+            {/* 상세보기 버튼 */}
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-[#2C2C2C] dark:text-gray-100 px-6 py-4 rounded-xl font-semibold transition-all duration-200 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2"
+            >
+              <svg 
+                className={`w-5 h-5 transition-transform duration-200 ${showDetails ? 'rotate-180' : ''}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+              {showDetails ? '상세정보 닫기' : '상세정보 보기'}
+            </button>
+
+            {/* 작품 상세 정보 (토글) */}
+            {showDetails && (
+              <div className="space-y-4 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 animate-fadeIn">
+                {/* 치수 */}
+                {artwork.dimensions && (
+                  <div className="flex items-start gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#D2B48C]/20 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-[#8B6F47]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">치수</p>
+                      <p className="text-xl text-[#2C2C2C] dark:text-gray-100 font-medium">{artwork.dimensions}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 가격 */}
+                {artwork.price !== null && artwork.price !== undefined && (
+                  <div className="flex items-start gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#D2B48C]/20 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-[#8B6F47]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">작품 가격</p>
+                      <p className="text-2xl font-bold text-[#D2B48C]">
+                        ₩{artwork.price.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 등록일 */}
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-[#D2B48C]/20 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-[#8B6F47]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#D2B48C]/20 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-[#8B6F47]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">작품 가격</p>
-                    <p className="text-2xl font-bold text-[#D2B48C]">
-                      ₩{artwork.price.toLocaleString()}
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">등록일</p>
+                    <p className="text-lg text-[#2C2C2C] dark:text-gray-100">
+                      {new Date(artwork.created_at).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
                     </p>
                   </div>
                 </div>
-              )}
-
-              {/* 설명 */}
-              {artwork.description && (
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">작품 설명</p>
-                  <p className="text-[#2C2C2C] dark:text-gray-100 leading-relaxed whitespace-pre-wrap">
-                    {artwork.description}
-                  </p>
-                </div>
-              )}
-
-              {/* 등록일 */}
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  등록일: {new Date(artwork.created_at).toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
               </div>
-            </div>
+            )}
 
             {/* 공유 버튼 */}
             <button
