@@ -151,23 +151,20 @@ img, picture, video, canvas {
   scrollbar-color: var(--accent-color) transparent;
 }
 
-/* Swiper Navigation Button Styles */
+/* Swiper Navigation Button Styles - matching map detail page */
 .swiper-button-next,
 .swiper-button-prev {
-  width: 48px !important;
-  height: 48px !important;
-  background: rgba(255, 255, 255, 0.9) !important;
+  width: 32px !important;
+  height: 32px !important;
+  background: rgba(0, 0, 0, 0.4) !important;
   border-radius: 50% !important;
-  color: var(--primary-color) !important;
-  transition: all 0.3s ease !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  color: white !important;
+  transition: all 0.2s ease !important;
 }
 
 .swiper-button-next:hover,
 .swiper-button-prev:hover {
-  background: rgba(255, 255, 255, 1) !important;
-  transform: scale(1.1) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  background: rgba(0, 0, 0, 0.6) !important;
 }
 
 .swiper-button-next::after,
@@ -179,13 +176,13 @@ img, picture, video, canvas {
 /* Dark mode */
 .dark .swiper-button-next,
 .dark .swiper-button-prev {
-  background: rgba(55, 65, 81, 0.9) !important;
-  color: var(--accent-color) !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+  color: white !important;
 }
 
 .dark .swiper-button-next:hover,
 .dark .swiper-button-prev:hover {
-  background: rgba(55, 65, 81, 1) !important;
+  background: rgba(0, 0, 0, 0.6) !important;
 }
 
 /* Disabled state */

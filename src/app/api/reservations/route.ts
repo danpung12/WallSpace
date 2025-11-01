@@ -40,12 +40,11 @@ export async function GET(request: NextRequest) {
         .from('reservations')
         .select(`
           *,
-          location:locations(*),
+          location:locations(*, images:location_images(image_url)),
           space:spaces(*),
           artwork:artworks(*)
         `)
         .eq('id', id)
-        .eq('artist_id', user.id)
         .single();
 
       if (reservationError) {
@@ -54,6 +53,30 @@ export async function GET(request: NextRequest) {
           { error: 'Failed to fetch reservation', details: reservationError.message },
           { status: 500 }
         );
+      }
+
+      if (!reservation) {
+        return NextResponse.json(
+          { error: 'Reservation not found' },
+          { status: 404 }
+        );
+      }
+
+      // 권한 확인: 예약한 작가 본인이거나 장소 관리자인 경우만 조회 가능
+      const isArtist = reservation.artist_id === user.id;
+      const isManager = (reservation as any).location?.manager_id === user.id;
+
+      if (!isArtist && !isManager) {
+        console.log('❌ Unauthorized access attempt:', { userId: user.id, artistId: reservation.artist_id, managerId: (reservation as any).location?.manager_id });
+        return NextResponse.json(
+          { error: 'Unauthorized to view this reservation' },
+          { status: 403 }
+        );
+      }
+
+      // Location 이미지를 배열로 변환
+      if ((reservation as any).location?.images) {
+        (reservation as any).location.images = ((reservation as any).location.images as any[]).map(img => img.image_url);
       }
 
       console.log('✅ Reservation fetched:', reservation?.id);
