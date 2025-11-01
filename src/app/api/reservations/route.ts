@@ -42,8 +42,7 @@ export async function GET(request: NextRequest) {
           *,
           location:locations(*, images:location_images(image_url)),
           space:spaces(*),
-          artwork:artworks(*),
-          artist:profiles!reservations_artist_id_fkey(id, name, nickname, phone, email, avatar_url)
+          artwork:artworks(*)
         `)
         .eq('id', id)
         .single();
@@ -75,6 +74,19 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      // Artist 정보를 별도로 가져오기
+      if (reservation.artist_id) {
+        const { data: artist } = await supabase
+          .from('profiles')
+          .select('id, name, nickname, phone, email, avatar_url')
+          .eq('id', reservation.artist_id)
+          .single();
+        
+        if (artist) {
+          (reservation as any).artist = artist;
+        }
+      }
+
       // Location 이미지를 배열로 변환
       if ((reservation as any).location?.images) {
         (reservation as any).location.images = ((reservation as any).location.images as any[]).map(img => img.image_url);
@@ -95,8 +107,7 @@ export async function GET(request: NextRequest) {
           images:location_images(image_url)
         ),
         space:spaces(*),
-        artwork:artworks(*),
-        artist:profiles!reservations_artist_id_fkey(id, name, nickname, phone, email, avatar_url)
+        artwork:artworks(*)
       `);
 
     // location_id로 조회할 때 (사장님이 자기 가게의 모든 예약 조회)
@@ -172,6 +183,23 @@ export async function GET(request: NextRequest) {
 
     // ⚡ JOIN으로 이미 모든 데이터를 가져왔으므로 추가 처리만 수행
     if (reservations && reservations.length > 0) {
+      // Artist 정보를 별도로 가져오기
+      const artistIds = [...new Set(reservations.map(r => r.artist_id).filter(Boolean))];
+      if (artistIds.length > 0) {
+        const { data: artists } = await supabase
+          .from('profiles')
+          .select('id, name, nickname, phone, email, avatar_url')
+          .in('id', artistIds);
+        
+        // Artist 정보를 각 예약에 매핑
+        if (artists) {
+          const artistMap = new Map(artists.map(a => [a.id, a]));
+          for (const reservation of reservations) {
+            (reservation as any).artist = artistMap.get(reservation.artist_id) || null;
+          }
+        }
+      }
+
       for (const reservation of reservations) {
         // Location 이미지를 배열로 변환
         if ((reservation as any).location?.images) {

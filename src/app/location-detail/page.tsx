@@ -1176,29 +1176,53 @@ function LocationDetailContent() {
                                   </div>
                                 </div>
 
-                                {/* 모바일: 예약현황 버튼을 오른쪽 상단에 배치 */}
-                                <button
-                                  onClick={() => handleViewSpaceReservations(space.id, space.name)}
-                                  disabled={loadingReservations}
-                                  className="sm:hidden absolute top-4 right-4 p-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 text-xs bg-[#D2B48C] hover:bg-[#C19A6B] text-white disabled:opacity-50 disabled:cursor-not-allowed shadow-md z-10"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                                  </svg>
-                                  {loadingReservations ? '...' : '예약'}
-                                </button>
-
-                                {/* PC: 기존 버튼 레이아웃 유지 */}
-                                <div className="hidden sm:flex gap-2 flex-wrap">
+                                {/* 모바일: 예약 버튼을 오른쪽 상단에 배치 */}
+                                {!isEditing && (
                                   <button
                                     onClick={() => handleViewSpaceReservations(space.id, space.name)}
                                     disabled={loadingReservations}
-                                    className="flex-1 sm:flex-initial px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-sm bg-[#D2B48C] hover:bg-[#C19A6B] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="sm:hidden absolute top-4 right-4 px-3 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 text-xs bg-[#D2B48C] hover:bg-[#C19A6B] text-white disabled:opacity-50 disabled:cursor-not-allowed shadow-md z-10"
                                   >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                                     </svg>
-                                    {loadingReservations ? '로딩 중...' : '예약현황'}
+                                    {loadingReservations ? '...' : '예약'}
+                                  </button>
+                                )}
+
+                                {/* 모바일 & PC: 버튼 레이아웃 */}
+                                <div className="flex gap-2 flex-wrap">
+                                  {/* PC: 예약현황 버튼 / 모바일: 수정 버튼 */}
+                                  <button
+                                    onClick={() => {
+                                      if (window.innerWidth >= 640) {
+                                        // PC: 예약현황
+                                        handleViewSpaceReservations(space.id, space.name);
+                                      } else {
+                                        // 모바일: 수정
+                                        setEditingSpaceId(space.id);
+                                        setSpaceEditValues({
+                                          max_artworks: space.max_artworks || 1,
+                                          width: space.width,
+                                          height: space.height,
+                                          depth: space.depth,
+                                          price_per_day: space.price_per_day || space.price || 0,
+                                          name: space.name,
+                                          description: space.description || ''
+                                        });
+                                      }
+                                    }}
+                                    disabled={loadingReservations}
+                                    className="flex-1 sm:flex-initial px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:bg-[#D2B48C] sm:hover:bg-[#C19A6B] sm:text-white bg-white hover:bg-gray-50 text-[#D2B48C] border border-[#D2B48C] sm:border-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    <svg className="w-4 h-4 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    <svg className="w-4 h-4 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                    </svg>
+                                    <span className="sm:hidden">수정</span>
+                                    <span className="hidden sm:inline">{loadingReservations ? '로딩 중...' : '예약현황'}</span>
                                   </button>
                                   <button
                                     onClick={() => handleToggleSpaceAvailability(space.id, space.manually_closed || false)}
