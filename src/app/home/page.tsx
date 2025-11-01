@@ -6,7 +6,6 @@ import Image from 'next/image';
 // --- 라이브러리 임포트 ---
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
-import { IoNotificationsCircle } from 'react-icons/io5';
 import { useMap, LocationType } from '../../context/MapContext'; // ✨ 1. 지도 컨텍스트 훅 및 MapProvider 임포트
 import { useRouter } from 'next/navigation'; // 1. useRouter 훅 임포트
 import { Location } from '@/data/locations';
@@ -19,34 +18,6 @@ import 'swiper/css/pagination';
 // MapDisplay 컴포넌트 임포트
 import MapDisplay from '../components/MapDisplay';
 import Header from '../components/Header'; // 1. Header 컴포넌트 임포트
-
-// --- 타입 정의 ---
-interface Notification {
-  id: string;
-  user_id: string;
-  type: string;
-  title: string;
-  message: string;
-  is_read: boolean;
-  related_id: string | null;
-  created_at: string;
-}
-
-// --- 유틸리티 함수 ---
-const getTimeAgo = (dateString: string): string => {
-  const now = new Date();
-  const past = new Date(dateString);
-  const diffMs = now.getTime() - past.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return '방금 전';
-  if (diffMins < 60) return `${diffMins}분 전`;
-  if (diffHours < 24) return `${diffHours}시간 전`;
-  if (diffDays < 7) return `${diffDays}일 전`;
-  return past.toLocaleDateString('ko-KR');
-};
 
 // --- 유틸리티 함수 ---
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -162,62 +133,13 @@ const GlobalSwiperStyles = () => {
 
 
 // --- 하위 컴포넌트 ---
-interface NotificationItemProps {
-  notification: Notification;
-  onClick: () => void;
-}
-
-const NotificationItem = ({ notification, onClick }: NotificationItemProps) => {
-  const timeAgo = getTimeAgo(notification.created_at);
-  
-  return (
-    <div 
-      className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg rounded-2xl flex items-center shadow-lg border border-white/20 dark:border-gray-700/30 cursor-pointer hover:bg-white dark:hover:bg-gray-800 transition-colors duration-200"
-      onClick={onClick}
-      style={{ 
-        height: 'clamp(4.75rem, 11.37vh, 7rem)',
-        padding: 'clamp(0.5rem, 1.9vh, 1.25rem)',
-        gap: 'clamp(0.375rem, 0.77vw, 0.75rem)'
-      }}
-    >
-      <IoNotificationsCircle 
-        className={`flex-shrink-0 ${notification.is_read ? 'text-gray-400' : 'text-[#D2B48C] dark:text-[#E8C8A0]'}`}
-        style={{ fontSize: 'clamp(1.75rem, 9.23vw, 2.5rem)' }}
-      />
-      <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-center">
-          <h3 className={`font-bold truncate ${notification.is_read ? 'text-gray-500' : 'text-[#2C2C2C] dark:text-gray-100'}`}
-            style={{ fontSize: 'clamp(0.8125rem, 4.1vw, 1.125rem)' }}>
-            {notification.title}
-          </h3>
-          <p className="flex-shrink-0 text-[#887563] dark:text-gray-400"
-            style={{ 
-              fontSize: 'clamp(0.625rem, 3.08vw, 0.875rem)',
-              marginLeft: 'clamp(0.25rem, 0.77vw, 0.5rem)'
-            }}>
-            {timeAgo}
-          </p>
-        </div>
-        <p className="text-[#887563] dark:text-gray-400 truncate"
-          style={{ 
-            fontSize: 'clamp(0.6875rem, 3.59vw, 0.9375rem)',
-            marginTop: 'clamp(0.0625rem, 0.3vh, 0.25rem)'
-          }}>
-          {notification.message}
-        </p>
-      </div>
-    </div>
-  );
-};
-
 interface RecommendedPlacesProps {
   onSlideChange: (index: number) => void;
   userLocation: { lat: number; lng: number } | null;
   locations: Location[];
-  hasNotifications: boolean;
 }
 
-const RecommendedPlaces = ({ onSlideChange, userLocation, locations, hasNotifications }: RecommendedPlacesProps) => {
+const RecommendedPlaces = ({ onSlideChange, userLocation, locations }: RecommendedPlacesProps) => {
   const router = useRouter(); // 2. router 인스턴스 생성
 
   const handlePlaceCardClick = (place: Location) => {
@@ -267,7 +189,7 @@ const RecommendedPlaces = ({ onSlideChange, userLocation, locations, hasNotifica
       </div>
 
       {/* PC: Grid - 화면 너비에 따라 자동 조절 (최대 3개) */}
-      <div className={`hidden lg:grid lg:gap-6 ${hasNotifications ? 'lg:grid-cols-1 xl:grid-cols-2' : 'lg:grid-cols-2 xl:grid-cols-3'}`}>
+      <div className="hidden lg:grid lg:gap-6 lg:grid-cols-2 xl:grid-cols-3">
         {locations.map((place) => (
           <PlaceCard
             key={place.id}
@@ -438,18 +360,16 @@ PlaceCard.displayName = 'PlaceCard';
 export default function MainPage() {
   const router = useRouter();
   const [locations, setLocations] = useState<Location[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [currentPlaceIndex, setCurrentPlaceIndex] = useState(0);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [isNavigating, setIsNavigating] = useState(false); // 로딩 상태 추가
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showTopFade, setShowTopFade] = useState(false);
   const [showBottomFade, setShowBottomFade] = useState(true);
 
-  // 추천 장소: 사용자 위치 기반 가까운 순으로 (알림 있으면 4곳, 없으면 12곳)
+  // 추천 장소: 사용자 위치 기반 가까운 순으로 12곳
   const recommendedLocations = useMemo(() => {
-    const maxLocations = notifications.length > 0 ? 4 : 12;
+    const maxLocations = 12;
     
     if (!userLocation || locations.length === 0) {
       return locations.slice(0, maxLocations);
@@ -470,7 +390,7 @@ export default function MainPage() {
     return locationsWithDistance
       .sort((a, b) => a.distance - b.distance)
       .slice(0, maxLocations);
-  }, [locations, userLocation, notifications.length]);
+  }, [locations, userLocation]);
 
   // 장소 데이터 로드
   useEffect(() => {
@@ -490,74 +410,6 @@ export default function MainPage() {
     
     loadLocations();
   }, []);
-
-  // 알림 데이터 로드 (로그인한 사용자만)
-  useEffect(() => {
-    const loadNotifications = async () => {
-      try {
-        // 로그인 상태 확인
-        const { createClient } = await import('@/lib/supabase/client');
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        // 로그인하지 않은 사용자는 알림을 로드하지 않음
-        if (!user) {
-          setNotifications([]);
-          return;
-        }
-
-        const response = await fetch('/api/notifications');
-        if (response.ok) {
-          const data: Notification[] = await response.json();
-          // 최신 3개만 표시
-          setNotifications(data.slice(0, 3));
-        } else {
-          // 응답 실패 시 빈 배열로 설정 (오류 무시)
-          setNotifications([]);
-        }
-      } catch (error) {
-        // 오류 발생 시 빈 배열로 설정 (조용히 처리)
-        console.log('알림 로드 실패 (로그인하지 않은 사용자):', error);
-        setNotifications([]);
-      }
-    };
-    
-    loadNotifications();
-    
-    // 30초마다 알림 업데이트
-    const interval = setInterval(loadNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // 알림 클릭 핸들러
-  const handleNotificationClick = async (notification: Notification) => {
-    // 로딩 시작
-    setIsNavigating(true);
-
-    try {
-      // 읽음 처리
-      if (!notification.is_read) {
-        await fetch(`/api/notifications/${notification.id}`, { method: 'PATCH' });
-      }
-
-      // 페이지 이동
-      if (notification.related_id) {
-        let path = '';
-        if (notification.type === 'reservation_request') {
-          path = `/manager-booking-approval?id=${notification.related_id}`;
-        } else if (notification.type === 'reservation_status_update' || notification.type === 'reservation_confirmed') {
-          // 예약 승인 알림 - 전시중 상세 페이지로 이동
-          path = `/exhibition-detail?id=${notification.related_id}`;
-        }
-        if (path) {
-          router.push(path);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to process notification:', err);
-      setIsNavigating(false); // 오류 발생 시 로딩 종료
-    }
-  };
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -609,96 +461,24 @@ export default function MainPage() {
   return (
     <>
       <GlobalSwiperStyles />
-      <Header /> {/* 2. Header 컴포넌트 추가 */}
-      
-      {/* 로딩 화면 */}
-      {isNavigating && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 flex flex-col items-center gap-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary-color)]"></div>
-            <p className="text-[var(--text-primary)] font-medium">로딩 중...</p>
-          </div>
-        </div>
-      )}
+      <Header />
       
       <div className="h-screen w-full lg:h-screen lg:overflow-hidden relative bg-[#e8e3da] dark:bg-[#1a1a1a] transition-colors duration-300 flex flex-col">
 
         <div className="relative z-10 mx-auto w-full max-w-screen-2xl flex-grow flex flex-col lg:overflow-y-auto lg:scrollbar-hide lg:px-8 lg:pb-0 lg:!pt-[40px]"
           style={{
             paddingTop: 'clamp(1rem, 3.79vh, 2rem)',
-            paddingBottom: notifications.length > 0 ? 'clamp(1.5rem, 5.69vh, 3rem)' : '0' // 알림 있을 때만 여유 공간
+            paddingBottom: '0'
           }}>
           <div className="lg:flex lg:h-full lg:gap-8 flex-grow flex flex-col lg:flex-row">
-            {/* 모바일: 항상 표시, PC: 숨김 (Header에 알림 아이콘 있음) */}
-            <div className="lg:hidden">
-              <section className="sm:px-6 lg:sticky lg:top-12 lg:px-0"
-                style={{
-                  paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
-                  paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)'
-                }}>
-                <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
-                  style={{
-                    marginBottom: 'clamp(0.5rem, 1.9vh, 1rem)',
-                    fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)'
-                  }}>
-                  새로운 알림
-                </h2>
-                {notifications.length > 0 ? (
-                  <div style={{ 
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 'clamp(0.5rem, 1.42vh, 0.75rem)'
-                  }}>
-                    {notifications.map((notification) => (
-                      <NotificationItem 
-                        key={notification.id} 
-                        notification={notification}
-                        onClick={() => handleNotificationClick(notification)}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg rounded-2xl flex flex-col items-center justify-center shadow-lg border border-white/20 dark:border-gray-700/30"
-                    style={{ 
-                      height: 'clamp(4.5rem, 20vh, 12rem)',
-                      padding: 'clamp(0.75rem, 2.5vh, 1.5rem)',
-                      gap: 'clamp(0.375rem, 1.5vh, 0.875rem)',
-                      width: '90%',
-                      marginLeft: 'auto',
-                      marginRight: 'auto'
-                    }}>
-                    <div style={{ 
-                      width: 'clamp(2.5rem, 6vh, 4rem)', 
-                      height: 'clamp(2.5rem, 6vh, 4rem)' 
-                    }} className="rounded-full bg-gradient-to-br from-[#D2B48C]/20 to-[#C19A6B]/20 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[#C19A6B]" style={{ fontSize: 'clamp(1.5rem, 4.5vh, 2.5rem)' }}>notifications_off</span>
-                    </div>
-                    <div className="text-center">
-                      <h4 className="font-bold text-[#2C2C2C] dark:text-gray-100"
-                        style={{ 
-                          fontSize: 'clamp(0.8125rem, 3vh, 1.125rem)',
-                          marginBottom: 'clamp(0.125rem, 0.5vh, 0.375rem)'
-                        }}>
-                        새 알림이 없습니다
-                      </h4>
-                      <p className="text-[#887563] dark:text-gray-400"
-                        style={{ fontSize: 'clamp(0.6875rem, 2vh, 0.875rem)' }}>
-                        알림이 도착하면 여기에 표시됩니다
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </section>
-            </div>
-
             <div className="lg:mt-0 lg:flex lg:flex-col lg:w-full flex-grow flex flex-col justify-end lg:justify-start"
               style={{
-                marginTop: notifications.length > 0 ? 'clamp(1rem, 3.79vh, 2rem)' : 'clamp(1rem, 3vh, 2rem)',
+                marginTop: 'clamp(1rem, 3vh, 2rem)',
                 marginBottom: 'clamp(12rem, 30vh, 22rem)'
               }}>
               <div className="flex items-baseline sm:px-6 lg:px-0"
                 style={{
-                  marginBottom: notifications.length > 0 ? 'clamp(0.5rem, 1.9vh, 1rem)' : 'clamp(1rem, 3vh, 2rem)',
+                  marginBottom: 'clamp(1rem, 3vh, 2rem)',
                   paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
                   paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)'
                 }}>
@@ -723,7 +503,6 @@ export default function MainPage() {
                     onSlideChange={setCurrentPlaceIndex}
                     userLocation={userLocation}
                     locations={recommendedLocations}
-                    hasNotifications={notifications.length > 0}
                   />
                 </div>
               </div>

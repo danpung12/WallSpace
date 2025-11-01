@@ -130,12 +130,19 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
 
       // 페이지 이동
       if (notification.related_id) {
+        let path = '';
         if (notification.type === 'reservation_request') {
           // 매니저: 예약 요청 상세
-          router.push(`/manager-booking-approval?id=${notification.related_id}`);
-        } else if (notification.type === 'reservation_confirmed' || notification.type === 'reservation_cancelled') {
+          path = `/manager-booking-approval?id=${notification.related_id}`;
+        } else if (notification.type === 'reservation_status_update' || notification.type === 'reservation_confirmed') {
+          // 작가: 전시중 상세 페이지
+          path = `/exhibition-detail?id=${notification.related_id}`;
+        } else if (notification.type === 'reservation_cancelled') {
           // 작가: 예약 상세
-          router.push(`/bookingdetail?id=${notification.related_id}`);
+          path = `/bookingdetail?id=${notification.related_id}`;
+        }
+        if (path) {
+          router.push(path);
         }
       }
 
@@ -273,18 +280,18 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
         </div>
       )}
 
-      {/* PC: 드롭다운 (배경 오버레이 없음) */}
+      {/* PC: 중앙 모달 */}
       {open && (
         <div className="hidden lg:block">
-          {/* 투명 배경 클릭 시 닫기 */}
+          {/* 배경 오버레이 */}
           <div
-            className="fixed inset-0 z-[998]"
+            className="fixed inset-0 z-[998] bg-black/50"
             onClick={onClose}
           />
           
           {/* 드롭다운 메뉴 */}
           <div
-            className="absolute top-full right-0 mt-2 z-[999] w-96 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-5rem)] overflow-hidden animate-fadeIn"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[999] w-96 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-8rem)] overflow-hidden animate-fadeIn"
             onClick={(e) => e.stopPropagation()}
           >
           {/* Header */}
@@ -299,7 +306,7 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
           </div>
 
           {/* Content */}
-          <div className="overflow-y-auto max-h-[calc(100vh-8rem)] custom-scrollbar">
+          <div className="overflow-y-auto max-h-[calc(100vh-12rem)] custom-scrollbar">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-gray-500 dark:text-gray-400">로딩 중...</div>
