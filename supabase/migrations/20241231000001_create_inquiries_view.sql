@@ -39,3 +39,7 @@ COMMENT ON VIEW public.inquiries_with_user IS '사용자 정보가 포함된 문
 -- 뷰는 자동으로 기본 테이블(inquiries)의 RLS 정책을 상속받습니다.
 
 
+
+
+
+

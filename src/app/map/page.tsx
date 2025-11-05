@@ -127,6 +127,7 @@ function MapPageContent() {
         cells, hasRange, filterButtons, headerLabel,
         isOptionsMenuOpen, setOptionsMenuOpen,
         handlePlaceSelect, gotoMonth, isDisabled, onClickDay, getDayClass, handleFilterClick,
+        moveToCurrentLocation, // 현재 위치로 이동 함수 추가
         // 데이터베이스에서 가져온 데이터
         locations,
         artworks,
@@ -313,11 +314,64 @@ function MapPageContent() {
                   font-size: 16px !important;
                 }
               }
+
+              /* 현재 위치 버튼 스타일 */
+              .current-location-button {
+                position: fixed;
+                z-index: 30;
+                background: white;
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                cursor: pointer;
+                transition: all 0.3s ease;
+                border: 2px solid var(--theme-brown-light);
+              }
+              .current-location-button:hover {
+                transform: scale(1.05);
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+              }
+              .current-location-button:active {
+                transform: scale(0.95);
+              }
+              
+              /* 모바일: 우측 하단 */
+              @media (max-width: 1023px) {
+                .current-location-button {
+                  bottom: 100px;
+                  right: 1rem;
+                }
+              }
+              
+              /* PC: 우측 하단 (조금 더 위) */
+              @media (min-width: 1024px) {
+                .current-location-button {
+                  bottom: 2rem;
+                  right: 2rem;
+                }
+              }
             `}</style>
 
             <div className={`page-container`}>
                 <MapDisplay />
                 {isMapLoading && <LoadingScreen />}
+                
+                {/* 현재 위치로 이동 버튼 */}
+                {!isMapLoading && (
+                    <button 
+                        className="current-location-button"
+                        onClick={moveToCurrentLocation}
+                        title="현재 위치로 이동"
+                    >
+                        <span className="material-symbols-outlined" style={{ color: 'var(--theme-brown-darkest)', fontSize: '28px' }}>
+                            my_location
+                        </span>
+                    </button>
+                )}
 
                 {!isMapLoading && (
                   <div className="top-search-bar">

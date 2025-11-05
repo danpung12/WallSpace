@@ -12,3 +12,7 @@ ADD COLUMN IF NOT EXISTS image_url TEXT;
 COMMENT ON COLUMN public.inquiries.image_url IS '문의 첨부 이미지 URL (Supabase Storage 경로)';
 
 
+
+
+
+

@@ -76,3 +76,7 @@ WHERE typname IN ('inquiry_type', 'inquiry_status');
 3. `.env.local` 파일의 SUPABASE URL (앞부분만)
 
 
+
+
+
+

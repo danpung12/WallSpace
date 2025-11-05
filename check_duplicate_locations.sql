@@ -25,3 +25,7 @@ SELECT COUNT(*) as total_locations FROM locations;
 
 
 
+
+
+
+

@@ -115,3 +115,7 @@ COMMENT ON COLUMN public.inquiries.status IS '처리 상태 (pending, in_progres
 COMMENT ON COLUMN public.inquiries.admin_reply IS '관리자 답변';
 
 
+
+
+
+

@@ -36,6 +36,7 @@ interface MapContextType {
     selectedPlace: LocationDetail | null;
     setSelectedPlace: React.Dispatch<React.SetStateAction<LocationDetail | null>>;
     initializeMap: (container: HTMLElement) => void;
+    moveToCurrentLocation: () => void;
     
     // Supabase 데이터
     locations: LocationDetail[];
@@ -85,6 +86,8 @@ const MapContext = createContext<MapContextType | null>(null);
 export function MapProvider({ children }: { children: ReactNode }) {
     const mapInstance = useRef<KakaoMap | null>(null);
     const markersRef = useRef<any[]>([]); // Ref to store markers
+    const currentLocationMarkerRef = useRef<any>(null); // Ref to store current location marker
+    const userLocationRef = useRef<{ lat: number; lng: number } | null>(null); // Store user location
     const [isMapLoading, setMapLoading] = useState(true);
     const [locationInfo, setLocationInfo] = useState({ city: '위치 찾는 중...' });
     const [selectedPlace, setSelectedPlace] = useState<LocationDetail | null>(null);
@@ -333,15 +336,100 @@ export function MapProvider({ children }: { children: ReactNode }) {
     }, [activeFilter, parkingFilter, open24HoursFilter, petsAllowedFilter]);
 
 
+    // 현재 위치 마커 생성 함수
+    const createCurrentLocationMarker = useCallback((map: KakaoMap, lat: number, lng: number) => {
+        const { kakao } = window;
+        if (!kakao) return;
+
+        // 기존 마커가 있다면 제거
+        if (currentLocationMarkerRef.current) {
+            currentLocationMarkerRef.current.setMap(null);
+        }
+
+        const position = new kakao.maps.LatLng(lat, lng);
+
+        // 현재 위치 마커용 HTML 생성 (네이버 지도 스타일 - 더 크게)
+        const content = document.createElement('div');
+        content.style.cssText = `
+            position: relative;
+            width: 30px;
+            height: 30px;
+        `;
+        
+        // 외부 펄스 효과
+        const pulse = document.createElement('div');
+        pulse.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            animation: pulse 2s ease-out infinite;
+        `;
+        
+        // 내부 파란색 점
+        const dot = document.createElement('div');
+        dot.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 24px;
+            height: 24px;
+            background: #3B82F6;
+            border: 4px solid white;
+            border-radius: 50%;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+        `;
+        
+        content.appendChild(pulse);
+        content.appendChild(dot);
+
+        // CSS 애니메이션 추가
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% {
+                    transform: translate(-50%, -50%) scale(0.5);
+                    opacity: 0.8;
+                }
+                100% {
+                    transform: translate(-50%, -50%) scale(1.5);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        const customOverlay = new kakao.maps.CustomOverlay({
+            map: map,
+            position: position,
+            content: content,
+            zIndex: 100
+        });
+
+        currentLocationMarkerRef.current = customOverlay;
+    }, []);
+
     const initializeMap = useCallback((container: HTMLElement) => {
         if (isMapInitialized.current || !window.kakao) return;
         isMapInitialized.current = true;
         
         window.kakao.maps.load(() => {
-            const createAndSetupMap = (lat: number, lng: number) => {
+            const createAndSetupMap = (lat: number, lng: number, isUserLocation: boolean = false) => {
                 const map = new window.kakao.maps.Map(container, { center: new window.kakao.maps.LatLng(lat, lng), level: 5 });
                 mapInstance.current = map;
                 loadMarkers(map);
+                
+                // 사용자 위치가 있는 경우 현재 위치 마커 표시 및 저장
+                if (isUserLocation) {
+                    userLocationRef.current = { lat, lng };
+                    createCurrentLocationMarker(map, lat, lng);
+                }
+                
                 const geocoder = new window.kakao.maps.services.Geocoder();
                 const updateLocationInfo = (center: KakaoLatLng) => {
                     geocoder.coord2Address(center.getLng(), center.getLat(), (result: KakaoGeocoderResult, status: KakaoGeocoderStatus) => {
@@ -352,9 +440,12 @@ export function MapProvider({ children }: { children: ReactNode }) {
                 window.kakao.maps.event.addListener(map, 'center_changed', () => updateLocationInfo(map.getCenter()));
                 setMapLoading(false);
             };
-            navigator.geolocation.getCurrentPosition(p => createAndSetupMap(p.coords.latitude, p.coords.longitude), () => createAndSetupMap(37.5665, 126.9780));
+            navigator.geolocation.getCurrentPosition(
+                p => createAndSetupMap(p.coords.latitude, p.coords.longitude, true), 
+                () => createAndSetupMap(37.5665, 126.9780, false)
+            );
         });
-    }, [loadMarkers]);
+    }, [loadMarkers, createCurrentLocationMarker]);
     
     const handlePlaceSelect = useCallback((place: KakaoPlace) => {
         const map = mapInstance.current;
@@ -421,8 +512,36 @@ export function MapProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
+    // 현재 위치로 이동하는 함수
+    const moveToCurrentLocation = useCallback(() => {
+        const map = mapInstance.current;
+        if (!map || !window.kakao) return;
+        
+        if (userLocationRef.current) {
+            // 저장된 사용자 위치로 이동
+            const { lat, lng } = userLocationRef.current;
+            const moveLatLon = new window.kakao.maps.LatLng(lat, lng);
+            map.panTo(moveLatLon);
+        } else {
+            // 사용자 위치가 없으면 현재 위치를 다시 가져옴
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    userLocationRef.current = { lat: latitude, lng: longitude };
+                    createCurrentLocationMarker(map, latitude, longitude);
+                    const moveLatLon = new window.kakao.maps.LatLng(latitude, longitude);
+                    map.panTo(moveLatLon);
+                },
+                (error) => {
+                    console.error('Error getting current location:', error);
+                    alert('현재 위치를 가져올 수 없습니다. 위치 권한을 확인해주세요.');
+                }
+            );
+        }
+    }, [createCurrentLocationMarker]);
+
     const value = {
-        mapInstance, isMapLoading, locationInfo, selectedPlace, setSelectedPlace, initializeMap,
+        mapInstance, isMapLoading, locationInfo, selectedPlace, setSelectedPlace, initializeMap, moveToCurrentLocation,
         isDetailPageVisible, setDetailPageVisible, isDatePickerOpen, setDatePickerOpen, viewDate, startDate, endDate,
         activeFilter, selectedArtwork, setSelectedArtwork, isArtworkModalOpen, setArtworkModalOpen, isArtworkSelectorVisible,
         isSearchModalOpen, setSearchModalOpen, isOptionsMenuOpen, setOptionsMenuOpen, parkingFilter, setParkingFilter,
