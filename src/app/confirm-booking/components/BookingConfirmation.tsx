@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import type { Location, Space } from '@/data/locations';
 import { Artwork } from '@/types/database';
 import ArtworkSelector from '@/app/map/components/ArtworkSelector';
+import { loadTossPayments, ANONYMOUS } from '@tosspayments/tosspayments-sdk';
 
 // --- 날짜 포맷팅 유틸 함수 ---
 const fmtKoreanDate = (d: Date) =>
@@ -39,6 +40,24 @@ export default function BookingConfirmation({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showArtworkSelector, setShowArtworkSelector] = useState(false);
+  const [payment, setPayment] = useState<any>(null);
+  const [isPaymentReady, setIsPaymentReady] = useState(false);
+
+  if (!bookingDetails) {
+    return <div>Loading...</div>;
+  }
+
+  const { location, space, startDate, endDate } = bookingDetails;
+
+  // 비용 계산 (먼저 계산)
+  const durationDays = daysDiffInclusive(startDate, endDate);
+  const spaceUsage = (space.price || 50000) * durationDays;
+  const total = spaceUsage; // 서비스 수수료 제거
+
+  const costDetails = {
+    spaceUsage,
+    total,
+  };
 
   // 사용자의 작품 목록 가져오기
   useEffect(() => {
@@ -79,47 +98,62 @@ export default function BookingConfirmation({
     fetchUserArtworks();
   }, []);
 
-  if (!bookingDetails) {
-    return <div>Loading...</div>;
-  }
+  // 토스페이먼츠 결제 인스턴스 초기화
+  useEffect(() => {
+    const initPayment = async () => {
+      try {
+        setIsPaymentReady(false);
+        setError(null);
+        
+        // 클라이언트 키는 환경 변수에서 가져오거나 테스트 키 사용
+        const clientKey = process.env.NEXT_PUBLIC_TOSS_PAYMENTS_CLIENT_KEY || 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
+        
+        if (!clientKey) {
+          throw new Error('결제 클라이언트 키가 설정되지 않았습니다.');
+        }
 
-  const { location, space, startDate, endDate } = bookingDetails;
+        console.log('💳 토스페이먼츠 초기화 시작...');
+        const tossPayments = await loadTossPayments(clientKey);
+        
+        // 결제 인스턴스 생성 (비회원 결제)
+        const paymentInstance = tossPayments.payment({ customerKey: ANONYMOUS });
 
-  // 비용 계산
-  const durationDays = daysDiffInclusive(startDate, endDate);
-  const spaceUsage = (space.price || 50000) * durationDays;
-  const total = spaceUsage; // 서비스 수수료 제거
+        setPayment(paymentInstance);
+        setIsPaymentReady(true);
+        console.log('✅ 토스페이먼츠 초기화 완료');
+      } catch (error: any) {
+        console.error('❌ 토스페이먼츠 초기화 실패:', error);
+        setError(`결제 시스템 초기화에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+        setIsPaymentReady(false);
+      }
+    };
 
-  const costDetails = {
-    spaceUsage,
-    total,
-  };
+    if (costDetails.total > 0) {
+      initPayment();
+    } else {
+      setIsPaymentReady(false);
+    }
+  }, [costDetails.total]);
 
-  // 예약 생성 핸들러
+  // 결제 및 예약 생성 핸들러
   const handleConfirmBooking = async () => {
     if (!selectedArtwork) {
       alert('전시할 작품을 선택해주세요.');
       return;
     }
 
-    // 디버깅: 데이터 확인
-    console.log('📦 Booking Details:', {
-      location: location,
-      space: space,
-      selectedArtwork: selectedArtwork,
-      startDate: startDate,
-      endDate: endDate
-    });
-
     // 필수 데이터 검증
     if (!location?.id) {
       alert('장소 정보가 없습니다. 다시 시도해주세요.');
-      console.error('❌ location.id is missing:', location);
       return;
     }
     if (!space?.id) {
       alert('공간 정보가 없습니다. 다시 시도해주세요.');
-      console.error('❌ space.id is missing:', space);
+      return;
+    }
+
+    if (!payment || !isPaymentReady) {
+      alert('결제 시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
       return;
     }
 
@@ -138,34 +172,36 @@ export default function BookingConfirmation({
         artwork_id: selectedArtwork.id,
         start_date: formatDate(startDate),
         end_date: formatDate(endDate),
+        amount: costDetails.total,
       };
 
-      console.log('📤 Creating reservation:', reservationData);
-
-      const response = await fetch('/api/reservations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // 토스페이먼츠 결제 요청 (결제창으로 직접 이동)
+      const orderId = `order_${Date.now()}`;
+      await payment.requestPayment({
+        method: 'CARD', // 카드 및 간편결제 통합결제창
+        amount: {
+          currency: 'KRW',
+          value: costDetails.total,
         },
-        body: JSON.stringify(reservationData),
+        orderId,
+        orderName: `${location.name} - ${space.name} 예약`,
+        successUrl: `${window.location.origin}/api/payment/success?orderId=${orderId}`,
+        failUrl: `${window.location.origin}/confirm-booking?fail=true`,
+        customerEmail: 'customer@example.com', // 실제로는 사용자 이메일 사용
+        customerName: '고객', // 실제로는 사용자 이름 사용
+        card: {
+          useEscrow: false,
+          flowMode: 'DEFAULT', // 통합결제창
+          useCardPoint: false,
+          useAppCardOnly: false,
+        },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create reservation');
-      }
-
-      const result = await response.json();
-      console.log('✅ Reservation created:', result);
-
-      // 예약 성공
-      if (onConfirm && result.reservation) {
-        onConfirm(result.reservation.id);
-      }
+      // 결제창으로 리다이렉트되므로 여기서는 처리하지 않음
     } catch (err: any) {
-      console.error('Error creating reservation:', err);
-      setError(err.message || '예약 생성 중 오류가 발생했습니다.');
-      alert(`예약 실패: ${err.message}`);
+      console.error('Error processing payment/reservation:', err);
+      setError(err.message || '결제 및 예약 처리 중 오류가 발생했습니다.');
+      alert(`결제 실패: ${err.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -317,6 +353,7 @@ export default function BookingConfirmation({
                       </div>
               </section>
 
+
               {/* 에러 메시지 */}
               {error && (
                   <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -332,20 +369,20 @@ export default function BookingConfirmation({
                   >
                       <button
                           onClick={handleConfirmBooking}
-                          disabled={isSubmitting || isLoadingArtworks || !selectedArtwork}
+                          disabled={isSubmitting || isLoadingArtworks || !selectedArtwork || !isPaymentReady}
                           className="w-full h-14 bg-[#D2B48C] hover:bg-[#C19A6B] text-white font-bold rounded-xl transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                          {isSubmitting ? '예약 중...' : isLoadingArtworks ? '작품 불러오는 중...' : `${costDetails.total.toLocaleString()}원 결제하기`}
+                          {isSubmitting ? '예약 중...' : isLoadingArtworks ? '작품 불러오는 중...' : !isPaymentReady ? '결제 준비 중...' : `${costDetails.total.toLocaleString()}원 결제하기`}
                       </button>
                   </footer>
               ) : (
                   <div className="p-4 bg-white">
                       <button
                           onClick={handleConfirmBooking}
-                          disabled={isSubmitting || isLoadingArtworks || !selectedArtwork}
+                          disabled={isSubmitting || isLoadingArtworks || !selectedArtwork || !isPaymentReady}
                           className="w-full h-[48px] bg-[#D2B48C] hover:bg-[#C19A6B] text-white font-bold rounded-xl transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                          {isSubmitting ? '예약 중...' : isLoadingArtworks ? '작품 불러오는 중...' : `${costDetails.total.toLocaleString()}원 결제하기`}
+                          {isSubmitting ? '예약 중...' : isLoadingArtworks ? '작품 불러오는 중...' : !isPaymentReady ? '결제 준비 중...' : `${costDetails.total.toLocaleString()}원 결제하기`}
                       </button>
                   </div>
               )}

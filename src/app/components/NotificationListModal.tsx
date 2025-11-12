@@ -179,6 +179,26 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
     }
   };
 
+  // 모든 알림 삭제
+  const handleClearAll = async () => {
+    if (!window.confirm('모든 알림을 삭제하시겠습니까?')) {
+      return;
+    }
+    
+    try {
+      // 모든 알림 ID 수집
+      const deletePromises = notifications.map(n => 
+        fetch(`/api/notifications?id=${n.id}`, { method: 'DELETE' })
+      );
+      
+      await Promise.all(deletePromises);
+      setNotifications([]);
+    } catch (error) {
+      console.error('Failed to clear all notifications:', error);
+      alert('알림 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
   // 시간 포맷
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -215,18 +235,29 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
           onClick={onClose}
         >
         <div
-          className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-h-[80vh] overflow-hidden"
+          className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-h-[80vh] overflow-hidden mx-4"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#3D2C1D] dark:text-gray-100">알림</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-            >
-              <span className="material-symbols-outlined text-gray-600 dark:text-gray-400">close</span>
-            </button>
+          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-[#3D2C1D] dark:text-gray-100">알림</h2>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              >
+                <span className="material-symbols-outlined text-gray-600 dark:text-gray-400">close</span>
+              </button>
+            </div>
+            {notifications.length > 0 && (
+              <button
+                onClick={handleClearAll}
+                className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors flex items-center gap-1 mt-2"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>
+                모두 지우기
+              </button>
+            )}
           </div>
 
           {/* Content */}
@@ -236,8 +267,8 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
               <div className="text-gray-500 dark:text-gray-400">로딩 중...</div>
             </div>
           ) : notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 px-4">
-              <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">
+            <div className="flex flex-col items-center justify-center py-6 px-4">
+              <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-2">
                 notifications_off
               </span>
               <p className="text-gray-500 dark:text-gray-400">알림이 없습니다</p>
@@ -307,14 +338,25 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
             onClick={(e) => e.stopPropagation()}
           >
           {/* Header */}
-          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[#3D2C1D] dark:text-gray-100">알림</h2>
-            <button
-              onClick={onClose}
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-            >
-              <span className="material-symbols-outlined text-gray-600 dark:text-gray-400 text-xl">close</span>
-            </button>
+          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-bold text-[#3D2C1D] dark:text-gray-100">알림</h2>
+              <button
+                onClick={onClose}
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              >
+                <span className="material-symbols-outlined text-gray-600 dark:text-gray-400 text-xl">close</span>
+              </button>
+            </div>
+            {notifications.length > 0 && (
+              <button
+                onClick={handleClearAll}
+                className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>
+                모두 지우기
+              </button>
+            )}
           </div>
 
           {/* Content */}

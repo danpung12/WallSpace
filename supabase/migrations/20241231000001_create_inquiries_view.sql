@@ -43,3 +43,14 @@ COMMENT ON VIEW public.inquiries_with_user IS '사용자 정보가 포함된 문
 
 
 
+
+
+
+
+
+
+
+
+
+
+

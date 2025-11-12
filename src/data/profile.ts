@@ -1,4 +1,3 @@
-import { NotificationToggles } from "../app/components/NotificationSettingsModal";
 export interface UserProfile {
   id: string;
   name: string;
@@ -12,7 +11,7 @@ export interface UserProfile {
   notificationSettings: {
     comments: boolean;
     exhibitions: boolean;
-    messages: boolean;
+    exhibition_distance: number; // 전시 알림 거리 (km)
   };
   userSettings: {
     darkMode: boolean;

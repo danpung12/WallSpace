@@ -31,6 +31,20 @@ export async function GET() {
       );
     }
 
+    // 알림 설정 가져오기
+    const { data: notificationSettings } = await supabase
+      .from('notification_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    // 사용자 설정 가져오기
+    const { data: userSettings } = await supabase
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
     // UserProfile 형식에 맞게 변환
     // user_metadata의 full_name을 우선 사용, 없으면 profiles 테이블의 name 사용
     const displayName = user.user_metadata?.full_name || 
@@ -46,14 +60,14 @@ export async function GET() {
       phone: profile.phone || '',
       dob: profile.dob || undefined,
       gender: profile.gender || undefined,
-      user_type: profile.user_type || 'artist', // user_type 추가
+      user_type: profile.user_type || 'artist',
       notificationSettings: {
-        comments: true,
-        exhibitions: true,
-        messages: true,
+        comments: notificationSettings?.comments ?? true,
+        exhibitions: notificationSettings?.exhibitions ?? true,
+        exhibition_distance: notificationSettings?.exhibition_distance ?? 5,
       },
       userSettings: {
-        darkMode: false,
+        darkMode: userSettings?.dark_mode ?? false,
       },
     };
 
@@ -128,6 +142,42 @@ export async function PUT(req: NextRequest) {
       );
     }
 
+    // 알림 설정 업데이트 (upsert)
+    if (updatedProfileData.notificationSettings) {
+      const { error: notifError } = await supabase
+        .from('notification_settings')
+        .upsert({
+          user_id: user.id,
+          comments: updatedProfileData.notificationSettings.comments,
+          exhibitions: updatedProfileData.notificationSettings.exhibitions,
+          exhibition_distance: updatedProfileData.notificationSettings.exhibition_distance,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (notifError) {
+        console.error('Notification settings update error:', notifError);
+      }
+    }
+
+    // 사용자 설정 업데이트 (upsert)
+    if (updatedProfileData.userSettings) {
+      const { error: settingsError } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          dark_mode: updatedProfileData.userSettings.darkMode,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (settingsError) {
+        console.error('User settings update error:', settingsError);
+      }
+    }
+
     // UserProfile 형식으로 변환하여 반환
     const userProfile: UserProfile = {
       id: updatedProfile.id,
@@ -138,7 +188,7 @@ export async function PUT(req: NextRequest) {
       phone: updatedProfile.phone || '',
       dob: updatedProfile.dob || undefined,
       gender: updatedProfile.gender || undefined,
-      user_type: updatedProfile.user_type || 'artist', // user_type 추가
+      user_type: updatedProfile.user_type || 'artist',
       notificationSettings: updatedProfileData.notificationSettings,
       userSettings: updatedProfileData.userSettings,
     };

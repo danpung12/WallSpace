@@ -219,12 +219,12 @@ const PlaceCard = React.memo(({ place, userLocation, onImageClick }: PlaceCardPr
     : null;
 
   return (
-    <div className="backdrop-blur-lg rounded-2xl shadow-lg border h-full flex flex-col cursor-pointer bg-white/60 dark:bg-gray-800/60 border-white/20 dark:border-gray-700/30 hover:bg-white/80 dark:hover:bg-gray-800/80 transition-colors duration-200 lg:p-5"
+    <div className="group/card bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg rounded-2xl shadow-lg border border-white/20 dark:border-gray-700/30 h-full flex flex-col cursor-pointer transition-all duration-300 ease-out hover:shadow-xl hover:scale-[1.02] hover:bg-white/80 dark:hover:bg-gray-800/80 lg:p-5"
       style={{ 
         padding: 'clamp(0.5rem, 1.9vh, 1.25rem)'
       }}>
       <div
-        className="w-full rounded-xl overflow-hidden relative group lg:h-56"
+        className="w-full rounded-xl overflow-hidden relative group/image lg:h-56"
         onClick={onImageClick}
         style={{
           height: 'clamp(10rem, 30.33vh, 16rem)'
@@ -236,6 +236,8 @@ const PlaceCard = React.memo(({ place, userLocation, onImageClick }: PlaceCardPr
             nextEl: `.custom-next-button-${place.id}`,
             prevEl: `.custom-prev-button-${place.id}`,
           }}
+          slidesPerView={1}
+          spaceBetween={0}
           className="w-full h-full"
           allowTouchMove={true}
           onSlideChange={(swiper) => {
@@ -249,14 +251,14 @@ const PlaceCard = React.memo(({ place, userLocation, onImageClick }: PlaceCardPr
           }}
         >
           {place.images.map((imgUrl, index) => (
-            <SwiperSlide key={index}>
-              <div className="relative w-full h-full">
+            <SwiperSlide key={index} className="overflow-hidden">
+              <div className="relative w-full h-full overflow-hidden">
                 <Image
                   src={imgUrl}
                   alt={`${place.name} ${index + 1}`}
                   fill
                   sizes="(max-width: 768px) 85vw, (max-width: 1024px) 50vw, 33vw"
-                  className="object-cover"
+                  className="object-cover transition-transform duration-500 group-hover/card:scale-105"
                   priority={index === 0}
                   loading={index === 0 ? 'eager' : 'lazy'}
                   placeholder="blur"
@@ -268,23 +270,26 @@ const PlaceCard = React.memo(({ place, userLocation, onImageClick }: PlaceCardPr
         </Swiper>
 
         {place.tags && place.tags.length > 0 && (
-          <div className="absolute z-10"
+          <div className="absolute z-10 flex gap-1.5"
             style={{
               top: 'clamp(0.5rem, 1.9vh, 1rem)',
               left: 'clamp(0.5rem, 1.9vh, 1rem)'
             }}>
-            <span className="text-white font-bold" 
-              style={{ 
-                textShadow: '0px 1px 2px rgba(0, 0, 0, 0.25)',
-                fontSize: 'clamp(1rem, 4.62vw, 1.5rem)'
-              }}>
-              #{place.tags[0]}
-            </span>
+            {place.tags.slice(0, 2).map((tag, i) => (
+              <span 
+                key={i} 
+                className="px-2 py-0.5 text-white bg-black/30 backdrop-blur-md rounded-full border border-white/10 shadow-sm font-bold" 
+                style={{ 
+                  fontSize: 'clamp(0.6875rem, 3.59vw, 0.875rem)'
+                }}>
+                #{tag}
+              </span>
+            ))}
           </div>
         )}
 
         <button
-          className={`custom-prev-button-${place.id} absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 hover:scale-110 ${isBeginning ? 'opacity-0 pointer-events-none' : 'opacity-70 group-hover:opacity-100'}`}
+          className={`custom-prev-button-${place.id} absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 hover:scale-110 ${isBeginning ? 'opacity-0 pointer-events-none' : 'opacity-70 group-hover/image:opacity-100'}`}
           onClick={(e) => e.stopPropagation()}
           style={{
             left: 'clamp(0.25rem, 2.05vw, 0.5rem)',
@@ -298,7 +303,7 @@ const PlaceCard = React.memo(({ place, userLocation, onImageClick }: PlaceCardPr
           </span>
         </button>
         <button
-          className={`custom-next-button-${place.id} absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 hover:scale-110 ${isEnd ? 'opacity-0 pointer-events-none' : 'opacity-70 group-hover:opacity-100'}`}
+          className={`custom-next-button-${place.id} absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full text-white transition-all duration-200 hover:scale-110 ${isEnd ? 'opacity-0 pointer-events-none' : 'opacity-70 group-hover/image:opacity-100'}`}
           onClick={(e) => e.stopPropagation()}
           style={{
             right: 'clamp(0.25rem, 2.05vw, 0.5rem)',

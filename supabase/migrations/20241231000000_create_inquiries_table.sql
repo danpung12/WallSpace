@@ -119,3 +119,14 @@ COMMENT ON COLUMN public.inquiries.admin_reply IS '관리자 답변';
 
 
 
+
+
+
+
+
+
+
+
+
+
+

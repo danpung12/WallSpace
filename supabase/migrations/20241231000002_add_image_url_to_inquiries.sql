@@ -16,3 +16,15 @@ COMMENT ON COLUMN public.inquiries.image_url IS '문의 첨부 이미지 URL (Su
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+

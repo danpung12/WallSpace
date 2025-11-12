@@ -80,3 +80,14 @@ WHERE typname IN ('inquiry_type', 'inquiry_status');
 
 
 
+
+
+
+
+
+
+
+
+
+
+

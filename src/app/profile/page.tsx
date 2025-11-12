@@ -220,14 +220,14 @@ export default function ProfilePage() {
 
       {/* 기존 모바일 Header (PC에서는 숨김 처리) */}
       <header className="sticky top-0 z-20 backdrop-blur-sm lg:hidden bg-[rgba(245,241,236,0.8)] dark:bg-[rgba(31,41,55,0.8)]">
-        <div className="flex items-center justify-between p-5">
+        <div className="flex items-center justify-between px-4 py-3">
           <button className="active:scale-95 transition-transform text-[#2C2C2C] dark:text-gray-100" type="button">
-            <svg fill="currentColor" height="28" width="28" viewBox="0 0 256 256">
+            <svg fill="currentColor" height="24" width="24" viewBox="0 0 256 256">
               <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z" />
             </svg>
           </button>
-          <h1 className="text-2xl font-bold text-[#2C2C2C] dark:text-gray-100">내 정보</h1>
-          <div className="w-7" />
+          <h1 className="text-xl font-bold text-[#2C2C2C] dark:text-gray-100">내 정보</h1>
+          <div className="w-6" />
         </div>
       </header>
       
@@ -472,7 +472,11 @@ export default function ProfilePage() {
         onClose={() => setShowUserSettingsModal(false)}
         initialSettings={{ 
           darkMode: isDarkMode,
-          notifications: userProfile.notificationSettings
+          notifications: {
+            comments: userProfile.notificationSettings.comments ?? true,
+            exhibitions: userProfile.notificationSettings.exhibitions ?? true,
+            exhibition_distance: userProfile.notificationSettings.exhibition_distance ?? 5
+          }
         }}
         onSave={async (settings) => {
           console.log("사용자 설정 저장 요청:", settings);
@@ -481,7 +485,11 @@ export default function ProfilePage() {
           // 프로필에도 저장 (비동기로 처리되지만 기다리지 않음)
           updateProfile({ 
             userSettings: { darkMode: settings.darkMode },
-            notificationSettings: settings.notifications
+            notificationSettings: {
+              comments: settings.notifications.comments,
+              exhibitions: settings.notifications.exhibitions,
+              exhibition_distance: settings.notifications.exhibition_distance
+            }
           });
           setShowUserSettingsModal(false);
         }}

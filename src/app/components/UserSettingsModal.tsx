@@ -7,7 +7,7 @@ export type UserSettings = {
   notifications: {
     comments: boolean;
     exhibitions: boolean;
-    messages: boolean;
+    exhibition_distance: number; // 전시 알림 거리 (km)
   };
 };
 
@@ -24,12 +24,24 @@ function UserSettingsModal({
   onSave,
   initialSettings,
 }: UserSettingsModalProps) {
-  const [settings, setSettings] = useState<UserSettings>(initialSettings);
+  const [settings, setSettings] = useState<UserSettings>({
+    ...initialSettings,
+    notifications: {
+      ...initialSettings.notifications,
+      exhibition_distance: initialSettings.notifications.exhibition_distance ?? 5
+    }
+  });
   const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setSettings(initialSettings);
+      setSettings({
+        ...initialSettings,
+        notifications: {
+          ...initialSettings.notifications,
+          exhibition_distance: initialSettings.notifications.exhibition_distance ?? 5
+        }
+      });
     }
   }, [open, initialSettings]);
 
@@ -62,12 +74,23 @@ function UserSettingsModal({
   }
 
   // 알림 설정 토글 핸들러
-  function handleToggleNotification(key: keyof UserSettings['notifications']) {
+  function handleToggleNotification(key: 'comments' | 'exhibitions') {
     setSettings((prev) => ({
       ...prev,
       notifications: {
         ...prev.notifications,
         [key]: !prev.notifications[key],
+      },
+    }));
+  }
+
+  // 전시 알림 거리 변경 핸들러
+  function handleDistanceChange(distance: number) {
+    setSettings((prev) => ({
+      ...prev,
+      notifications: {
+        ...prev.notifications,
+        exhibition_distance: distance,
       },
     }));
   }
@@ -120,22 +143,22 @@ function UserSettingsModal({
             <div className="space-y-4">
               <SettingItem
                 label="댓글 알림"
-                desc="내 작업에 새로운 댓글이 달리면 알림을 받습니다."
+                desc="내 작품에 새로운 댓글이 달리면"
                 checked={settings.notifications.comments}
                 onChange={() => handleToggleNotification("comments")}
               />
               <SettingItem
                 label="전시 알림"
-                desc="새로운 전시에 대한 알림을 받습니다."
+                desc="근처의 새 전시에 대한 알림을 받습니다."
                 checked={settings.notifications.exhibitions}
                 onChange={() => handleToggleNotification("exhibitions")}
               />
-              <SettingItem
-                label="메시지 알림"
-                desc="다른 사용자로부터 메시지를 받으면 알림을 받습니다."
-                checked={settings.notifications.messages}
-                onChange={() => handleToggleNotification("messages")}
-              />
+              {settings.notifications.exhibitions && (
+                <DistanceSlider
+                  distance={settings.notifications.exhibition_distance}
+                  onChange={handleDistanceChange}
+                />
+              )}
             </div>
           </div>
 
@@ -214,6 +237,62 @@ function SettingItem({ label, desc, checked, onChange }: SettingItemProps) {
           relative
         `}></div>
       </label>
+    </div>
+  );
+}
+
+// 거리 슬라이더 컴포넌트
+type DistanceSliderProps = {
+  distance: number;
+  onChange: (distance: number) => void;
+};
+
+function DistanceSlider({ distance, onChange }: DistanceSliderProps) {
+  const validDistance = distance ?? 5;
+  
+  return (
+    <div className="px-4 py-3 bg-[#F5F1EC] dark:bg-gray-700/50 rounded-xl">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm font-medium text-[#6B5E54] dark:text-gray-400">
+          근처 거리 설정
+        </p>
+        <p className="text-sm font-bold text-[#3E352F] dark:text-gray-100">
+          {validDistance} km
+        </p>
+      </div>
+      <input
+        type="range"
+        min="1"
+        max="50"
+        value={validDistance}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full h-2 bg-[#EAE5DE] dark:bg-gray-600 rounded-lg appearance-none cursor-pointer
+          [&::-webkit-slider-thumb]:appearance-none
+          [&::-webkit-slider-thumb]:w-4
+          [&::-webkit-slider-thumb]:h-4
+          [&::-webkit-slider-thumb]:rounded-full
+          [&::-webkit-slider-thumb]:bg-[#D2B48C]
+          [&::-webkit-slider-thumb]:cursor-pointer
+          [&::-webkit-slider-thumb]:shadow-md
+          [&::-webkit-slider-thumb]:hover:bg-[#A89587]
+          [&::-webkit-slider-thumb]:transition-colors
+          [&::-moz-range-thumb]:w-4
+          [&::-moz-range-thumb]:h-4
+          [&::-moz-range-thumb]:rounded-full
+          [&::-moz-range-thumb]:bg-[#D2B48C]
+          [&::-moz-range-thumb]:border-0
+          [&::-moz-range-thumb]:cursor-pointer
+          [&::-moz-range-thumb]:shadow-md
+          [&::-moz-range-thumb]:hover:bg-[#A89587]
+          [&::-moz-range-thumb]:transition-colors"
+        style={{
+          background: `linear-gradient(to right, #D2B48C 0%, #D2B48C ${(validDistance - 1) / 49 * 100}%, #EAE5DE ${(validDistance - 1) / 49 * 100}%, #EAE5DE 100%)`
+        }}
+      />
+      <div className="flex justify-between mt-1">
+        <span className="text-xs text-[#6B5E54] dark:text-gray-400">1 km</span>
+        <span className="text-xs text-[#6B5E54] dark:text-gray-400">50 km</span>
+      </div>
     </div>
   );
 }
