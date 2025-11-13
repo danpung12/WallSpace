@@ -12,6 +12,16 @@ serve(async (req) => {
   }
 
   try {
+    // 환경 변수 존재 여부 최우선 확인
+    const naverClientId = Deno.env.get('NAVER_CLIENT_ID');
+    const naverClientSecret = Deno.env.get('NAVER_CLIENT_SECRET');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!naverClientId || !naverClientSecret || !supabaseUrl || !supabaseServiceRoleKey) {
+      throw new Error('필수 환경 변수가 설정되지 않았습니다.');
+    }
+
     const { code: naverAuthCode } = await req.json();
 
     // 1. 네이버에 Access Token 요청
@@ -20,8 +30,8 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
-        client_id: Deno.env.get('NAVER_CLIENT_ID')!,
-        client_secret: Deno.env.get('NAVER_CLIENT_SECRET')!,
+        client_id: naverClientId,
+        client_secret: naverClientSecret,
         code: naverAuthCode,
         state: 'dummy_state',
       }),
@@ -36,17 +46,25 @@ serve(async (req) => {
     if (!userResponse.ok) throw new Error(`Naver user fetch failed: ${await userResponse.text()}`);
     const naverUser = (await userResponse.json()).response;
 
+    // [디버깅 로그 추가] 네이버로부터 받은 사용자 정보 전체를 출력합니다.
+    console.log('Naver user profile response:', JSON.stringify(naverUser, null, 2));
+
+    const userEmail = naverUser.email;
+    if (!userEmail) {
+      throw new Error('An email address is required, but was not provided by Naver.');
+    }
+
     // 3. Supabase Admin 클라이언트 초기화
-    const supabaseAdmin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // 4. Supabase에서 사용자 조회 또는 생성
-    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email: naverUser.email });
+    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email: userEmail });
     if (listError) throw listError;
     let user: User | null = users && users.length > 0 ? users[0] : null;
 
     if (!user) {
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: naverUser.email,
+        email: userEmail,
         email_confirm: true,
         user_metadata: {
           full_name: naverUser.name,
