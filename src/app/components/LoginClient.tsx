@@ -9,6 +9,7 @@ import GuestSignUpModal from './GuestSignUpModal';
 import FindPasswordModal from './FindPasswordModal';
 import { loginUser } from '@/lib/api/auth';
 import { createClient } from '@/lib/supabase/client';
+import { type Provider } from '@supabase/supabase-js';
 import AlertModal from './AlertModal';
 
 export default function LoginClient() {
@@ -120,9 +121,9 @@ export default function LoginClient() {
 
   // 소셜 로그인 핸들러
   const handleSocialLogin = async (provider: 'google' | 'kakao' | 'naver') => {
-    // 네이버, 카카오는 준비 중 안내
-    if (provider === 'kakao' || provider === 'naver') {
-      setAlertMessage('구글 외 타 간편로그인 기능은 심사 중으로\n정식 출시를 기다려 주세요.');
+    // 카카오는 준비 중 안내
+    if (provider === 'kakao') {
+      setAlertMessage('카카오 로그인 기능은 현재 심사 중으로\n정식 출시를 기다려 주세요.');
       setShowAlertModal(true);
       return;
     }
@@ -133,7 +134,7 @@ export default function LoginClient() {
       // 각 제공자별 추가 정보 요청 설정
       const scopes: Record<string, string> = {
         kakao: 'profile_nickname,profile_image,account_email,gender,age_range',
-        naver: 'name,email,profile_image,gender,age',
+        // 'naver_oidc' 스코프는 config.toml에서 관리되므로 여기서는 naver를 삭제합니다.
         google: 'email,profile',
       };
 
@@ -144,7 +145,7 @@ export default function LoginClient() {
         : `${window.location.origin}/onboarding`;
 
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: provider,
+        provider: provider as Provider,
         options: {
           redirectTo: redirectUrl,
           scopes: scopes[provider],
