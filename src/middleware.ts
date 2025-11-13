@@ -55,6 +55,7 @@ export async function middleware(request: NextRequest) {
     '/reset-password',
     '/verify-email',
     '/artwork', // 작품 상세 페이지는 공개
+    '/auth/callback/naver', // 네이버 로그인 콜백 경로
   ]
 
   // 소셜 로그인 사용자의 추가 정보 체크

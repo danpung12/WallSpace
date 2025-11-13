@@ -1,20 +1,24 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, User } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// CORS 헤더 설정 (모든 도메인에서의 요청을 허용)
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
-  // CORS preflight 요청 처리
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     const { code } = await req.json();
+    const naverClientId = Deno.env.get('NAVER_CLIENT_ID')!;
+    const naverClientSecret = Deno.env.get('NAVER_CLIENT_SECRET')!;
+
+    if (!naverClientId || !naverClientSecret) {
+      throw new Error('Naver client ID or secret is not configured.');
+    }
 
     // 1. 네이버에 Access Token 요청
     const tokenResponse = await fetch('https://nid.naver.com/oauth2.0/token', {
@@ -22,15 +26,16 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
-        client_id: Deno.env.get('NAVER_CLIENT_ID')!,
-        client_secret: Deno.env.get('NAVER_CLIENT_SECRET')!,
+        client_id: naverClientId,
+        client_secret: naverClientSecret,
         code,
-        state: 'dummy_state', // 실제 프로덕션에서는 state 값도 검증하는 것이 안전합니다.
+        state: 'dummy_state',
       }),
     });
 
     if (!tokenResponse.ok) {
-      throw new Error(`네이버 토큰 요청 실패: ${await tokenResponse.text()}`);
+      const errorText = await tokenResponse.text();
+      throw new Error(`Failed to get Naver token: ${errorText}`);
     }
     const tokens = await tokenResponse.json();
     const accessToken = tokens.access_token;
@@ -41,9 +46,16 @@ serve(async (req) => {
     });
 
     if (!userResponse.ok) {
-      throw new Error(`네이버 사용자 정보 조회 실패: ${await userResponse.text()}`);
+      const errorText = await userResponse.text();
+      throw new Error(`Failed to get Naver user info: ${errorText}`);
     }
     const naverUser = (await userResponse.json()).response;
+    const providerId = naverUser.id;
+    const userEmail = naverUser.email;
+
+    if (!userEmail) {
+      throw new Error('Naver user email is not available. Please check API permissions.');
+    }
 
     // 3. Supabase Admin 클라이언트 초기화
     const supabaseAdmin = createClient(
@@ -51,24 +63,20 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 4. Supabase에서 사용자 조회 또는 생성
-    // 네이버 ID를 사용하여 사용자를 식별합니다.
-    const providerId = naverUser.id;
-    let { data: user, error: userError } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('raw_user_meta_data->>provider_id', providerId)
-      .single();
+    // 4. Supabase에서 이메일로 사용자 조회
+    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+      email: userEmail,
+    });
 
-    if (userError && userError.code !== 'PGRST116') { // PGRST116: 'exact-single-row-not-found'
-      throw userError;
-    }
+    if (listError) throw listError;
+
+    let user: User | null = users && users.length > 0 ? users[0] : null;
 
     // 사용자가 없으면 새로 생성
     if (!user) {
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: naverUser.email, // 네이버에서 제공하는 이메일 사용
-        email_confirm: true, // 소셜 로그인이므로 이메일 인증된 것으로 간주
+        email: userEmail,
+        email_confirm: true,
         user_metadata: {
           full_name: naverUser.name,
           avatar_url: naverUser.profile_image,
@@ -78,23 +86,39 @@ serve(async (req) => {
       });
 
       if (createError) throw createError;
-      user = newUser;
+      user = newUser.user;
+    } else {
+      // 기존 사용자가 있지만 네이버 연동 정보가 없으면 업데이트
+      if (!user.user_metadata?.provider_id || user.user_metadata?.provider !== 'naver') {
+        const { data: updatedUser, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+          user.id,
+          {
+            user_metadata: {
+              ...user.user_metadata,
+              full_name: naverUser.name,
+              avatar_url: naverUser.profile_image,
+              provider: 'naver',
+              provider_id: providerId,
+            }
+          }
+        );
+        if (updateError) throw updateError;
+        user = updatedUser.user;
+      }
     }
 
-    // 5. 수동으로 세션 생성 (JWT 생성)
-    // 이 부분은 Supabase의 내부 구현에 따라 변경될 수 있습니다.
-    // 현재 버전에서는 직접 JWT를 생성하기보다, 클라이언트에서 처리하도록 세션 객체를 반환합니다.
-    // 하지만 이 함수는 Admin 권한으로 실행되므로, 사용자 세션을 직접 만들어줄 수 있습니다.
-    // 여기서는 간단하게 사용자 정보를 반환하고, 클라이언트에서 setSession을 통해 처리하도록 합니다.
-    // 더 안전한 방법은 사용자 ID로 세션을 생성하는 것입니다.
+    if (!user) {
+      throw new Error('Failed to create or find user.');
+    }
+
+    // 5. Magic Link를 이용해 세션 정보 생성
     const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'magiclink',
-        email: user.email,
+        email: user.email!,
     });
 
     if (sessionError) throw sessionError;
 
-    // generateLink에서 반환된 사용자 정보와 세션 정보를 조합합니다.
     const session = sessionData.properties;
 
     return new Response(JSON.stringify({ session }), {
@@ -103,10 +127,10 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    console.error('Edge function error:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });
   }
 });
-
