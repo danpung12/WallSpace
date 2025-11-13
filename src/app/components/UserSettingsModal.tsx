@@ -32,9 +32,11 @@ function UserSettingsModal({
     }
   });
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
     if (open) {
+      setIsClosing(false);
       setSettings({
         ...initialSettings,
         notifications: {
@@ -44,6 +46,13 @@ function UserSettingsModal({
       });
     }
   }, [open, initialSettings]);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 200);
+  };
 
   useEffect(() => {
     const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
@@ -56,17 +65,11 @@ function UserSettingsModal({
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
-
-  // 바깥 클릭 닫기
-  const overlayRef = useRef<HTMLDivElement | null>(null);
-  function handleOverlayClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
-    if (e.target === overlayRef.current) onClose();
-  }
+  }, [open, handleClose]);
 
   // 다크모드 토글 핸들러
   function handleToggleDarkMode() {
@@ -97,38 +100,23 @@ function UserSettingsModal({
 
   function handleSave() {
     onSave?.(settings);
-    onClose();
+    handleClose();
   }
+
+  if (!open && !isClosing) return null;
 
   return (
     <div
-      ref={overlayRef}
-      className={`fixed inset-0 z-[999] bg-black/50 flex ${isDesktop ? 'items-center' : 'items-end'} justify-center transition-opacity duration-200 ${
-        open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-      }`}
-      style={{ transitionProperty: "opacity" }}
-      onMouseDown={handleOverlayClick}
+      className={`fixed inset-0 z-[999] bg-black/50 flex items-center justify-center ${isClosing ? 'modal-leave' : 'modal-enter'}`}
+      onClick={handleClose}
     >
       <div
-        className={`
-          w-full max-w-md bg-white dark:bg-gray-800 shadow-lg
-          transition-all duration-300 ease-in-out
-          ${isDesktop ? 'rounded-2xl max-h-[90vh]' : 'rounded-t-3xl max-h-[85vh]'}
-          ${open 
-            ? (isDesktop ? 'scale-100 opacity-100' : 'translate-y-0') 
-            : (isDesktop ? 'scale-95 opacity-0' : 'translate-y-full')
-          }
-          overflow-hidden flex flex-col
-        `}
+        className={`w-full max-w-md bg-white dark:bg-gray-800 shadow-lg rounded-2xl max-h-[90vh] overflow-hidden flex flex-col ${isClosing ? 'modal-content-leave' : 'modal-content-enter'}`}
+        onClick={(e) => e.stopPropagation()}
         style={{
           fontFamily: "'Pretendard', sans-serif",
         }}
       >
-        {!isDesktop && (
-          <div className="flex items-center justify-center w-full h-8 pt-3 flex-shrink-0">
-            <div className="h-1.5 w-10 rounded-full bg-[#EAE5DE] dark:bg-gray-600 cursor-pointer" onClick={onClose}></div>
-          </div>
-        )}
         <div className="p-6 pt-4 overflow-y-auto flex-1">
           <h1 className="text-2xl font-bold mb-6 text-[#3E352F] dark:text-gray-100">사용자 설정</h1>
           
@@ -184,21 +172,20 @@ function UserSettingsModal({
           <div className="flex gap-3">
             <button
               type="button"
-              className="bg-[#F5F1EC] dark:bg-gray-700 text-[#3E352F] dark:text-gray-100 rounded-full px-6 py-3 font-bold text-sm w-full hover:bg-[#EAE5DE] dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-[#A89587] dark:focus:ring-gray-600 focus:ring-opacity-50 transition-colors"
-              onClick={onClose}
+              className="bg-[#F5F1EC] dark:bg-gray-700 text-[#3E352F] dark:text-gray-100 rounded-lg px-6 py-3 font-bold text-sm w-full hover:bg-[#EAE5DE] dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-[#A89587] dark:focus:ring-gray-600 focus:ring-opacity-50 transition-colors"
+              onClick={handleClose}
             >
               취소
             </button>
             <button
               type="button"
-              className="bg-[#D2B48C] text-white rounded-full px-6 py-3 font-bold text-sm w-full hover:bg-[#A89587] focus:outline-none focus:ring-2 focus:ring-[#D2B48C] focus:ring-opacity-50 transition-colors"
+              className="bg-[#D2B48C] text-white rounded-lg px-6 py-3 font-bold text-sm w-full hover:bg-[#A89587] focus:outline-none focus:ring-2 focus:ring-[#D2B48C] focus:ring-opacity-50 transition-colors"
               onClick={handleSave}
             >
               저장
             </button>
           </div>
         </div>
-        {!isDesktop && <div className="h-8 bg-white dark:bg-gray-800 flex-shrink-0"></div>}
       </div>
     </div>
   );

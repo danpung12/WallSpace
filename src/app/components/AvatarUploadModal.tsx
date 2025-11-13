@@ -19,15 +19,25 @@ export default function AvatarUploadModal({
 }: AvatarUploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // 모달이 열릴 때 현재 아바타를 미리보기로 설정
     if (open) {
+      setIsClosing(false);
       setPreviewUrl(currentAvatarUrl);
       setSelectedFile(null); // 파일 선택 초기화
     }
   }, [open, currentAvatarUrl]);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, 200); // 애니메이션 시간과 동일
+  };
 
   // 파일이 변경될 때마다 미리보기 URL 생성
   useEffect(() => {
@@ -55,19 +65,19 @@ export default function AvatarUploadModal({
     }
   };
 
-  if (!open) return null;
+  if (!open && !isClosing) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 ${isClosing ? 'modal-leave' : 'modal-enter'}`}
       style={{ paddingBottom: 'calc(64px + env(safe-area-inset-bottom))' }}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
-        className="relative w-full max-w-sm p-6 bg-[#FDFBF8] rounded-2xl shadow-lg m-4"
+        className={`relative w-full max-w-sm p-6 bg-[#FDFBF8] dark:bg-gray-800 rounded-2xl shadow-lg m-4 ${isClosing ? 'modal-content-leave' : 'modal-content-enter'}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-2xl font-bold text-center text-[#3D2C1D] mb-4">
+        <h2 className="text-2xl font-bold text-center text-[#3D2C1D] dark:text-gray-100 mb-4">
           프로필 사진 변경
         </h2>
 

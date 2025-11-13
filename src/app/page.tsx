@@ -786,8 +786,97 @@ export default function HomePage() {
             paddingBottom: 'clamp(1.5rem, 5.69vh, 3rem)'
           }}>
           <div className="lg:flex lg:h-full lg:gap-8 flex-grow flex flex-col lg:flex-row">
-            {/* 모바일: 즐겨찾기 표시, PC: 즐겨찾기만 */}
-            <div className={`lg:w-1/6 ${favorites.length === 0 ? 'lg:hidden' : ''}`}>
+            {/* PC: 추천 장소를 왼쪽에 배치 */}
+            <div className={`lg:mt-0 lg:flex lg:flex-col ${favorites.length > 0 ? 'lg:w-5/6' : 'lg:w-full'} flex-grow flex flex-col ${favorites.length === 0 ? 'justify-end lg:justify-start' : 'lg:justify-start'} lg:order-1`}
+              style={{
+                marginTop: 0,
+                paddingTop: 0
+              }}>
+              {/* 모바일: 추천 장소 섹션 - 하단 네비게이션 바로 위에 위치 */}
+              <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none"
+                style={{
+                  paddingBottom: 'calc(64px + env(safe-area-inset-bottom))'
+                }}>
+                <div className="bg-gradient-to-t from-[#e8e3da] via-[#e8e3da]/95 to-transparent dark:from-[#1a1a1a] dark:via-[#1a1a1a]/95 pointer-events-auto"
+                  style={{
+                    paddingTop: 'clamp(1.5rem, 4vh, 2.5rem)',
+                    paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
+                    paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)',
+                    paddingBottom: 'clamp(1rem, 2.5vh, 1.5rem)'
+                  }}>
+                  <div className="flex items-start mb-3"
+                    style={{
+                      marginBottom: 'clamp(0.5rem, 1.5vh, 0.875rem)'
+                    }}>
+                    <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100"
+                      style={{
+                        marginRight: 'clamp(0.25rem, 2.05vw, 0.5rem)',
+                        fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)',
+                        lineHeight: '1.2'
+                      }}>
+                      추천 장소
+                    </h2>
+                    <p className="font-medium text-[#887563] dark:text-gray-400"
+                      style={{
+                        fontSize: 'clamp(0.8125rem, 4.1vw, 1rem)'
+                      }}>
+                      {recommendedLocations[currentPlaceIndex]?.name}
+                    </p>
+                  </div>
+                  <div className="overflow-x-auto scrollbar-hide -mx-4 px-4"
+                    style={{
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none',
+                      WebkitOverflowScrolling: 'touch'
+                    }}>
+                    <RecommendedPlaces
+                      onSlideChange={setCurrentPlaceIndex}
+                      userLocation={userLocation}
+                      locations={recommendedLocations}
+                      hasNotifications={notifications.length > 0}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* PC: 추천 장소 섹션 */}
+              <div className="hidden lg:block">
+                <div className="flex items-start sm:px-6 lg:px-0"
+                  style={{
+                    marginBottom: 'clamp(0.5rem, 1.9vh, 1rem)',
+                    paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
+                    paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)',
+                    marginTop: 0,
+                    paddingTop: 0
+                  }}>
+                  <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
+                    style={{
+                      marginRight: 'clamp(0.25rem, 2.05vw, 0.5rem)',
+                      fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)',
+                      lineHeight: '1.2',
+                      marginTop: 0,
+                      paddingTop: 0,
+                      height: 'auto'
+                    }}>
+                    추천 장소
+                  </h2>
+                </div>
+
+                <div className="lg:min-h-0 lg:flex-1">
+                  <div ref={scrollContainerRef} className="h-full w-full overflow-y-auto scrollbar-hide lg:pb-0">
+                    <RecommendedPlaces
+                      onSlideChange={setCurrentPlaceIndex}
+                      userLocation={userLocation}
+                      locations={recommendedLocations}
+                      hasNotifications={notifications.length > 0}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 모바일: 즐겨찾기 표시, PC: 즐겨찾기를 오른쪽에 배치 */}
+            <div className={`lg:w-1/6 lg:order-2 ${favorites.length === 0 ? 'lg:hidden' : ''}`}>
               <section className="sm:px-6 lg:sticky lg:top-12 lg:px-0"
                 style={{
                   paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
@@ -941,94 +1030,6 @@ export default function HomePage() {
                   )}
                 </div>
               </section>
-            </div>
-
-            <div className={`lg:mt-0 lg:flex lg:flex-col ${favorites.length > 0 ? 'lg:w-5/6' : 'lg:w-full'} flex-grow flex flex-col ${favorites.length === 0 ? 'justify-end lg:justify-start' : 'lg:justify-start'}`}
-              style={{
-                marginTop: 0,
-                paddingTop: 0
-              }}>
-              {/* 모바일: 추천 장소 섹션 - 하단 네비게이션 바로 위에 위치 */}
-              <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none"
-                style={{
-                  paddingBottom: 'calc(64px + env(safe-area-inset-bottom))'
-                }}>
-                <div className="bg-gradient-to-t from-[#e8e3da] via-[#e8e3da]/95 to-transparent dark:from-[#1a1a1a] dark:via-[#1a1a1a]/95 pointer-events-auto"
-                  style={{
-                    paddingTop: 'clamp(1.5rem, 4vh, 2.5rem)',
-                    paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
-                    paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)',
-                    paddingBottom: 'clamp(1rem, 2.5vh, 1.5rem)'
-                  }}>
-                  <div className="flex items-start mb-3"
-                    style={{
-                      marginBottom: 'clamp(0.5rem, 1.5vh, 0.875rem)'
-                    }}>
-                    <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100"
-                      style={{
-                        marginRight: 'clamp(0.25rem, 2.05vw, 0.5rem)',
-                        fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)',
-                        lineHeight: '1.2'
-                      }}>
-                      추천 장소
-                    </h2>
-                    <p className="font-medium text-[#887563] dark:text-gray-400"
-                      style={{
-                        fontSize: 'clamp(0.8125rem, 4.1vw, 1rem)'
-                      }}>
-                      {recommendedLocations[currentPlaceIndex]?.name}
-                    </p>
-                  </div>
-                  <div className="overflow-x-auto scrollbar-hide -mx-4 px-4"
-                    style={{
-                      scrollbarWidth: 'none',
-                      msOverflowStyle: 'none',
-                      WebkitOverflowScrolling: 'touch'
-                    }}>
-                    <RecommendedPlaces
-                      onSlideChange={setCurrentPlaceIndex}
-                      userLocation={userLocation}
-                      locations={recommendedLocations}
-                      hasNotifications={notifications.length > 0}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* PC: 추천 장소 섹션 */}
-              <div className="hidden lg:block">
-                <div className="flex items-start sm:px-6 lg:px-0"
-                  style={{
-                    marginBottom: 'clamp(0.5rem, 1.9vh, 1rem)',
-                    paddingLeft: 'clamp(0.625rem, 4.1vw, 1rem)',
-                    paddingRight: 'clamp(0.625rem, 4.1vw, 1rem)',
-                    marginTop: 0,
-                    paddingTop: 0
-                  }}>
-                  <h2 className="font-bold text-[#2C2C2C] dark:text-gray-100 lg:text-2xl"
-                    style={{
-                      marginRight: 'clamp(0.25rem, 2.05vw, 0.5rem)',
-                      fontSize: 'clamp(0.9375rem, 5.13vw, 1.25rem)',
-                      lineHeight: '1.2',
-                      marginTop: 0,
-                      paddingTop: 0,
-                      height: 'auto'
-                    }}>
-                    추천 장소
-                  </h2>
-                </div>
-
-                <div className="lg:min-h-0 lg:flex-1">
-                  <div ref={scrollContainerRef} className="h-full w-full overflow-y-auto scrollbar-hide lg:pb-0">
-                    <RecommendedPlaces
-                      onSlideChange={setCurrentPlaceIndex}
-                      userLocation={userLocation}
-                      locations={recommendedLocations}
-                      hasNotifications={notifications.length > 0}
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
