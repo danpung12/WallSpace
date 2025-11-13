@@ -54,36 +54,26 @@ serve(async (req) => {
     }
     if (!user) throw new Error('Could not create or find user.');
 
-    // 4. JWT를 직접 생성하여 완전한 세션을 만듭니다.
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode(jwtSecret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
+    // 4. [핵심 수정] Access Token과 Refresh Token을 모두 생성합니다.
+    const cryptoKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(jwtSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const now = getNumericDate(0);
+    const accessTokenExp = now + 3600; // 1 hour
+    const refreshTokenExp = now + 604800; // 1 week
 
-    const accessToken = await create(
-      { alg: 'HS256', typ: 'JWT' },
-      {
-        sub: user.id,
-        role: 'authenticated',
-        email: user.email,
-        iat: getNumericDate(0),
-        exp: getNumericDate(3600), // 1시간 후 만료
-      },
-      cryptoKey
-    );
+    const accessToken = await create({ alg: 'HS256', typ: 'JWT' }, { sub: user.id, role: 'authenticated', email: user.email, iat: now, exp: accessTokenExp }, cryptoKey);
+    const refreshToken = await create({ alg: 'HS256', typ: 'JWT' }, { sub: user.id, iat: now, exp: refreshTokenExp }, cryptoKey);
 
-    // 5. [핵심 수정] setSession이 요구하는 완전한 세션 객체를 구성합니다.
+    // 5. setSession이 요구하는 완전한 세션 객체를 구성합니다.
     const session = {
       access_token: accessToken,
-      token_type: 'bearer',
+      refresh_token: refreshToken,
       user: user,
-      refresh_token: '', // refresh_token 필드 추가
+      token_type: 'bearer',
+      expires_in: 3600,
+      expires_at: accessTokenExp,
     };
 
-    return new Response(JSON.stringify({ session, version: 'final-v3' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    return new Response(JSON.stringify({ session, version: 'final-v4' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
 
   } catch (error) {
     console.error('[FATAL] Edge function error:', error.message);
