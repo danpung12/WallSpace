@@ -29,28 +29,31 @@ function NaverAuthCallback() {
 
     const handleLogin = async () => {
       const supabase = createClient();
-      // 'naver-auth' Edge Function을 호출합니다.
+      setMessage('네이버 계정 정보를 확인하고 있습니다...');
+      
+      // 1. Edge Function을 호출하여 Supabase 인증 코드를 받아옵니다.
       const { data, error: functionError } = await supabase.functions.invoke('naver-auth', {
         body: { code },
       });
 
-      if (functionError) {
+      if (functionError || !data.code) {
         console.error('Edge Function error:', functionError);
-        setError(`로그인에 실패했습니다: ${functionError.message}`);
+        setError(`로그인 처리 중 오류가 발생했습니다: ${functionError?.message || '인증 코드를 받아오지 못했습니다.'}`);
         return;
       }
 
-      // Edge Function에서 반환된 세션 정보로 클라이언트의 인증 상태를 설정합니다.
-      const { error: sessionError } = await supabase.auth.setSession(data.session);
+      setMessage('로그인 세션을 설정하고 있습니다...');
+
+      // 2. 받아온 코드로 세션을 교환하여 로그인을 완료합니다.
+      const { error: sessionError } = await supabase.auth.exchangeCodeForSession(data.code);
 
       if (sessionError) {
-        console.error('Session error:', sessionError);
-        setError(`세션 설정에 실패했습니다: ${sessionError.message}`);
+        console.error('Session exchange error:', sessionError);
+        setError(`로그인에 실패했습니다: ${sessionError.message}`);
         return;
       }
 
-      // 로그인 성공 후 홈으로 리디렉션합니다.
-      // 또는 redirectTo 파라미터가 있었다면 해당 경로로 보낼 수 있습니다.
+      // 3. 로그인 성공 후 온보딩 페이지로 이동합니다.
       router.push('/onboarding');
     };
 
@@ -58,15 +61,14 @@ function NaverAuthCallback() {
   }, [searchParams, router]);
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', textAlign: 'center', padding: '20px' }}>
       <h1>로그인 처리 중</h1>
-      <p>{error || message}</p>
+      <p style={{ marginTop: '10px', color: error ? 'red' : 'black' }}>{error || message}</p>
       {error && <a href="/login" style={{ marginTop: '20px', color: 'blue' }}>로그인 페이지로 돌아가기</a>}
     </div>
   );
 }
 
-// Suspense로 감싸서 useSearchParams 사용 문제를 방지합니다.
 export default function NaverAuthCallbackPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
@@ -74,4 +76,3 @@ export default function NaverAuthCallbackPage() {
     </Suspense>
   );
 }
-
