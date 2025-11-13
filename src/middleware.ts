@@ -50,7 +50,8 @@ export async function middleware(request: NextRequest) {
     '/login',
     '/signup',
     '/select-type',
-    '/onboarding',
+    '/onboarding', // 구글 등 기본 온보딩
+    '/onboarding/naver', // 네이버 전용 온보딩
     '/find-password',
     '/reset-password',
     '/verify-email',
@@ -59,7 +60,7 @@ export async function middleware(request: NextRequest) {
   ]
 
   // 소셜 로그인 사용자의 추가 정보 체크
-  if (user && pathname !== '/onboarding' && !publicPaths.includes(pathname)) {
+  if (user && !pathname.startsWith('/onboarding') && !publicPaths.includes(pathname)) {
     try {
       const { data: profile } = await supabase
         .from('profiles')
@@ -67,26 +68,28 @@ export async function middleware(request: NextRequest) {
         .eq('id', user.id)
         .single()
 
-      // 소셜 로그인 사용자 (provider가 google 등)
       const provider = user.app_metadata?.provider || 'email'
       
       if (provider !== 'email') {
-        // 프로필이 없으면 onboarding으로
+        // 프로필이 없으면 기본 온보딩으로 (최초)
         if (!profile) {
           const url = request.nextUrl.clone()
           url.pathname = '/onboarding'
           return NextResponse.redirect(url)
         }
         
-        // user_type이 없으면 onboarding으로
+        // user_type이 없는 경우, provider에 따라 분기
         if (!profile.user_type) {
           const url = request.nextUrl.clone()
-          url.pathname = '/onboarding'
+          if (provider === 'naver') {
+            url.pathname = '/onboarding/naver'
+          } else {
+            url.pathname = '/onboarding'
+          }
           return NextResponse.redirect(url)
         }
         
-        // 게스트: gender, age_range 필수
-        // 아티스트: nickname, phone 필수
+        // user_type이 있지만 추가 정보가 필요한 경우 (구글 등)
         const isGuest = profile.user_type === 'guest'
         const isArtist = profile.user_type === 'artist'
         
@@ -101,7 +104,6 @@ export async function middleware(request: NextRequest) {
       }
     } catch (error) {
       console.error('Error checking profile:', error)
-      // 에러 발생 시 (프로필 조회 실패) 소셜 로그인 사용자면 onboarding으로
       const provider = user.app_metadata?.provider || 'email'
       if (provider !== 'email') {
         const url = request.nextUrl.clone()
