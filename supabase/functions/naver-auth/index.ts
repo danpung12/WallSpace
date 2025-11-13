@@ -60,7 +60,7 @@ serve(async (req) => {
     const accessTokenExp = now + 3600; // 1 hour
     const refreshTokenExp = now + 604800; // 1 week
 
-    const accessToken = await create({ alg: 'HS256', typ: 'JWT' }, { sub: user.id, role: 'authenticated', email: user.email, iat: now, exp: accessTokenExp }, cryptoKey);
+    const accessToken = await create({ alg: 'HS256', typ: 'JWT' }, { aud: 'authenticated', sub: user.id, role: 'authenticated', email: user.email, iat: now, exp: accessTokenExp }, cryptoKey);
     const refreshToken = await create({ alg: 'HS256', typ: 'JWT' }, { sub: user.id, iat: now, exp: refreshTokenExp }, cryptoKey);
 
     // 5. setSession이 요구하는 완전한 세션 객체를 구성합니다.
@@ -73,7 +73,7 @@ serve(async (req) => {
       expires_at: accessTokenExp,
     };
 
-    return new Response(JSON.stringify({ session, version: 'final-v4' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    return new Response(JSON.stringify({ session, version: 'final-v5' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
 
   } catch (error) {
     console.error('[FATAL] Edge function error:', error.message);
