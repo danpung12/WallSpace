@@ -51,7 +51,7 @@ function NaverAuthCallback() {
 
       // 로그인 성공 후 홈으로 리디렉션합니다.
       // 또는 redirectTo 파라미터가 있었다면 해당 경로로 보낼 수 있습니다.
-      router.push('/home');
+      router.push('/onboarding');
     };
 
     handleLogin();

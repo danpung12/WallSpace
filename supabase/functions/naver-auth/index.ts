@@ -119,7 +119,12 @@ serve(async (req) => {
 
     if (sessionError) throw sessionError;
 
-    const session = sessionData.properties;
+    // 6. 클라이언트 setSession이 요구하는 형식으로 세션 객체 재구성
+    const session = {
+      access_token: sessionData.properties.access_token,
+      refresh_token: sessionData.properties.refresh_token,
+      user: sessionData.user,
+    };
 
     return new Response(JSON.stringify({ session }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
