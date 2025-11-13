@@ -121,6 +121,24 @@ export default function LoginClient() {
 
   // 소셜 로그인 핸들러
   const handleSocialLogin = async (provider: 'google' | 'kakao' | 'naver') => {
+    // 네이버 로그인 처리
+    if (provider === 'naver') {
+      const clientId = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID;
+      if (!clientId) {
+        setLoginError('네이버 로그인을 위한 설정이 올바르지 않습니다.');
+        console.error('NEXT_PUBLIC_NAVER_CLIENT_ID is not set in .env.local');
+        return;
+      }
+      const redirectUri = `${window.location.origin}/auth/callback/naver`;
+      const state = Math.random().toString(36).substring(2);
+      sessionStorage.setItem('oauth_state', state);
+
+      const naverAuthUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`;
+
+      window.location.href = naverAuthUrl;
+      return;
+    }
+
     // 카카오는 준비 중 안내
     if (provider === 'kakao') {
       setAlertMessage('카카오 로그인 기능은 현재 심사 중으로\n정식 출시를 기다려 주세요.');
@@ -130,17 +148,13 @@ export default function LoginClient() {
 
     try {
       const supabase = createClient();
-      
-      // 각 제공자별 추가 정보 요청 설정
+
       const scopes: Record<string, string> = {
-        kakao: 'profile_nickname,profile_image,account_email,gender,age_range',
-        // 'naver_oidc' 스코프는 config.toml에서 관리되므로 여기서는 naver를 삭제합니다.
         google: 'email,profile',
       };
 
-      // redirectTo 파라미터 확인
       const redirectTo = searchParams.get('redirectTo');
-      const redirectUrl = redirectTo 
+      const redirectUrl = redirectTo
         ? `${window.location.origin}${redirectTo}`
         : `${window.location.origin}/onboarding`;
 
