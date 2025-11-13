@@ -31,24 +31,24 @@ function NaverAuthCallback() {
       const supabase = createClient();
       setMessage('네이버 계정 정보를 확인하고 있습니다...');
       
-      // 1. Edge Function을 호출하여 Supabase 인증 코드를 받아옵니다.
+      // 1. Edge Function을 호출하여 Supabase 세션 객체를 받아옵니다.
       const { data, error: functionError } = await supabase.functions.invoke('naver-auth', {
         body: { code },
       });
 
-      if (functionError || !data.code) {
+      if (functionError || !data.session) {
         console.error('Edge Function error:', functionError);
-        setError(`로그인 처리 중 오류가 발생했습니다: ${functionError?.message || '인증 코드를 받아오지 못했습니다.'}`);
+        setError(`로그인 처리 중 오류가 발생했습니다: ${functionError?.message || '세션 정보를 받아오지 못했습니다.'}`);
         return;
       }
 
       setMessage('로그인 세션을 설정하고 있습니다...');
 
-      // 2. 받아온 코드로 세션을 교환하여 로그인을 완료합니다.
-      const { error: sessionError } = await supabase.auth.exchangeCodeForSession(data.code);
+      // 2. [핵심 수정] 받아온 세션으로 클라이언트 로그인을 완료합니다.
+      const { error: sessionError } = await supabase.auth.setSession(data.session);
 
       if (sessionError) {
-        console.error('Session exchange error:', sessionError);
+        console.error('Session setting error:', sessionError);
         setError(`로그인에 실패했습니다: ${sessionError.message}`);
         return;
       }
