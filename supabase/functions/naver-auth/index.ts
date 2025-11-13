@@ -47,14 +47,29 @@ serve(async (req) => {
     if (listError) throw listError;
     user = users && users.length > 0 ? users[0] : null;
 
-    if (!user) {
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({ email: userEmail, email_confirm: true, user_metadata: { full_name: naverUser.name, avatar_url: naverUser.profile_image, provider: 'naver', provider_id: naverUser.id } });
+    if (user) {
+      // [핵심 수정] 기존 사용자가 있으면, provider 정보를 'naver'로 업데이트 (계정 연결)
+      if (user.app_metadata?.provider !== 'naver') {
+        const { data: updatedUser, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+          app_metadata: { ...user.app_metadata, provider: 'naver', provider_id: naverUser.id },
+        });
+        if (updateError) throw updateError;
+        user = updatedUser.user;
+      }
+    } else {
+      // 사용자가 없으면 새로 생성
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: userEmail,
+        email_confirm: true,
+        app_metadata: { provider: 'naver', provider_id: naverUser.id },
+        user_metadata: { full_name: naverUser.name, avatar_url: naverUser.profile_image },
+      });
       if (createError) throw createError;
       user = newUser.user;
     }
     if (!user) throw new Error('Could not create or find user.');
 
-    // 4. [핵심 수정] Access Token과 Refresh Token을 모두 생성합니다.
+    // 4. JWT를 직접 생성하여 완전한 세션을 만듭니다.
     const cryptoKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(jwtSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
     const now = getNumericDate(0);
     const accessTokenExp = now + 3600; // 1 hour
@@ -73,7 +88,7 @@ serve(async (req) => {
       expires_at: accessTokenExp,
     };
 
-    return new Response(JSON.stringify({ session, version: 'final-v5' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    return new Response(JSON.stringify({ session }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
 
   } catch (error) {
     console.error('[FATAL] Edge function error:', error.message);
