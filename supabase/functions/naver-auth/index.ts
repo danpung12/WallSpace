@@ -21,7 +21,7 @@ serve(async (req) => {
     const jwtSecret = Deno.env.get('CUSTOM_JWT_SECRET');
 
     if (!naverClientId || !naverClientSecret || !supabaseUrl || !supabaseServiceRoleKey || !jwtSecret) {
-      throw new Error('Missing required environment variables, including SUPABASE_JWT_SECRET.');
+      throw new Error('Missing required environment variables, including CUSTOM_JWT_SECRET.');
     }
 
     // 1. 네이버 토큰 교환
@@ -54,7 +54,7 @@ serve(async (req) => {
     }
     if (!user) throw new Error('Could not create or find user.');
 
-    // 4. [핵심 수정] JWT를 직접 생성하여 완전한 세션을 만듭니다.
+    // 4. JWT를 직접 생성하여 완전한 세션을 만듭니다.
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
       new TextEncoder().encode(jwtSecret),
@@ -79,11 +79,11 @@ serve(async (req) => {
       access_token: accessToken,
       token_type: 'bearer',
       user: user,
-      // 실제로는 refresh token도 생성해야 하지만, 우선 access token만으로 구현합니다.
     };
 
     console.log('Successfully created JWT session. Returning to client.');
-    return new Response(JSON.stringify({ session }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    // [디버깅] 버전 정보를 응답에 포함합니다.
+    return new Response(JSON.stringify({ session, version: 'final-v2' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
 
   } catch (error) {
     console.error('[FATAL] Edge function error:', error.message);

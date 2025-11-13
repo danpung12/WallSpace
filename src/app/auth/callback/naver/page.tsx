@@ -36,6 +36,9 @@ function NaverAuthCallback() {
         body: { code },
       });
 
+      // [디버깅] Edge Function으로부터 받은 응답 전체를 콘솔에 출력합니다.
+      console.log('Edge function response:', data);
+
       if (functionError || !data.session) {
         console.error('Edge Function error:', functionError);
         setError(`로그인 처리 중 오류가 발생했습니다: ${functionError?.message || '세션 정보를 받아오지 못했습니다.'}`);
@@ -44,7 +47,7 @@ function NaverAuthCallback() {
 
       setMessage('로그인 세션을 설정하고 있습니다...');
 
-      // 2. [핵심 수정] 받아온 세션으로 클라이언트 로그인을 완료합니다.
+      // 2. 받아온 세션으로 클라이언트 로그인을 완료합니다.
       const { error: sessionError } = await supabase.auth.setSession(data.session);
 
       if (sessionError) {
