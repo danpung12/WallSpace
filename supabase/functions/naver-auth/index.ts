@@ -40,23 +40,20 @@ serve(async (req) => {
     const userEmail = naverUser.email;
     if (!userEmail) throw new Error('Email not provided by Naver.');
 
-    // 3. Supabase 사용자 조회 또는 생성
+    // 3. Supabase 사용자 조회
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
     let user: User | null;
     const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email: userEmail });
     if (listError) throw listError;
     user = users && users.length > 0 ? users[0] : null;
 
-    if (user) {
-      // [핵심 수정] 기존 사용자가 있으면, provider 정보를 'naver'로 업데이트 (계정 연결)
-      if (user.app_metadata?.provider !== 'naver') {
-        const { data: updatedUser, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-          app_metadata: { ...user.app_metadata, provider: 'naver', provider_id: naverUser.id },
-        });
-        if (updateError) throw updateError;
-        user = updatedUser.user;
-      }
-    } else {
+    // 4. [핵심 수정] 사용자 상태에 따라 분기
+    if (user && user.app_metadata?.provider !== 'naver') {
+      // 기존 계정이 있지만, 네이버 연동이 안된 경우 -> 계정 충돌 상태 반환
+      return new Response(JSON.stringify({ status: 'conflict', email: user.email }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    }
+
+    if (!user) {
       // 사용자가 없으면 새로 생성
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: userEmail,
@@ -69,7 +66,7 @@ serve(async (req) => {
     }
     if (!user) throw new Error('Could not create or find user.');
 
-    // 4. JWT를 직접 생성하여 완전한 세션을 만듭니다.
+    // 5. JWT를 직접 생성하여 완전한 세션을 만듭니다.
     const cryptoKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(jwtSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
     const now = getNumericDate(0);
     const accessTokenExp = now + 3600; // 1 hour
@@ -78,7 +75,6 @@ serve(async (req) => {
     const accessToken = await create({ alg: 'HS256', typ: 'JWT' }, { aud: 'authenticated', sub: user.id, role: 'authenticated', email: user.email, iat: now, exp: accessTokenExp }, cryptoKey);
     const refreshToken = await create({ alg: 'HS256', typ: 'JWT' }, { sub: user.id, iat: now, exp: refreshTokenExp }, cryptoKey);
 
-    // 5. setSession이 요구하는 완전한 세션 객체를 구성합니다.
     const session = {
       access_token: accessToken,
       refresh_token: refreshToken,
