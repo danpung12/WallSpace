@@ -75,15 +75,15 @@ serve(async (req) => {
       cryptoKey
     );
 
+    // 5. [핵심 수정] setSession이 요구하는 완전한 세션 객체를 구성합니다.
     const session = {
       access_token: accessToken,
       token_type: 'bearer',
       user: user,
+      refresh_token: '', // refresh_token 필드 추가
     };
 
-    console.log('Successfully created JWT session. Returning to client.');
-    // [디버깅] 버전 정보를 응답에 포함합니다.
-    return new Response(JSON.stringify({ session, version: 'final-v2' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    return new Response(JSON.stringify({ session, version: 'final-v3' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
 
   } catch (error) {
     console.error('[FATAL] Edge function error:', error.message);
