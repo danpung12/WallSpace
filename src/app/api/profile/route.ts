@@ -69,6 +69,7 @@ export async function GET() {
       userSettings: {
         darkMode: userSettings?.dark_mode ?? false,
       },
+      identities: user.identities || [],
     };
 
     // 프로필 데이터는 자주 변경되지 않으므로 캐싱

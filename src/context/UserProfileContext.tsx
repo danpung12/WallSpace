@@ -8,6 +8,7 @@ interface UserProfileContextType {
   loading: boolean;
   refreshProfile: () => Promise<void>;
   updateProfile: (profile: UserProfile) => void;
+  unlinkIdentity: (provider: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const UserProfileContext = createContext<UserProfileContextType | null>(null);
@@ -60,6 +61,33 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
     setUserProfile(profile);
     sessionStorage.setItem('userProfile', JSON.stringify(profile));
   }, []);
+
+  const unlinkIdentity = useCallback(async (provider: string) => {
+    try {
+      const response = await fetch('/api/auth/unlink', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ provider }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: result.error || 'Failed to unlink identity.' };
+      }
+
+      // Unlink successful, refresh the profile to get the updated identities
+      await refreshProfile();
+      return { success: true };
+
+    } catch (error) {
+      console.error('Error unlinking identity:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      return { success: false, error: errorMessage };
+    }
+  }, [refreshProfile]);
 
   return (
     <UserProfileContext.Provider value={{ 

@@ -12,11 +12,13 @@ type EditProfileModalProps = {
   userProfile: UserProfile | null;
   userMode?: 'artist' | 'manager';
   onSave: (updatedProfile: UserProfile) => void;
+  onUnlink: (provider: string) => void;
+  onLinkNew: () => void;
   error: string | null;
   setError: (error: string | null) => void;
 };
 
-export default function EditProfileModal({ open, onClose, userProfile: initialProfile, userMode, onSave, error, setError }: EditProfileModalProps) {
+export default function EditProfileModal({ open, onClose, userProfile: initialProfile, userMode, onSave, onUnlink, onLinkNew, error, setError }: EditProfileModalProps) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(initialProfile);
   const { setIsNavVisible } = useBottomNav();
   
@@ -198,6 +200,47 @@ export default function EditProfileModal({ open, onClose, userProfile: initialPr
                             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                           </svg>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* 소셜 계정 연동 */}
+                    <div className="space-y-2 pt-2">
+                      <label className="flex items-center gap-2 text-sm font-semibold text-[#3D2C1D] dark:text-gray-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-[#D2B48C]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        소셜 계정 연동
+                      </label>
+                      <div className="space-y-3 pt-2">
+                        {userProfile?.identities && userProfile.identities.length > 0 ? (
+                          userProfile.identities.map((identity) => (
+                            <div key={identity.provider} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                {/* Provider Icon can be added here later */}
+                                <span className="text-sm font-medium text-[#2C2C2C] dark:text-gray-200 capitalize">{identity.provider}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => onUnlink(identity.provider)}
+                                className="px-3 py-1 text-xs font-semibold text-red-600 bg-red-100 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60 rounded-md transition-colors"
+                              >
+                                연동 해제
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-gray-500 dark:text-gray-400 px-1">연동된 소셜 계정이 없습니다.</p>
+                        )}
+                         <button
+                          type="button"
+                          onClick={onLinkNew}
+                          className="w-full mt-2 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                          </svg>
+                          새로운 계정 연동
+                        </button>
                       </div>
                     </div>
 

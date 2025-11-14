@@ -13,6 +13,8 @@ import NotificationListModal from "../components/NotificationListModal";
 import { UserProfile } from "@/data/profile";
 import EditProfileModal from "../components/EditProfileModal";
 import InquiryModal from "../components/InquiryModal"; // ✅ 문의하기 모달 추가
+import AddLinkModal from '../components/AddLinkModal'; // ✅ 소셜 연동 모달 추가
+import SocialIcon from '../components/SocialIcon'; // ✅ 소셜 아이콘 추가
 import { useDarkMode } from "../context/DarkModeContext"; // ✅ 다크모드 훅 추가
 import { useUserMode } from "../context/UserModeContext"; // ✅ UserMode 훅 추가
 import { useRouter } from "next/navigation"; // ✅ 라우터 추가
@@ -39,6 +41,9 @@ export default function ProfilePage() {
   const [hasNotifications, setHasNotifications] = useState(false);
   const [showInquiryModal, setShowInquiryModal] = useState(false); // ✅ 문의하기 모달 상태 추가
   const [isMobile, setIsMobile] = useState(false); // ✅ 모바일 감지 상태 추가
+  const [showUnlinkModal, setShowUnlinkModal] = useState(false);
+  const [providerToUnlink, setProviderToUnlink] = useState<string | null>(null);
+  const [showAddLinkModal, setShowAddLinkModal] = useState(false);
 
   // ✅ 모바일 감지
   useEffect(() => {
@@ -174,6 +179,59 @@ export default function ProfilePage() {
     } catch (err) {
       console.error('로그아웃 중 오류:', err);
       alert('로그아웃 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleUnlinkClick = (provider: string) => {
+    setProviderToUnlink(provider);
+    setShowUnlinkModal(true);
+  };
+
+  const handleUnlinkConfirm = async () => {
+    if (!providerToUnlink) return;
+
+    try {
+      const supabaseModule = await import('@/lib/supabase/client');
+      const supabase = supabaseModule.createClient();
+      const { error } = await supabase.auth.unlink({ provider: providerToUnlink as any });
+
+      if (error) {
+        throw error;
+      }
+
+      // UI 업데이트: 프로필 정보 다시 불러오기
+      mutate('/api/profile');
+      setShowUnlinkModal(false);
+      setProviderToUnlink(null);
+      
+    } catch (error: any) {
+      console.error('연동 해제 실패:', error);
+      alert(`'${providerToUnlink}' 계정 연동 해제에 실패했습니다: ${error.message}`);
+    } finally {
+      setShowUnlinkModal(false);
+      setProviderToUnlink(null);
+    }
+  };
+
+  const handleLinkWithProvider = async (provider: 'kakao' | 'naver' | 'google') => {
+    try {
+      const supabaseModule = await import('@/lib/supabase/client');
+      const supabase = supabaseModule.createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          // Linking to an existing user
+          queryParams: { access_type: 'offline', prompt: 'consent' }
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      console.error(`${provider} 연동 실패:`, error);
+      alert(`${provider} 계정 연동에 실패했습니다: ${error.message}`);
     }
   };
 
@@ -355,6 +413,32 @@ export default function ProfilePage() {
                 <section className="px-5 py-5 mx-5 mt-8 bg-white dark:bg-gray-800 shadow-md rounded-3xl lg:mx-0 lg:mt-0 lg:p-8 border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
                   <h3 className="mb-4 lg:mb-6 text-lg lg:text-xl font-bold text-[#2C2C2C] dark:text-gray-100">계정 관리</h3>
                   <div className="space-y-2 lg:space-y-3">
+                    {/* 소셜 연동 계정 */}
+                    <div className="pt-4">
+                      <h4 className="text-md lg:text-lg font-bold text-[#2C2C2C] dark:text-gray-100 mb-3">소셜 연동</h4>
+                      <div className="space-y-3">
+                                                {userProfile.identities && userProfile.identities.length > 0 ? (
+                          userProfile.identities.map((identity) => (
+                            <div key={identity.provider} className="flex items-center justify-between p-3 lg:p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                              <div className="flex items-center">
+                                <SocialIcon provider={identity.provider} className="w-6 h-6 mr-3" />
+                                <span className="text-lg font-bold capitalize">{identity.provider}</span>
+                              </div>
+                              <button onClick={() => handleUnlinkClick(identity.provider)} className="text-sm font-semibold text-red-500 hover:text-red-700 transition-colors">
+                                해제
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center p-4 text-gray-500 dark:text-gray-400">
+                            <p>연동된 소셜 계정이 없습니다.</p>
+                          </div>
+                        )}
+                        <button onClick={() => setShowAddLinkModal(true)} className="w-full text-center p-3 lg:p-4 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors font-bold">
+                          + 계정 연동 추가
+                        </button>
+                      </div>
+                    </div>
                     {/* 비밀번호 변경 */}
             <button
               type="button"
@@ -528,6 +612,15 @@ export default function ProfilePage() {
         title="로그아웃"
         message="정말 로그아웃 하시겠습니까?"
       />
+
+      {/* 소셜 연동 해제 확인 모달 */}
+      <LogoutConfirmationModal
+        isOpen={showUnlinkModal}
+        onClose={() => setShowUnlinkModal(false)}
+        onConfirm={handleUnlinkConfirm}
+        title={`${providerToUnlink ? providerToUnlink.charAt(0).toUpperCase() + providerToUnlink.slice(1) : ''} 연동 해제`}
+        message={`정말 ${providerToUnlink} 계정 연동을 해제하시겠습니까?`}
+      />
       {/* ✅ SNS 계정 알림 모달 추가 */}
       <AlertModal
         isOpen={showAlertModal}
@@ -559,6 +652,13 @@ export default function ProfilePage() {
           console.log('문의가 접수되었습니다.');
           // 문의 성공 후 추가 작업이 필요하면 여기서 처리
         }}
+      />
+
+      {/* 소셜 계정 연동 모달 */}
+      <AddLinkModal
+        open={showAddLinkModal}
+        onClose={() => setShowAddLinkModal(false)}
+        onLink={handleLinkWithProvider}
       />
     </div>
   );

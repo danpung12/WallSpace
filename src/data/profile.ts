@@ -1,3 +1,15 @@
+export interface Identity {
+  provider: string;
+  id: string;
+  user_id: string;
+  identity_data?: {
+    [key: string]: any;
+  };
+  last_sign_in_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -16,4 +28,5 @@ export interface UserProfile {
   userSettings: {
     darkMode: boolean;
   };
+  identities?: Identity[];
 }
