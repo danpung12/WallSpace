@@ -107,13 +107,14 @@ function AddStoreContent() {
     // 화면 순서 정의
     const screenOrder = ['screen-start', 'screen-step1', 'screen-step2', 'screen-step3', 'screen-step4', 'screen-confirm'];
 
-    const showScreen = (screenId: string, progressValue: number) => {
+    const showScreen = (screenId: string, progressValue: number, skipMaxCheck: boolean = false) => {
         // 현재 도달한 최대 단계보다 앞으로 가려는 시도 방지
         const targetIndex = screenOrder.indexOf(screenId);
         const maxReachedIndex = screenOrder.indexOf(maxScreenReached);
         
         // 이미 도달한 단계까지만 이동 가능 (뒤로 가기나 이미 완료한 단계로만 이동)
-        if (targetIndex <= maxReachedIndex) {
+        // skipMaxCheck가 true면 최대 단계 체크를 건너뛰고 바로 이동 (다음 버튼 클릭 시 사용)
+        if (skipMaxCheck || targetIndex <= maxReachedIndex) {
         setActiveScreen(screenId);
         setProgress(progressValue);
         } else {
@@ -776,7 +777,7 @@ function AddStoreContent() {
         
         if (isStep1Valid()) {
             setMaxScreenReached('screen-step2'); // 다음 단계 잠금 해제
-            showScreen('screen-step2', 50);
+            showScreen('screen-step2', 50, true); // 최대 단계 체크 건너뛰기
         }
     };
 
@@ -792,7 +793,7 @@ function AddStoreContent() {
         
         if (isStep2Valid()) {
             setMaxScreenReached('screen-step3'); // 다음 단계 잠금 해제
-            showScreen('screen-step3', 75);
+            showScreen('screen-step3', 75, true); // 최대 단계 체크 건너뛰기
         }
     };
 
@@ -808,7 +809,7 @@ function AddStoreContent() {
         
         if (isStep3Valid()) {
             setMaxScreenReached('screen-step4'); // 다음 단계 잠금 해제
-            showScreen('screen-step4', 100);
+            showScreen('screen-step4', 100, true); // 최대 단계 체크 건너뛰기
         }
     };
 
@@ -824,7 +825,7 @@ function AddStoreContent() {
         
         if (isStep4Valid()) {
             setMaxScreenReached('screen-confirm'); // 다음 단계 잠금 해제
-            showScreen('screen-confirm', 100);
+            showScreen('screen-confirm', 100, true); // 최대 단계 체크 건너뛰기
         }
     };
 

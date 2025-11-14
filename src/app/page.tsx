@@ -493,6 +493,11 @@ export default function HomePage() {
       .slice(0, maxLocations);
   }, [locations, userLocation, notifications.length]);
 
+  // 위치 가져오기 상태 추가
+  const [isLocationLoading, setIsLocationLoading] = useState(true);
+  // locations 로드 완료 여부 추적
+  const [locationsLoaded, setLocationsLoaded] = useState(false);
+
   // 인증 확인 및 데이터 로드
   useEffect(() => {
     const checkAuthAndLoadData = async () => {
@@ -519,6 +524,8 @@ export default function HomePage() {
         } else {
           console.error('Failed to fetch locations');
         }
+        // locations 로드 시도 완료 표시 (성공/실패 무관)
+        setLocationsLoaded(true);
 
         // 알림 데이터 처리
         if (notificationsResponse.status === 'fulfilled' && notificationsResponse.value.ok) {
@@ -537,9 +544,9 @@ export default function HomePage() {
         }
       } catch (error) {
         console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
+        setLocationsLoaded(true); // 에러 발생 시에도 로드 시도 완료로 표시
       }
+      // 위치 정보 로딩과 정렬 완료까지 대기하므로 여기서는 setIsLoading 호출하지 않음
     };
     
     checkAuthAndLoadData();
@@ -665,6 +672,7 @@ export default function HomePage() {
     }
   };
 
+  // 위치 정보 가져오기 및 정렬 완료까지 로딩 유지
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -673,14 +681,31 @@ export default function HomePage() {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           });
+          setIsLocationLoading(false);
         },
         (error) => {
           console.error("Error getting user location:", error);
-          // Handle error or set a default location
+          // 위치 가져오기 실패 시에도 정렬은 수행됨 (userLocation이 null인 상태)
+          setIsLocationLoading(false);
         }
       );
+    } else {
+      // Geolocation을 지원하지 않는 경우
+      setIsLocationLoading(false);
     }
   }, []);
+
+  // locations 로드 및 userLocation 준비 완료 후 정렬까지 대기
+  useEffect(() => {
+    // locations 로드 시도가 완료되고, 위치 정보 로딩이 완료되면 정렬 수행 후 로딩 종료
+    if (locationsLoaded && !isLocationLoading) {
+      // 정렬이 완료될 때까지 약간의 지연을 두어 useMemo가 계산되도록 함
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [locationsLoaded, isLocationLoading]);
  
   useEffect(() => {
     const el = scrollContainerRef.current;
