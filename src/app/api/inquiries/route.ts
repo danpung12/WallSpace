@@ -207,8 +207,8 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         subject,
         content: content.trim(),
-        image_url: imageUrl,
-        status: 'pending'
+        image_url: imageUrl
+
       })
       .select()
       .single();
