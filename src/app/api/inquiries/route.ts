@@ -132,7 +132,6 @@ export async function POST(request: NextRequest) {
 
     // 주제 유효성 검증
     const validSubjects = ['payment_error', 'reservation_error', 'general', 'other'];
-
     if (!validSubjects.includes(subject)) {
       return NextResponse.json(
         { error: 'Invalid subject type' },
@@ -192,11 +191,10 @@ export async function POST(request: NextRequest) {
         console.log('✅ Image uploaded:', imageUrl);
       } catch (imageError: any) {
         console.error('❌ Error processing image:', imageError);
-        // 이미지 업로드 실패는 에러로 처리하지 않고 계속 진행
-        // return NextResponse.json(
-        //   { error: 'Failed to upload image', details: imageError.message },
-        //   { status: 500 }
-        // );
+        return NextResponse.json(
+          { error: 'Failed to upload image', details: imageError.message },
+          { status: 500 }
+        );
       }
     }
 
@@ -207,8 +205,8 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         subject,
         content: content.trim(),
-        image_url: imageUrl
-
+        image_url: imageUrl,
+        status: 'pending'
       })
       .select()
       .single();
@@ -451,4 +449,3 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
-
