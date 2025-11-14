@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
 
     // 요청 본문 파싱
     const body = await request.json();
-    const { subject, content, image } = body;
+    const { subject: subjectMap[subject], content, image } = body;
 
     // 입력 검증
     if (!subject || !content) {
@@ -131,7 +131,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 주제 유효성 검증
-    const validSubjects = ['payment_error', 'reservation_error', 'general', 'other'];
+    const subjectMap: { [key: string]: string } = {
+      'payment_error': '결제 오류',
+      'reservation_error': '예약 오류',
+      'general': '일반 문의',
+      'other': '기타',
+    };
+    const validSubjects = Object.keys(subjectMap);
+
     if (!validSubjects.includes(subject)) {
       return NextResponse.json(
         { error: 'Invalid subject type' },
