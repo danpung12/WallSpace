@@ -13,6 +13,7 @@ import { useUserMode } from '../context/UserModeContext';
 import { useReservations } from '@/context/ReservationContext'; // Import useReservations
 import { getUserArtworks, createArtwork, updateArtwork, deleteArtwork } from '@/lib/api/artworks';
 import type { Artwork } from '@/types/database';
+import { useApi } from '@/lib/swr'; // SWR 추가
 
 // 동적 임포트로 모달을 lazy load
 const AddArtworkModal = dynamic(() => import('./components/AddArtworkModal'), {
@@ -785,10 +786,23 @@ function DashboardContent() {
     setIsNavVisible(true);
   }, [setIsNavVisible]);
 
-  // 병렬로 데이터 로드 (최적화)
+  // SWR로 locations 데이터 가져오기 (manager 모드일 때만)
+  const { data: locationsData, isLoading: locationsLoading } = useApi<any[]>(
+    userMode === 'manager' ? '/api/locations?myLocations=true' : null
+  );
+
+  // locations 데이터 설정
   useEffect(() => {
-    const fetchData = async () => {
-      if (userMode === 'artist') {
+    if (locationsData) {
+      setLocations(locationsData);
+    }
+    setIsLoadingLocations(locationsLoading);
+  }, [locationsData, locationsLoading]);
+
+  // 작가 모드일 때 artworks 로드
+  useEffect(() => {
+    if (userMode === 'artist') {
+      const fetchArtworks = async () => {
         try {
           setIsLoadingArtworks(true);
           const data = await getUserArtworks();
@@ -798,27 +812,9 @@ function DashboardContent() {
         } finally {
           setIsLoadingArtworks(false);
         }
-      } else if (userMode === 'manager') {
-        try {
-          setIsLoadingLocations(true);
-          const response = await fetch('/api/locations?myLocations=true', {
-            next: { revalidate: 60 } // 60초 캐싱
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setLocations(data);
-          } else {
-            console.error('Failed to fetch locations');
-          }
-        } catch (error) {
-          console.error('Error fetching locations:', error);
-        } finally {
-          setIsLoadingLocations(false);
-        }
-      }
-    };
-
-    fetchData();
+      };
+      fetchArtworks();
+    }
   }, [userMode, searchParams]);
 
   // 중앙에 위치한 카드를 계산하고 해당 카드로 스크롤하는 함수

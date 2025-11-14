@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation'; // 1. useRouter 훅 임포트
 import { Location } from '@/data/locations';
 import { createClient } from '@/lib/supabase/client';
 import { useReservations } from '@/context/ReservationContext';
+import { useApi, mutate } from '@/lib/swr';
 
 // --- Swiper CSS 임포트 ---
 import 'swiper/css';
@@ -495,97 +496,53 @@ export default function HomePage() {
 
   // 위치 가져오기 상태 추가
   const [isLocationLoading, setIsLocationLoading] = useState(true);
-  // locations 로드 완료 여부 추적
-  const [locationsLoaded, setLocationsLoaded] = useState(false);
 
-  // 인증 확인 및 데이터 로드
+  // 인증 확인
   useEffect(() => {
-    const checkAuthAndLoadData = async () => {
+    const checkAuth = async () => {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
         router.replace('/login');
-        return;
       }
-
-      // 장소 데이터, 알림, 즐겨찾기 병렬 로드로 속도 향상
-      try {
-        const [locationsResponse, notificationsResponse, favoritesResponse] = await Promise.allSettled([
-          fetch('/api/locations'),
-          fetch('/api/notifications'),
-          fetch('/api/favorites')
-        ]);
-
-        // 장소 데이터 처리
-        if (locationsResponse.status === 'fulfilled' && locationsResponse.value.ok) {
-          const data = await locationsResponse.value.json();
-          setLocations(data);
-        } else {
-          console.error('Failed to fetch locations');
-        }
-        // locations 로드 시도 완료 표시 (성공/실패 무관)
-        setLocationsLoaded(true);
-
-        // 알림 데이터 처리
-        if (notificationsResponse.status === 'fulfilled' && notificationsResponse.value.ok) {
-          const data = await notificationsResponse.value.json();
-          setNotifications(data.slice(0, 3));
-          const unread = data.filter((n: any) => !n.is_read).length;
-          setUnreadCount(unread);
-        }
-
-        // 즐겨찾기 데이터 처리
-        if (favoritesResponse.status === 'fulfilled' && favoritesResponse.value.ok) {
-          const data = await favoritesResponse.value.json();
-          // 즐겨찾기된 장소 정보 추출
-          const favoriteLocations = data.map((fav: any) => fav.locations).filter(Boolean);
-          setFavorites(favoriteLocations);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setLocationsLoaded(true); // 에러 발생 시에도 로드 시도 완료로 표시
-      }
-      // 위치 정보 로딩과 정렬 완료까지 대기하므로 여기서는 setIsLoading 호출하지 않음
     };
     
-    checkAuthAndLoadData();
+    checkAuth();
   }, [router]);
 
-  // 알림 폴링 (30초마다 - 초기 로드는 위에서 처리)
-  useEffect(() => {
-    const loadNotifications = async () => {
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          setNotifications([]);
-          setUnreadCount(0);
-          return;
-        }
+  // SWR로 데이터 가져오기 - 자동 캐싱 및 재검증
+  const { data: locationsData, error: locationsError, isLoading: locationsLoading } = useApi<Location[]>('/api/locations');
+  const { data: notificationsData, error: notificationsError, isLoading: notificationsLoading } = useApi<Notification[]>('/api/notifications', {
+    refreshInterval: 30000, // 30초마다 자동 재검증
+    revalidateOnFocus: true, // 포커스 시 재검증 (알림은 중요하므로)
+  });
+  const { data: favoritesData, error: favoritesError, isLoading: favoritesLoading } = useApi<any[]>('/api/favorites');
 
-        const response = await fetch('/api/notifications');
-        if (response.ok) {
-          const data: Notification[] = await response.json();
-          setNotifications(data.slice(0, 3));
-          const unread = data.filter((n: any) => !n.is_read).length;
-          setUnreadCount(unread);
-        } else {
-          setNotifications([]);
-          setUnreadCount(0);
-        }
-      } catch (error) {
-        console.log('알림 로드 실패:', error);
-        setNotifications([]);
-        setUnreadCount(0);
-      }
-    };
-    
-    // 30초마다 알림 업데이트 (초기 로드는 제외)
-    const interval = setInterval(loadNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  // 데이터 설정
+  useEffect(() => {
+    if (locationsData) {
+      setLocations(locationsData);
+    }
+  }, [locationsData]);
+
+  useEffect(() => {
+    if (notificationsData) {
+      setNotifications(notificationsData.slice(0, 3));
+      const unread = notificationsData.filter((n: any) => !n.is_read).length;
+      setUnreadCount(unread);
+    }
+  }, [notificationsData]);
+
+  useEffect(() => {
+    if (favoritesData) {
+      const favoriteLocations = favoritesData.map((fav: any) => fav.locations).filter(Boolean);
+      setFavorites(favoriteLocations);
+    }
+  }, [favoritesData]);
+
+  // locations 로드 완료 여부 추적
+  const locationsLoaded = !locationsLoading && (locationsData !== undefined || locationsError !== undefined);
 
   // 알림 클릭 핸들러
   const handleNotificationClick = async (notification: Notification) => {
@@ -621,6 +578,9 @@ export default function HomePage() {
       // 백그라운드에서 삭제
       fetch(`/api/notifications?id=${notification.id}`, {
         method: 'DELETE',
+      }).then(() => {
+        // 삭제 후 캐시 무효화하여 최신 데이터 가져오기
+        mutate('/api/notifications');
       }).catch(error => {
         console.error('Failed to delete notification:', error);
       });
@@ -640,6 +600,9 @@ export default function HomePage() {
       
       fetch(`/api/notifications?id=${notification.id}`, {
         method: 'DELETE',
+      }).then(() => {
+        // 삭제 후 캐시 무효화하여 최신 데이터 가져오기
+        mutate('/api/notifications');
       }).catch(error => {
         console.error('Failed to delete notification:', error);
       });
@@ -698,14 +661,15 @@ export default function HomePage() {
   // locations 로드 및 userLocation 준비 완료 후 정렬까지 대기
   useEffect(() => {
     // locations 로드 시도가 완료되고, 위치 정보 로딩이 완료되면 정렬 수행 후 로딩 종료
-    if (locationsLoaded && !isLocationLoading) {
+    // SWR은 자동으로 캐싱되므로 locationsData가 있으면 즉시 표시 가능
+    if ((locationsLoaded || locationsData) && !isLocationLoading) {
       // 정렬이 완료될 때까지 약간의 지연을 두어 useMemo가 계산되도록 함
       const timer = setTimeout(() => {
         setIsLoading(false);
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [locationsLoaded, isLocationLoading]);
+  }, [locationsLoaded, locationsData, isLocationLoading]);
  
   useEffect(() => {
     const el = scrollContainerRef.current;

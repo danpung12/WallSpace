@@ -56,7 +56,12 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return NextResponse.json(favorites || []);
+    // 캐싱 헤더 추가 - 즐겨찾기는 변경 빈도가 낮으므로 더 긴 캐싱
+    return NextResponse.json(favorites || [], {
+      headers: {
+        'Cache-Control': 'private, s-maxage=120, stale-while-revalidate=300',
+      },
+    });
   } catch (error) {
     console.error('GET /api/favorites error:', error);
     return NextResponse.json(

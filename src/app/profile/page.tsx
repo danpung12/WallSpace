@@ -18,6 +18,7 @@ import { useUserMode } from "../context/UserModeContext"; // ✅ UserMode 훅 �
 import { useRouter } from "next/navigation"; // ✅ 라우터 추가
 import { logoutUser } from "@/lib/api/auth"; // ✅ 로그아웃 함수 추가
 import { useUserProfile } from "@/context/UserProfileContext"; // ✅ 사용자 프로필 Context 추가
+import { useApi, mutate } from "@/lib/swr"; // SWR 추가
 
 export default function ProfilePage() {
   const router = useRouter(); // ✅ 라우터 초기화
@@ -51,51 +52,49 @@ export default function ProfilePage() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // 프로필 및 알림 병렬 로드 (최적화)
+  // SWR로 프로필 및 알림 데이터 가져오기
+  const { data: profileData, error: profileError, isLoading: profileLoading } = useApi<UserProfile>('/api/profile');
+  const { data: notificationsData } = useApi<any[]>('/api/notifications?cleanupRead=true', {
+    refreshInterval: 30000, // 30초마다 자동 재검증
+  });
+
+  // 프로필 데이터 설정
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // 병렬로 프로필과 알림 데이터 가져오기
-        const [profileResponse, notificationsResponse, supabaseModule] = await Promise.all([
-          fetch("/api/profile", { next: { revalidate: 30 } }),
-          fetch('/api/notifications?cleanupRead=true', { next: { revalidate: 10 } }),
-          import('@/lib/supabase/client')
-        ]);
+    if (profileData) {
+      setUserProfile(profileData);
+      // 초기 로드 시에만 다크모드 설정 (이후 변경은 UserSettingsModal에서 처리)
+      if (profileData.userSettings?.darkMode !== undefined && !userProfile) {
+        setDarkMode(profileData.userSettings.darkMode);
+      }
+    }
+    if (profileError) {
+      setError(profileError.message || "Failed to fetch profile");
+    }
+    setIsLoading(profileLoading);
+  }, [profileData, profileError, profileLoading, setDarkMode, userProfile]);
 
-        // 프로필 데이터 처리
-        if (profileResponse.ok) {
-          const data: UserProfile = await profileResponse.json();
-          setUserProfile(data);
-          // 초기 로드 시에만 다크모드 설정 (이후 변경은 UserSettingsModal에서 처리)
-          if (data.userSettings?.darkMode !== undefined && !userProfile) {
-            setDarkMode(data.userSettings.darkMode);
-          }
-        } else {
-          throw new Error(`HTTP error! status: ${profileResponse.status}`);
-        }
+  // 알림 데이터 설정
+  useEffect(() => {
+    if (notificationsData) {
+      setHasNotifications(notificationsData.length > 0);
+    }
+  }, [notificationsData]);
 
-        // 알림 데이터 처리
-        if (notificationsResponse.ok) {
-          const notifData = await notificationsResponse.json();
-          setHasNotifications(notifData.length > 0);
-        }
-
-        // SNS 로그인 여부 확인
-        const supabase = supabaseModule.createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const provider = user.app_metadata?.provider || 'email';
-          setIsSocialLogin(provider !== 'email');
-        }
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch profile");
-        console.error("Error fetching profile:", err);
-      } finally {
-        setIsLoading(false);
+  // SNS 로그인 여부 확인
+  useEffect(() => {
+    const checkSocialLogin = async () => {
+      const supabaseModule = await import('@/lib/supabase/client');
+      const supabase = supabaseModule.createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const provider = user.app_metadata?.provider || 'email';
+        setIsSocialLogin(provider !== 'email');
       }
     };
-    fetchData();
-  }, [setDarkMode]);
+    if (profileData) {
+      checkSocialLogin();
+    }
+  }, [profileData]);
 
   // 프로필 데이터 업데이트 (PUT 요청)
   const updateProfile = async (updatedData: Partial<UserProfile>): Promise<boolean> => {
@@ -118,6 +117,8 @@ export default function ProfilePage() {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      // 프로필 업데이트 후 캐시 무효화
+      mutate('/api/profile');
       const data: UserProfile = await response.json();
       setUserProfile(data); // Re-sync with server state
       updateGlobalProfile(data); // ✅ 전역 Context도 업데이트 (Header가 재렌더링 안 됨)

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useApi, mutate } from "@/lib/swr"; // SWR 추가
 
 interface Notification {
   id: string;
@@ -20,15 +21,20 @@ interface NotificationListModalProps {
 
 export default function NotificationListModal({ open, onClose }: NotificationListModalProps) {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(false);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [selectedRejection, setSelectedRejection] = useState<{
     reason: string;
     title: string;
   } | null>(null);
-  const lastFetchTime = useRef<number>(0);
-  const FETCH_COOLDOWN = 30000; // 30초 쿨다운
+
+  // SWR로 알림 데이터 가져오기
+  const { data: notifications, error: notificationsError, isLoading: loading } = useApi<Notification[]>(
+    open ? '/api/notifications?cleanupRead=true' : null,
+    {
+      refreshInterval: 30000, // 30초마다 자동 재검증
+      revalidateOnFocus: true, // 포커스 시 재검증
+    }
+  );
 
   // 디버깅: 모달 상태 변경 감지
   useEffect(() => {
@@ -36,52 +42,24 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
     console.log('🚨 selectedRejection:', selectedRejection);
   }, [showRejectionModal, selectedRejection]);
 
-  // 알림 목록 가져오기 (변경사항이 있을 때만)
+  // 알림 디버그 로그
   useEffect(() => {
-    if (open) {
-      const now = Date.now();
-      const timeSinceLastFetch = now - lastFetchTime.current;
-      
-      // 30초 이내에 fetch했으면 스킵
-      if (timeSinceLastFetch < FETCH_COOLDOWN && notifications.length > 0) {
-        console.log('⏭️ 최근에 불러왔으므로 스킵');
-        return;
-      }
-      
-      // 처음이거나 30초 이상 지났으면 fetch
-      fetchNotifications();
-    }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const fetchNotifications = async () => {
-    setLoading(true);
-    try {
-      // 읽은 알림 자동 삭제하고 읽지 않은 알림만 가져오기
-      const response = await fetch('/api/notifications?cleanupRead=true');
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🔔 === NOTIFICATIONS DEBUG ===');
-        console.log('Total notifications:', data.length);
-        console.log('All notifications:', data);
-        data.forEach((n: any, idx: number) => {
-          console.log(`Notification ${idx}:`, {
-            id: n.id,
-            type: n.type,
-            title: n.title,
-            rejection_reason: n.rejection_reason,
-            hasRejectionReason: !!n.rejection_reason
-          });
+    if (notifications) {
+      console.log('🔔 === NOTIFICATIONS DEBUG ===');
+      console.log('Total notifications:', notifications.length);
+      console.log('All notifications:', notifications);
+      notifications.forEach((n: any, idx: number) => {
+        console.log(`Notification ${idx}:`, {
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          rejection_reason: n.rejection_reason,
+          hasRejectionReason: !!n.rejection_reason
         });
-        console.log('🔔 === END DEBUG ===');
-        setNotifications(data);
-        lastFetchTime.current = Date.now(); // 마지막 fetch 시간 업데이트
-      }
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-    } finally {
-      setLoading(false);
+      });
+      console.log('🔔 === END DEBUG ===');
     }
-  };
+  }, [notifications]);
 
   // 알림 클릭 (읽음 처리 후 목록에서 제거 + 페이지 이동)
   const handleNotificationClick = async (notification: Notification) => {
@@ -112,9 +90,12 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
             body: JSON.stringify({ notificationId: notification.id }),
           });
         }
-        setNotifications(prev => prev.filter(n => n.id !== notification.id));
         fetch(`/api/notifications?id=${notification.id}`, {
           method: 'DELETE',
+        }).then(() => {
+          // 삭제 후 캐시 무효화하여 최신 데이터 가져오기
+          mutate('/api/notifications?cleanupRead=true');
+          mutate('/api/notifications');
         }).catch(error => {
           console.error('Failed to delete notification:', error);
         });
@@ -130,12 +111,13 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
         });
       }
       
-      // 로컬 state에서 즉시 제거 (UI 반응 빠르게)
-      setNotifications(prev => prev.filter(n => n.id !== notification.id));
-      
       // 백그라운드에서 삭제 (비동기)
       fetch(`/api/notifications?id=${notification.id}`, {
         method: 'DELETE',
+      }).then(() => {
+        // 삭제 후 캐시 무효화하여 최신 데이터 가져오기
+        mutate('/api/notifications?cleanupRead=true');
+        mutate('/api/notifications');
       }).catch(error => {
         console.error('Failed to delete notification:', error);
       });
@@ -173,7 +155,9 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
       await fetch(`/api/notifications?id=${notificationId}`, {
         method: 'DELETE',
       });
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      // 캐시 무효화하여 최신 데이터 가져오기
+      mutate('/api/notifications?cleanupRead=true');
+      mutate('/api/notifications');
     } catch (error) {
       console.error('Failed to delete notification:', error);
     }
@@ -187,12 +171,14 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
     
     try {
       // 모든 알림 ID 수집
-      const deletePromises = notifications.map(n => 
+      const deletePromises = notifications?.map(n => 
         fetch(`/api/notifications?id=${n.id}`, { method: 'DELETE' })
-      );
+      ) || [];
       
       await Promise.all(deletePromises);
-      setNotifications([]);
+      // 캐시 무효화하여 최신 데이터 가져오기
+      mutate('/api/notifications?cleanupRead=true');
+      mutate('/api/notifications');
     } catch (error) {
       console.error('Failed to clear all notifications:', error);
       alert('알림 삭제 중 오류가 발생했습니다.');
@@ -249,7 +235,7 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
                 <span className="material-symbols-outlined text-gray-600 dark:text-gray-400">close</span>
               </button>
             </div>
-            {notifications.length > 0 && (
+            {notifications && notifications.length > 0 && (
               <button
                 onClick={handleClearAll}
                 className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors flex items-center gap-1 mt-2"
@@ -266,7 +252,7 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-500 dark:text-gray-400">로딩 중...</div>
             </div>
-          ) : notifications.length === 0 ? (
+          ) : !notifications || notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-6 px-4">
               <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-2">
                 notifications_off
@@ -348,7 +334,7 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
                 <span className="material-symbols-outlined text-gray-600 dark:text-gray-400 text-xl">close</span>
               </button>
             </div>
-            {notifications.length > 0 && (
+            {notifications && notifications.length > 0 && (
               <button
                 onClick={handleClearAll}
                 className="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors flex items-center gap-1"
@@ -365,7 +351,7 @@ export default function NotificationListModal({ open, onClose }: NotificationLis
               <div className="flex items-center justify-center py-12">
                 <div className="text-gray-500 dark:text-gray-400">로딩 중...</div>
               </div>
-            ) : notifications.length === 0 ? (
+            ) : !notifications || notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 px-4">
                 <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">
                   notifications_off

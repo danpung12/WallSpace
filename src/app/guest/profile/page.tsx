@@ -12,6 +12,7 @@ import { UserProfile } from "@/data/profile";
 import { useDarkMode } from "../../context/DarkModeContext";
 import { useRouter } from "next/navigation";
 import { logoutUser } from "@/lib/api/auth";
+import { useApi, mutate } from "@/lib/swr"; // SWR 추가
 
 export default function GuestProfilePage() {
   const router = useRouter();
@@ -27,37 +28,39 @@ export default function GuestProfilePage() {
   const [isSocialLogin, setIsSocialLogin] = useState(false);
   const [showAlertModal, setShowAlertModal] = useState(false);
 
-  // 프로필 데이터 가져오기
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await fetch("/api/profile");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data: UserProfile = await response.json();
-        setUserProfile(data);
-        if (data.userSettings?.darkMode !== undefined) {
-          setDarkMode(data.userSettings.darkMode);
-        }
+  // SWR로 프로필 데이터 가져오기
+  const { data: profileData, error: profileError, isLoading: profileLoading } = useApi<UserProfile>('/api/profile');
 
-        const { createClient } = await import('@/lib/supabase/client');
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (user) {
-          const provider = user.app_metadata?.provider || 'email';
-          setIsSocialLogin(provider !== 'email');
-        }
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch profile");
-        console.error("Error fetching profile:", err);
-      } finally {
-        setIsLoading(false);
+  // 프로필 데이터 설정
+  useEffect(() => {
+    if (profileData) {
+      setUserProfile(profileData);
+      if (profileData.userSettings?.darkMode !== undefined) {
+        setDarkMode(profileData.userSettings.darkMode);
+      }
+    }
+    if (profileError) {
+      setError(profileError.message || "Failed to fetch profile");
+    }
+    setIsLoading(profileLoading);
+  }, [profileData, profileError, profileLoading, setDarkMode]);
+
+  // SNS 로그인 여부 확인
+  useEffect(() => {
+    const checkSocialLogin = async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const provider = user.app_metadata?.provider || 'email';
+        setIsSocialLogin(provider !== 'email');
       }
     };
-    fetchProfile();
-  }, [setDarkMode]);
+    if (profileData) {
+      checkSocialLogin();
+    }
+  }, [profileData]);
 
   const updateProfile = async (updatedData: Partial<UserProfile>): Promise<boolean> => {
     if (!userProfile) return false;
@@ -78,6 +81,8 @@ export default function GuestProfilePage() {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      // 프로필 업데이트 후 캐시 무효화
+      mutate('/api/profile');
       const data: UserProfile = await response.json();
       setUserProfile(data);
       return true;

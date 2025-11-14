@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useApi } from '@/lib/swr'; // SWR 추가
 
 interface BookingSuccessProps {
   isModal?: boolean;
@@ -33,38 +34,21 @@ export default function BookingSuccess({
 }: BookingSuccessProps) {
   const router = useRouter();
   const [reservation, setReservation] = useState<ReservationData | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  // 예약 데이터 로드
+  // SWR로 예약 데이터 가져오기
+  const { data: reservationData, isLoading: loading } = useApi<any>(
+    reservationId ? `/api/reservations?id=${reservationId}` : null
+  );
+
+  // 예약 데이터 설정
   useEffect(() => {
-    const fetchReservation = async () => {
-      if (!reservationId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        console.log('📦 Fetching reservation:', reservationId);
-        const response = await fetch(`/api/reservations?id=${reservationId}`);
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ Reservation data:', data);
-          
-          // data가 배열이면 첫 번째 항목 사용, 아니면 그대로 사용
-          const reservationData = Array.isArray(data) ? data[0] : data;
-          setReservation(reservationData);
-        } else {
-          console.error('Failed to fetch reservation');
-        }
-      } catch (error) {
-        console.error('Error fetching reservation:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchReservation();
-  }, [reservationId]);
+    if (reservationData) {
+      console.log('✅ Reservation data:', reservationData);
+      // data가 배열이면 첫 번째 항목 사용, 아니면 그대로 사용
+      const data = Array.isArray(reservationData) ? reservationData[0] : reservationData;
+      setReservation(data);
+    }
+  }, [reservationData]);
 
   const handleViewBookingClick = () => {
     if (onViewBooking) {
