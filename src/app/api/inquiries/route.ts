@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
 
     // 요청 본문 파싱
     const body = await request.json();
-    const { subject: subjectMap[subject], content, image } = body;
+    const { subject, content, image } = body;
 
     // 입력 검증
     if (!subject || !content) {
