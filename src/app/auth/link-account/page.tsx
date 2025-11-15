@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LinkAccountPage() {
+function LinkAccountContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const provider = searchParams.get("provider");
@@ -113,6 +113,18 @@ export default function LinkAccountPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LinkAccountPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-[#F5F1EC] dark:bg-gray-900">
+        <div className="text-[#887563] dark:text-gray-400">로딩 중...</div>
+      </div>
+    }>
+      <LinkAccountContent />
+    </Suspense>
   );
 }
 
