@@ -46,6 +46,7 @@ export default function ProfilePage() {
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showUnlinkConfirmModal, setShowUnlinkConfirmModal] = useState(false);
   const [providerToUnlink, setProviderToUnlink] = useState<string | null>(null);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false); // 회원 탈퇴 모달
 
   // ✅ 모바일 감지
   useEffect(() => {
@@ -195,6 +196,35 @@ export default function ProfilePage() {
     } catch (err) {
       console.error('로그아웃 중 오류:', err);
       alert('로그아웃 중 오류가 발생했습니다.');
+    }
+  };
+
+  // ✅ 회원 탈퇴 핸들러 함수 추가
+  const handleDeleteAccount = async () => {
+    console.log("회원 탈퇴 처리");
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch('/api/profile/delete-account', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || '회원 탈퇴에 실패했습니다.');
+      }
+
+      // 탈퇴 성공 시 로그아웃 처리
+      await logoutUser();
+      
+      setShowDeleteAccountModal(false);
+      alert('회원 탈퇴가 완료되었습니다.');
+      router.push('/'); // 홈으로 이동
+    } catch (err: any) {
+      console.error('회원 탈퇴 중 오류:', err);
+      alert(err.message || '회원 탈퇴 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -566,6 +596,20 @@ export default function ProfilePage() {
               </div>
               <span className="ml-4 lg:ml-5 font-bold text-sm lg:text-base text-red-600 dark:text-red-400">로그아웃</span>
             </button>
+
+            {/* 회원 탈퇴 */}
+            <button
+              type="button"
+              onClick={() => setShowDeleteAccountModal(true)}
+              className="group flex items-center p-4 lg:p-5 rounded-xl hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-50/50 dark:hover:from-gray-800 dark:hover:to-gray-800/50 transition-all duration-200 w-full hover:shadow-sm hover:scale-[1.01]"
+            >
+              <div className="p-2.5 lg:p-3 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800/50 dark:to-gray-800/30 rounded-xl transition-all duration-200 group-hover:from-gray-200 group-hover:to-gray-100 dark:group-hover:from-gray-800/70 dark:group-hover:to-gray-800/50 group-active:scale-95">
+                <svg className="w-6 lg:w-7 h-6 lg:h-7 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 256 256">
+                  <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z" />
+                </svg>
+              </div>
+              <span className="ml-4 lg:ml-5 font-bold text-sm lg:text-base text-gray-600 dark:text-gray-400">회원 탈퇴</span>
+            </button>
                   </div>
                 </section>
             </div>
@@ -700,6 +744,15 @@ export default function ProfilePage() {
         onConfirm={confirmUnlinkProvider}
         title="계정 연동 해제"
         message={`${providerToUnlink} 계정 연동을 해제하시겠습니까?`}
+      />
+
+      {/* 회원 탈퇴 확인 모달 */}
+      <LogoutConfirmationModal
+        isOpen={showDeleteAccountModal}
+        onClose={() => setShowDeleteAccountModal(false)}
+        onConfirm={handleDeleteAccount}
+        title="회원 탈퇴"
+        message="정말로 회원 탈퇴하시겠습니까? 모든 데이터가 삭제되며 복구할 수 없습니다."
       />
     </div>
   );
