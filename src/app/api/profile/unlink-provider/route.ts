@@ -13,19 +13,27 @@ export async function POST(request: Request) {
       );
     }
 
-    // 현재 사용자 확인
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // 최신 사용자 정보를 다시 불러옵니다.
+    const { data: { user }, error: userError } = await supabase.auth.refreshSession();
     
     if (userError || !user) {
       return NextResponse.json(
-        { error: '인증되지 않은 사용자입니다.' },
+        { error: '사용자 정보를 갱신하는 데 실패했습니다.' },
         { status: 401 }
       );
     }
 
-    // user 객체에서 identities 정보 가져오기
+    // 갱신된 user 객체에서 identities 정보 가져오기
     const identities = user.identities || [];
     
+    // 마지막 로그인 수단은 해제할 수 없도록 체크
+    if (identities.length <= 1) {
+      return NextResponse.json(
+        { error: '마지막으로 남은 로그인 방법은 해제할 수 없습니다. 계정 잠김을 방지하기 위한 조치입니다.' },
+        { status: 400 }
+      );
+    }
+
     console.log('User identities:', identities);
     console.log('Provider to unlink:', provider);
 
