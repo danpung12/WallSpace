@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { create, getNumericDate } from 'https://deno.land/x/djwt@v2.8/mod.ts';
+import { SignJWT } from 'jose';
 
 export async function POST(request: NextRequest) {
   try {
@@ -110,45 +110,30 @@ export async function POST(request: NextRequest) {
 
     // 4. JWT 생성하여 세션 반환
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(jwtSecret);
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      keyData,
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
+    const secretKey = encoder.encode(jwtSecret);
 
     const now = Math.floor(Date.now() / 1000);
     const accessTokenExp = now + 3600; // 1 hour
     const refreshTokenExp = now + 604800; // 1 week
 
-    const accessTokenPayload = {
+    const accessToken = await new SignJWT({
       aud: 'authenticated',
       sub: user.id,
       role: 'authenticated',
       email: user.email,
-      iat: now,
-      exp: accessTokenExp,
-    };
+    })
+      .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+      .setIssuedAt(now)
+      .setExpirationTime(accessTokenExp)
+      .sign(secretKey);
 
-    const refreshTokenPayload = {
+    const refreshToken = await new SignJWT({
       sub: user.id,
-      iat: now,
-      exp: refreshTokenExp,
-    };
-
-    const accessToken = await create(
-      { alg: 'HS256', typ: 'JWT' },
-      accessTokenPayload,
-      cryptoKey
-    );
-
-    const refreshToken = await create(
-      { alg: 'HS256', typ: 'JWT' },
-      refreshTokenPayload,
-      cryptoKey
-    );
+    })
+      .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+      .setIssuedAt(now)
+      .setExpirationTime(refreshTokenExp)
+      .sign(secretKey);
 
     const session = {
       access_token: accessToken,
