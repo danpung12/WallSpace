@@ -17,10 +17,13 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = useCallback(async (retryCount = 0) => {
     try {
       setLoading(true);
-      const response = await fetch('/api/profile');
+      const response = await fetch('/api/profile', {
+        credentials: 'include', // 쿠키 포함
+      });
+      
       if (response.ok) {
         const data: UserProfile = await response.json();
         setUserProfile(data);
@@ -37,9 +40,21 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
             // 무시
           }
         }
+      } else if (response.status === 401 && retryCount < 2) {
+        // 401 에러 시 재시도 (쿠키 설정 지연 대응)
+        console.log(`Profile fetch 401, retrying... (${retryCount + 1}/2)`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+        return fetchProfile(retryCount + 1);
+      } else {
+        console.error('Failed to fetch profile:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+      // 네트워크 에러 시 재시도
+      if (retryCount < 2) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+        return fetchProfile(retryCount + 1);
+      }
     } finally {
       setLoading(false);
     }

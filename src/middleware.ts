@@ -121,6 +121,25 @@ export async function middleware(request: NextRequest) {
       url.pathname = '/login'
       return NextResponse.redirect(url)
     }
+    
+    // 게스트 계정은 /guest로 리다이렉트
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('id', user.id)
+        .single()
+      
+      if (profile?.user_type === 'guest') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/guest'
+        return NextResponse.redirect(url)
+      }
+    } catch (error) {
+      // 프로필 조회 실패 시 계속 진행 (기본 동작)
+      console.error('Error checking user type:', error)
+    }
+    
     return supabaseResponse
   }
 

@@ -156,6 +156,7 @@ export default function OnboardingPage() {
       if (userType === 'guest') {
         updateData.gender = gender;
         updateData.age_range = ageRange;
+        updateData.phone = null; // 게스트는 phone을 null로 설정
         if (!nickname) updateData.nickname = '무명';
       } else {
         updateData.nickname = nickname;
@@ -168,6 +169,12 @@ export default function OnboardingPage() {
         .eq('id', userData.id);
 
       if (error) throw error;
+
+      // 세션 갱신을 위해 auth 세션 새로고침
+      await supabase.auth.refreshSession();
+
+      // 쿠키가 제대로 설정되도록 약간의 지연 후 리다이렉트
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       if (userType === 'guest') {
         router.replace('/guest');
