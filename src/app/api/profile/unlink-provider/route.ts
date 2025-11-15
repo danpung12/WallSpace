@@ -39,15 +39,42 @@ export async function POST(request: Request) {
       );
     }
 
-    // Supabase의 unlinkIdentity 메서드 사용
-    const { data, error: unlinkError } = await supabase.auth.unlinkIdentity({
+    // identity_id 유효성 검사
+    if (!targetIdentity.id) {
+      console.error('Identity ID가 없습니다:', targetIdentity);
+      return NextResponse.json(
+        { error: 'Identity ID를 찾을 수 없습니다.' },
+        { status: 400 }
+      );
+    }
+
+    console.log('Target identity ID:', targetIdentity.id);
+
+    // unlinkIdentity API 사용
+    const { data: unlinkData, error: unlinkError } = await supabase.auth.unlinkIdentity({
       identity_id: targetIdentity.id,
     });
 
     if (unlinkError) {
       console.error('Identity 연동 해제 실패:', unlinkError);
+      
+      // Manual linking이 비활성화된 경우
+      if (unlinkError.message?.includes('manual linking')) {
+        return NextResponse.json(
+          { 
+            error: 'Identity 연동 해제 기능이 비활성화되어 있습니다.',
+            hint: 'Supabase 대시보드에서 Authentication > Providers > Enable manual linking을 활성화해주세요.',
+            details: unlinkError.message
+          },
+          { status: 400 }
+        );
+      }
+
       return NextResponse.json(
-        { error: unlinkError.message || 'Identity 연동 해제에 실패했습니다.' },
+        { 
+          error: unlinkError.message || 'Identity 연동 해제에 실패했습니다.',
+          details: unlinkError
+        },
         { status: 500 }
       );
     }
@@ -55,7 +82,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ 
       success: true,
       message: `${provider} 계정 연동이 해제되었습니다.`,
-      data
+      data: unlinkData
     });
 
   } catch (error: any) {
