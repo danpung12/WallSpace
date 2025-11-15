@@ -212,3 +212,59 @@ export async function PUT(req: NextRequest) {
     );
   }
 }
+
+export async function DELETE() {
+  try {
+    // 서버용 Supabase 클라이언트 생성
+    const supabase = await createClient();
+    
+    // 현재 로그인한 사용자 확인
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { message: 'Unauthorized' }, 
+        { status: 401 }
+      );
+    }
+
+    // 1. 사용자 관련 데이터 삭제 (CASCADE로 자동 삭제되지 않는 경우를 대비)
+    // notification_settings, user_settings는 CASCADE로 자동 삭제됨
+    
+    // 2. profiles 테이블에서 사용자 삭제 (CASCADE로 관련 데이터도 삭제됨)
+    const { error: deleteProfileError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', user.id);
+
+    if (deleteProfileError) {
+      console.error('Profile deletion error:', deleteProfileError);
+      return NextResponse.json(
+        { message: 'Failed to delete profile data' }, 
+        { status: 500 }
+      );
+    }
+
+    // 3. Supabase Auth에서 사용자 계정 삭제
+    const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(user.id);
+
+    if (deleteAuthError) {
+      console.error('Auth user deletion error:', deleteAuthError);
+      return NextResponse.json(
+        { message: 'Failed to delete user account' }, 
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      { message: 'Account deleted successfully' }, 
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('DELETE /api/profile error:', error);
+    return NextResponse.json(
+      { message: 'Internal server error' }, 
+      { status: 500 }
+    );
+  }
+}
