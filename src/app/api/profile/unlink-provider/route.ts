@@ -39,8 +39,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // identity_id 유효성 검사
-    if (!targetIdentity.id) {
+    // identity_id 유효성 검사 (identity_id 필드 사용, id 필드가 아님!)
+    const identityIdToUnlink = targetIdentity.identity_id || targetIdentity.id;
+    
+    if (!identityIdToUnlink) {
       console.error('Identity ID가 없습니다:', targetIdentity);
       return NextResponse.json(
         { 
@@ -55,13 +57,12 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('Target identity ID:', targetIdentity.id);
-    console.log('Identity ID type:', typeof targetIdentity.id);
-    console.log('Identity ID value:', JSON.stringify(targetIdentity.id));
+    console.log('Target identity_id:', identityIdToUnlink);
+    console.log('Identity ID type:', typeof identityIdToUnlink);
 
-    // unlinkIdentity API 사용
+    // unlinkIdentity API 사용 (identity_id 필드 사용)
     const { data: unlinkData, error: unlinkError } = await supabase.auth.unlinkIdentity({
-      identity_id: targetIdentity.id,
+      identity_id: identityIdToUnlink,
     });
 
     if (unlinkError) {
@@ -84,8 +85,8 @@ export async function POST(request: Request) {
           error: unlinkError.message || 'Identity 연동 해제에 실패했습니다.',
           details: unlinkError,
           debug: {
-            identityId: targetIdentity.id,
-            identityIdType: typeof targetIdentity.id,
+            identityId: identityIdToUnlink,
+            identityIdType: typeof identityIdToUnlink,
             targetIdentity,
             provider
           }
