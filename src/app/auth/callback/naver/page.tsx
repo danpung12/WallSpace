@@ -68,8 +68,10 @@ function NaverAuthCallback() {
             naverUserId: data.naverUserId,
             naverUserName: data.naverUserName,
             naverProfileImage: data.naverProfileImage,
+            userType: data.userType,
+            provider: data.provider,
           }));
-          router.push(`/auth/link/naver?email=${encodeURIComponent(data.email)}`);
+          router.push(`/auth/link/naver?email=${encodeURIComponent(data.email)}&userType=${encodeURIComponent(data.userType || '')}&provider=${encodeURIComponent(data.provider || 'naver')}`);
           return;
         }
 

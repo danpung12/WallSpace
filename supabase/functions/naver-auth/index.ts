@@ -65,6 +65,13 @@ serve(async (req) => {
             // 네이버 연동이 안 되어 있음 -> 계정 충돌 상태 반환
             console.log('계정 충돌 발견: 이메일은 같지만 네이버 연동 안됨:', userEmail);
             
+            // 기존 계정의 user_type 조회
+            const { data: profile } = await supabaseAdmin
+              .from('profiles')
+              .select('user_type')
+              .eq('id', emailUser.id)
+              .single();
+            
             // 네이버 정보를 세션 스토리지에 임시 저장하기 위해 반환
             return new Response(JSON.stringify({ 
               status: 'conflict', 
@@ -72,6 +79,8 @@ serve(async (req) => {
               naverUserId: naverUser.id,
               naverUserName: naverUser.name,
               naverProfileImage: naverUser.profile_image,
+              userType: profile?.user_type || null,
+              provider: 'naver',
             }), { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
               status: 200 
