@@ -18,9 +18,29 @@ const fetcher = async (url: string) => {
   return res.json();
 };
 
+// sessionStorage를 사용한 캐시 provider (새로고침 시에도 캐시 유지)
+function sessionStorageProvider() {
+  // 서버 사이드에서는 Map 사용
+  if (typeof window === 'undefined') {
+    return new Map();
+  }
+
+  // 클라이언트 사이드에서는 sessionStorage 사용
+  const map = new Map(JSON.parse(sessionStorage.getItem('swr-cache') || '[]'));
+
+  // 페이지 언로드 시 캐시 저장
+  window.addEventListener('beforeunload', () => {
+    const appCache = JSON.stringify(Array.from(map.entries()));
+    sessionStorage.setItem('swr-cache', appCache);
+  });
+
+  return map;
+}
+
 // SWR 전역 설정
 export const swrConfig: SWRConfiguration = {
   fetcher,
+  provider: sessionStorageProvider, // sessionStorage 캐시 provider 사용
   revalidateOnFocus: false, // 포커스 시 자동 재검증 비활성화 (수동으로만 업데이트)
   revalidateOnReconnect: true, // 네트워크 재연결 시 재검증
   revalidateIfStale: true, // 오래된 데이터가 있으면 백그라운드에서 재검증

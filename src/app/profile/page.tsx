@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import Header from "../components/Header"; // 1. Header 컴포넌트 임포트
 import ChangePasswordModal from "../components/ChangePasswordModal";
 import UserSettingsModal from "../components/UserSettingsModal"; // ✅ 추가
@@ -144,23 +145,34 @@ export default function ProfilePage() {
   // ✅ 아바타 저장 핸들러 함수 추가
   const handleAvatarSave = async (file: File) => {
     console.log("새 프로필 사진 저장:", file.name);
+    setIsLoading(true);
 
-    const base64Url = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+    try {
+      // FormData 생성
+      const formData = new FormData();
+      formData.append('file', file);
 
-    // updateProfile이 완료될 때까지 기다립니다.
-    const success = await updateProfile({ avatarUrl: base64Url });
+      // 이미지를 Supabase Storage에 업로드
+      const response = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        body: formData,
+      });
 
-    if (success) {
+      if (!response.ok) {
+        throw new Error('Failed to upload avatar');
+      }
+
+      const { avatarUrl } = await response.json();
+
+      // 프로필 캐시 무효화 (서버에서 이미 업데이트됨)
+      await mutate('/api/profile');
+      
       setShowAvatarModal(false);
-    } else {
-      // 에러 처리 (예: 사용자에게 알림)
-      console.error("아바타 업데이트에 실패했습니다.");
-      // 필요한 경우 여기에서 사용자에게 오류 메시지를 표시할 수 있습니다.
+    } catch (error) {
+      console.error("아바타 업데이트에 실패했습니다:", error);
+      setError("프로필 사진 업로드에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -310,15 +322,20 @@ export default function ProfilePage() {
         {/* Avatar */}
         <section className="text-center lg:text-left lg:flex lg:items-center lg:space-x-10 lg:bg-white dark:lg:bg-gray-800 lg:p-10 lg:rounded-3xl lg:shadow-md lg:border lg:border-gray-100 dark:lg:border-gray-700 lg:hover:shadow-lg lg:transition-all lg:duration-300">
           <div className="relative inline-block group">
-            <img
-              src={userProfile.avatarUrl || '/default-profile.svg'}
-              alt="User profile picture"
-              className="object-cover w-20 h-20 rounded-full shadow-lg lg:w-40 lg:h-40 ring-4 ring-white dark:ring-gray-700 transition-all duration-300 group-hover:ring-[#D2B48C]/30"
-              onError={(e) => {
-                // 이미지 로드 실패 시 기본 이미지로 대체
-                e.currentTarget.src = '/default-profile.svg';
-              }}
-            />
+            <div className="relative w-20 h-20 lg:w-40 lg:h-40">
+              <Image
+                src={userProfile.avatarUrl || '/default-profile.svg'}
+                alt="User profile picture"
+                fill
+                priority
+                sizes="(max-width: 1024px) 80px, 160px"
+                className="object-cover rounded-full shadow-lg ring-4 ring-white dark:ring-gray-700 transition-all duration-300 group-hover:ring-[#D2B48C]/30"
+                onError={(e) => {
+                  // 이미지 로드 실패 시 기본 이미지로 대체
+                  e.currentTarget.src = '/default-profile.svg';
+                }}
+              />
+            </div>
             <button
               onClick={() => setShowAvatarModal(true)} // ✅ 추가
               className="absolute bottom-0 right-0 rounded-full p-1.5 shadow-lg active:scale-95 transition-all duration-300 lg:p-3 hover:shadow-xl hover:scale-110"

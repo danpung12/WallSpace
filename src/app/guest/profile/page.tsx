@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import Header from "../../components/Header";
 import ChangePasswordModal from "../../components/ChangePasswordModal";
 import NotificationSettingsModal from "../../components/NotificationSettingsModal";
@@ -97,16 +98,34 @@ export default function GuestProfilePage() {
   };
 
   const handleAvatarSave = async (file: File) => {
-    const base64Url = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+    setIsLoading(true);
 
-    const success = await updateProfile({ avatarUrl: base64Url });
-    if (success) {
+    try {
+      // FormData 생성
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // 이미지를 Supabase Storage에 업로드
+      const response = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload avatar');
+      }
+
+      const { avatarUrl } = await response.json();
+
+      // 프로필 캐시 무효화 (서버에서 이미 업데이트됨)
+      await mutate('/api/profile');
+      
       setShowAvatarModal(false);
+    } catch (error) {
+      console.error("아바타 업데이트에 실패했습니다:", error);
+      setError("프로필 사진 업로드에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -161,14 +180,19 @@ export default function GuestProfilePage() {
         {/* Avatar */}
         <section className="text-center lg:text-left lg:flex lg:items-center lg:space-x-10 lg:bg-white dark:lg:bg-gray-800 lg:p-10 lg:rounded-3xl lg:shadow-md lg:border lg:border-gray-100 dark:lg:border-gray-700">
           <div className="relative inline-block group">
-            <img
-              src={userProfile.avatarUrl || '/default-profile.svg'}
-              alt="User profile picture"
-              className="object-cover w-28 h-28 rounded-full shadow-lg lg:w-40 lg:h-40 ring-4 ring-white dark:ring-gray-700"
-              onError={(e) => {
-                e.currentTarget.src = '/default-profile.svg';
-              }}
-            />
+            <div className="relative w-28 h-28 lg:w-40 lg:h-40">
+              <Image
+                src={userProfile.avatarUrl || '/default-profile.svg'}
+                alt="User profile picture"
+                fill
+                priority
+                sizes="(max-width: 1024px) 112px, 160px"
+                className="object-cover rounded-full shadow-lg ring-4 ring-white dark:ring-gray-700"
+                onError={(e) => {
+                  e.currentTarget.src = '/default-profile.svg';
+                }}
+              />
+            </div>
             <button
               onClick={() => setShowAvatarModal(true)}
               className="absolute bottom-1 right-1 rounded-full p-2 shadow-lg active:scale-95 transition-all duration-300 lg:p-3"
