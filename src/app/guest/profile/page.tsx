@@ -306,7 +306,30 @@ export default function GuestProfilePage() {
       {/* 모달들 */}
       <ChangePasswordModal open={showChangePw} onClose={() => setShowChangePw(false)} onSubmit={(newPassword) => { setShowChangePw(false); }} />
       <NotificationSettingsModal open={showNotiModal} onClose={() => setShowNotiModal(false)} initialSettings={userProfile.notificationSettings} onSave={(settings) => { updateProfile({ notificationSettings: settings }); setShowNotiModal(false); }} />
-      <UserSettingsModal open={showUserSettingsModal} onClose={() => setShowUserSettingsModal(false)} initialSettings={{ darkMode: isDarkMode }} onSave={(settings) => { setDarkMode(settings.darkMode); updateProfile({ userSettings: settings }); setShowUserSettingsModal(false); }} />
+      <UserSettingsModal 
+        open={showUserSettingsModal} 
+        onClose={() => setShowUserSettingsModal(false)} 
+        initialSettings={{ 
+          darkMode: isDarkMode,
+          notifications: {
+            comments: userProfile?.notificationSettings?.comments ?? true,
+            exhibitions: userProfile?.notificationSettings?.exhibitions ?? true,
+            exhibition_distance: userProfile?.notificationSettings?.exhibition_distance ?? 5
+          }
+        }} 
+        onSave={(settings) => { 
+          setDarkMode(settings.darkMode); 
+          updateProfile({ 
+            userSettings: { darkMode: settings.darkMode },
+            notificationSettings: {
+              comments: settings.notifications.comments,
+              exhibitions: settings.notifications.exhibitions,
+              exhibition_distance: settings.notifications.exhibition_distance
+            }
+          }); 
+          setShowUserSettingsModal(false); 
+        }} 
+      />
       <AvatarUploadModal open={showAvatarModal} currentAvatarUrl={userProfile.avatarUrl || '/default-profile.svg'} onClose={() => setShowAvatarModal(false)} onSave={handleAvatarSave} />
       <LogoutConfirmationModal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} onConfirm={handleLogout} title="로그아웃" message="정말 로그아웃 하시겠습니까?" />
       <AlertModal isOpen={showAlertModal} onClose={() => setShowAlertModal(false)} message="SNS 로그인 계정입니다." />

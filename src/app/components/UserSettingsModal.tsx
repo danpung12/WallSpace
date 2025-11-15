@@ -15,7 +15,7 @@ type UserSettingsModalProps = {
   open: boolean;
   onClose: () => void;
   onSave?: (data: UserSettings) => void;
-  initialSettings: UserSettings;
+  initialSettings: Partial<UserSettings> & { darkMode: boolean };
 };
 
 function UserSettingsModal({
@@ -25,10 +25,11 @@ function UserSettingsModal({
   initialSettings,
 }: UserSettingsModalProps) {
   const [settings, setSettings] = useState<UserSettings>({
-    ...initialSettings,
+    darkMode: initialSettings.darkMode ?? false,
     notifications: {
-      ...initialSettings.notifications,
-      exhibition_distance: initialSettings.notifications.exhibition_distance ?? 5
+      comments: initialSettings.notifications?.comments ?? true,
+      exhibitions: initialSettings.notifications?.exhibitions ?? true,
+      exhibition_distance: initialSettings.notifications?.exhibition_distance ?? 5
     }
   });
   const [isDesktop, setIsDesktop] = useState(false);
@@ -38,10 +39,11 @@ function UserSettingsModal({
     if (open) {
       setIsClosing(false);
       setSettings({
-        ...initialSettings,
+        darkMode: initialSettings.darkMode ?? false,
         notifications: {
-          ...initialSettings.notifications,
-          exhibition_distance: initialSettings.notifications.exhibition_distance ?? 5
+          comments: initialSettings.notifications?.comments ?? true,
+          exhibitions: initialSettings.notifications?.exhibitions ?? true,
+          exhibition_distance: initialSettings.notifications?.exhibition_distance ?? 5
         }
       });
     }
