@@ -24,8 +24,19 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
       if (response.ok) {
         const data: UserProfile = await response.json();
         setUserProfile(data);
-        // sessionStorage에 캐싱 (페이지 새로고침 시에도 유지)
-        sessionStorage.setItem('userProfile', JSON.stringify(data));
+        // sessionStorage에 캐싱 시도 (용량 초과 시 무시)
+        try {
+          sessionStorage.setItem('userProfile', JSON.stringify(data));
+        } catch (storageError) {
+          // 저장소 용량 초과 시 무시하고 계속 진행
+          console.warn('Failed to cache profile in sessionStorage:', storageError);
+          // 기존 캐시 삭제 시도
+          try {
+            sessionStorage.removeItem('userProfile');
+          } catch (e) {
+            // 무시
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -36,19 +47,39 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
 
   // 초기 로드
   useEffect(() => {
-    // sessionStorage에서 먼저 확인
-    const cached = sessionStorage.getItem('userProfile');
-    if (cached) {
-      try {
-        setUserProfile(JSON.parse(cached));
-        setLoading(false);
-        // 백그라운드에서 최신 데이터 가져오기
-        fetchProfile();
-      } catch (e) {
-        // 캐시된 데이터가 손상되었으면 새로 가져오기
+    // 기존 캐시 정리 (용량 초과 문제 해결)
+    try {
+      // QuotaExceededError 발생 시 기존 캐시 삭제 시도
+      sessionStorage.removeItem('userProfile');
+    } catch (e) {
+      // 무시
+    }
+    
+    // sessionStorage에서 먼저 확인 (용량 초과 시 무시)
+    try {
+      const cached = sessionStorage.getItem('userProfile');
+      if (cached) {
+        try {
+          setUserProfile(JSON.parse(cached));
+          setLoading(false);
+          // 백그라운드에서 최신 데이터 가져오기
+          fetchProfile();
+        } catch (e) {
+          // 캐시된 데이터가 손상되었으면 새로 가져오기
+          console.warn('Failed to parse cached profile:', e);
+          try {
+            sessionStorage.removeItem('userProfile');
+          } catch (removeError) {
+            // 무시
+          }
+          fetchProfile();
+        }
+      } else {
         fetchProfile();
       }
-    } else {
+    } catch (storageError) {
+      // sessionStorage 접근 실패 시 바로 새로 가져오기
+      console.warn('Failed to access sessionStorage:', storageError);
       fetchProfile();
     }
   }, [fetchProfile]);
@@ -59,7 +90,19 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
 
   const updateProfile = useCallback((profile: UserProfile) => {
     setUserProfile(profile);
-    sessionStorage.setItem('userProfile', JSON.stringify(profile));
+    // sessionStorage 업데이트 시도 (용량 초과 시 무시)
+    try {
+      sessionStorage.setItem('userProfile', JSON.stringify(profile));
+    } catch (storageError) {
+      // 저장소 용량 초과 시 무시하고 계속 진행
+      console.warn('Failed to update profile in sessionStorage:', storageError);
+      // 기존 캐시 삭제 시도
+      try {
+        sessionStorage.removeItem('userProfile');
+      } catch (e) {
+        // 무시
+      }
+    }
   }, []);
 
   const unlinkIdentity = useCallback(async (provider: string) => {
