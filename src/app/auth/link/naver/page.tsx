@@ -178,7 +178,7 @@ function NaverLinkPage() {
           )}
         </div>
 
-        <div className="mb-6">
+        <div className="mb-6 text-center">
           <p className="text-sm text-[#6B5E54] leading-relaxed">
             이 이메일로 이미 가입된 계정이 있습니다.
             <br />
