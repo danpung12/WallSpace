@@ -67,14 +67,25 @@ export default function OnboardingPage() {
           // 에러가 있지만 계속 진행 (프로필이 없을 수 있음)
         }
 
-        if (profile && profile.nickname && profile.phone) {
-          // 이미 완전한 프로필이 있으면 user_type에 따라 리다이렉트
-          if (profile.user_type === 'guest') {
-            router.replace('/guest');
+        // 프로필이 이미 완전한지 확인
+        if (profile && profile.user_type) {
+          const isComplete = 
+            (profile.user_type === 'guest' && profile.gender && profile.age_range) ||
+            (profile.user_type === 'artist' && profile.nickname && profile.phone);
+          
+          if (isComplete) {
+            // 이미 완전한 프로필이 있으면 user_type에 따라 리다이렉트
+            console.log('Complete profile found, redirecting...', profile.user_type);
+            if (profile.user_type === 'guest') {
+              router.replace('/guest');
+            } else {
+              router.replace('/');
+            }
+            return;
           } else {
-            router.replace('/');
+            // 프로필이 있지만 완전하지 않은 경우 - 기존 데이터로 폼 채우기
+            console.log('Incomplete profile found, showing form...');
           }
-          return;
         }
 
         // 기존 프로필 데이터가 있다면 필드 채우기
