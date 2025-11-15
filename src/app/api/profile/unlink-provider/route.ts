@@ -23,46 +23,33 @@ export async function POST(request: Request) {
       );
     }
 
-    // auth.identities 테이블에서 사용자의 모든 identity 조회
-    const { data: identities, error: identitiesError } = await supabase
-      .rpc('get_user_identities', { user_id_param: user.id });
+    // user 객체에서 identities 정보 가져오기
+    const identities = user.identities || [];
+    
+    console.log('User identities:', identities);
+    console.log('Provider to unlink:', provider);
 
-    if (identitiesError) {
-      console.error('Identity 조회 실패:', identitiesError);
-      // RPC가 없을 경우 직접 쿼리 시도
-      const { data: directIdentities, error: directError } = await supabase
-        .from('identities')
-        .select('*')
-        .eq('user_id', user.id);
-      
-      if (directError) {
-        console.error('직접 조회도 실패:', directError);
-        return NextResponse.json(
-          { error: 'Identity 조회에 실패했습니다.' },
-          { status: 500 }
-        );
-      }
-      
-      // 연동된 계정이 2개 이상인지 확인
-      if (!directIdentities || directIdentities.length <= 1) {
-        return NextResponse.json(
-          { error: '최소 1개의 로그인 방법이 필요합니다. 마지막 계정은 해제할 수 없습니다.' },
-          { status: 400 }
-        );
-      }
-    } else {
-      // 연동된 계정이 2개 이상인지 확인
-      if (!identities || identities.length <= 1) {
-        return NextResponse.json(
-          { error: '최소 1개의 로그인 방법이 필요합니다. 마지막 계정은 해제할 수 없습니다.' },
-          { status: 400 }
-        );
-      }
+    // 연동된 계정이 2개 이상인지 확인 (마지막 계정은 해제 불가)
+    if (identities.length <= 1) {
+      return NextResponse.json(
+        { error: '최소 1개의 로그인 방법이 필요합니다. 마지막 계정은 해제할 수 없습니다.' },
+        { status: 400 }
+      );
+    }
+
+    // 해당 provider가 연동되어 있는지 확인
+    const targetIdentity = identities.find((id: any) => id.provider === provider);
+    
+    if (!targetIdentity) {
+      return NextResponse.json(
+        { error: '해당 provider가 연동되어 있지 않습니다.' },
+        { status: 404 }
+      );
     }
 
     // Supabase의 unlinkIdentity 메서드 사용
     const { data, error: unlinkError } = await supabase.auth.unlinkIdentity({
-      provider: provider as any,
+      identity_id: targetIdentity.id,
     });
 
     if (unlinkError) {
