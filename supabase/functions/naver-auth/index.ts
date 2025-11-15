@@ -77,16 +77,23 @@ serve(async (req) => {
     if (!user) throw new Error('Could not create or find user.');
 
     // 기존 사용자에게 네이버 identity가 없으면 추가
-    const { data: { identities } } = await supabaseAdmin.auth.admin.listUserIdentities(user.id);
-    const hasNaverIdentity = identities?.some((id: any) => id.provider === 'naver');
+    // 직접 SQL로 identities 조회 (listUserIdentities가 없으므로)
+    const { data: existingIdentities, error: identityCheckError } = await supabaseAdmin
+      .from('auth.identities')
+      .select('provider')
+      .eq('user_id', user.id)
+      .eq('provider', 'naver');
+    
+    const hasNaverIdentity = existingIdentities && existingIdentities.length > 0;
     
     if (!hasNaverIdentity) {
       // 기존 사용자에 네이버 identity 추가
       try {
-        // Supabase Admin API로 identity 추가 시도
-        const { error: linkError } = await supabaseAdmin.rpc('link_identity', {
-          user_id: user.id,
-          identity_data: {
+        // 직접 SQL로 identity 추가
+        const { error: sqlError } = await supabaseAdmin
+          .from('auth.identities')
+          .insert({
+            user_id: user.id,
             provider: 'naver',
             provider_id: naverUser.id,
             identity_data: {
@@ -95,31 +102,16 @@ serve(async (req) => {
               name: naverUser.name,
               picture: naverUser.profile_image,
             },
-          },
-        });
+            last_sign_in_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
         
-        if (linkError) {
-          console.error('네이버 identity 추가 실패 (RPC):', linkError);
-          // RPC가 없으면 직접 SQL로 추가 시도
-          const { error: sqlError } = await supabaseAdmin
-            .from('auth.identities')
-            .insert({
-              user_id: user.id,
-              provider: 'naver',
-              provider_id: naverUser.id,
-              identity_data: {
-                sub: naverUser.id,
-                email: userEmail,
-                name: naverUser.name,
-                picture: naverUser.profile_image,
-              },
-              last_sign_in_at: new Date().toISOString(),
-            });
-          
-          if (sqlError) {
-            console.error('네이버 identity 추가 실패 (SQL):', sqlError);
-            // 에러를 던지지 않고 계속 진행
-          }
+        if (sqlError) {
+          console.error('네이버 identity 추가 실패:', sqlError);
+          // 에러를 던지지 않고 계속 진행 (이미 로그인은 가능)
+        } else {
+          console.log('네이버 identity 추가 성공');
         }
       } catch (err) {
         console.error('네이버 identity 추가 중 예외 발생:', err);
