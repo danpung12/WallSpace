@@ -115,7 +115,9 @@ function NaverLinkPage() {
       case 'naver':
         return (
           <div className="w-16 h-16 flex items-center justify-center bg-[#03C75A] rounded-xl">
-            <span className="text-white text-4xl font-bold" style={{ fontFamily: 'Arial, sans-serif' }}>N</span>
+            <svg className="w-8 h-8" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 6V16L11 6H4V26H11V16L19 26H26V6H19Z" fill="white"/>
+            </svg>
           </div>
         );
 
