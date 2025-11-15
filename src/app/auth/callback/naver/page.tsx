@@ -31,8 +31,16 @@ function NaverAuthCallback() {
       const supabase = createClient();
       setMessage('네이버 계정 정보를 확인하고 있습니다...');
       
+      // Edge Function 호출 시 apikey 헤더 추가 (JWT 검증 우회)
+      // Supabase 클라이언트가 자동으로 헤더를 추가하지만, 명시적으로 apikey를 추가
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       const { data, error: functionError } = await supabase.functions.invoke('naver-auth', {
         body: { code },
+        ...(anonKey && {
+          headers: {
+            'apikey': anonKey,
+          },
+        }),
       });
 
       if (functionError) {
