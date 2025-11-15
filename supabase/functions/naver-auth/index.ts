@@ -54,21 +54,78 @@ serve(async (req) => {
     }
 
     if (!user) {
-      // 사용자가 없으면 새로 생성
+      // 사용자가 없으면 새로 생성 (네이버 identity 포함)
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: userEmail,
         email_confirm: true,
         app_metadata: { provider: 'naver', provider_id: naverUser.id },
         user_metadata: { full_name: naverUser.name, avatar_url: naverUser.profile_image },
+        // 네이버 identity를 함께 생성
+        identities: [{
+          provider: 'naver',
+          identity_data: {
+            sub: naverUser.id,
+            email: userEmail,
+            name: naverUser.name,
+            picture: naverUser.profile_image,
+          },
+        }],
       });
       if (createError) throw createError;
       user = newUser.user;
     }
     if (!user) throw new Error('Could not create or find user.');
 
-    // 참고: identity는 createUser 시 자동으로 생성되거나, 
-    // 나중에 사용자가 수동으로 연동할 수 있습니다.
-    // 여기서는 로그인 세션만 생성합니다.
+    // 기존 사용자에게 네이버 identity가 없으면 추가
+    const { data: { identities } } = await supabaseAdmin.auth.admin.listUserIdentities(user.id);
+    const hasNaverIdentity = identities?.some((id: any) => id.provider === 'naver');
+    
+    if (!hasNaverIdentity) {
+      // 기존 사용자에 네이버 identity 추가
+      try {
+        // Supabase Admin API로 identity 추가 시도
+        const { error: linkError } = await supabaseAdmin.rpc('link_identity', {
+          user_id: user.id,
+          identity_data: {
+            provider: 'naver',
+            provider_id: naverUser.id,
+            identity_data: {
+              sub: naverUser.id,
+              email: userEmail,
+              name: naverUser.name,
+              picture: naverUser.profile_image,
+            },
+          },
+        });
+        
+        if (linkError) {
+          console.error('네이버 identity 추가 실패 (RPC):', linkError);
+          // RPC가 없으면 직접 SQL로 추가 시도
+          const { error: sqlError } = await supabaseAdmin
+            .from('auth.identities')
+            .insert({
+              user_id: user.id,
+              provider: 'naver',
+              provider_id: naverUser.id,
+              identity_data: {
+                sub: naverUser.id,
+                email: userEmail,
+                name: naverUser.name,
+                picture: naverUser.profile_image,
+              },
+              last_sign_in_at: new Date().toISOString(),
+            });
+          
+          if (sqlError) {
+            console.error('네이버 identity 추가 실패 (SQL):', sqlError);
+            // 에러를 던지지 않고 계속 진행
+          }
+        }
+      } catch (err) {
+        console.error('네이버 identity 추가 중 예외 발생:', err);
+        // 에러를 던지지 않고 계속 진행
+      }
+    }
 
     // 5. JWT를 직접 생성하여 완전한 세션을 만듭니다.
     const cryptoKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(jwtSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
