@@ -66,6 +66,32 @@ serve(async (req) => {
     }
     if (!user) throw new Error('Could not create or find user.');
 
+    // 네이버 identity가 없으면 추가 (기존 사용자에 네이버 연동 추가)
+    const { data: { identities } } = await supabaseAdmin.auth.admin.listUserIdentities(user.id);
+    const hasNaverIdentity = identities?.some((id: any) => id.provider === 'naver');
+    
+    if (!hasNaverIdentity) {
+      // 네이버 identity 추가
+      const { error: linkError } = await supabaseAdmin.auth.admin.linkIdentity({
+        id: user.id,
+        identity: {
+          provider: 'naver',
+          type: 'oauth',
+          identity_data: {
+            sub: naverUser.id,
+            email: userEmail,
+            name: naverUser.name,
+            picture: naverUser.profile_image,
+          },
+        },
+      });
+      
+      if (linkError) {
+        console.error('네이버 identity 추가 실패:', linkError);
+        // 에러를 던지지 않고 계속 진행 (이미 로그인은 가능)
+      }
+    }
+
     // 5. JWT를 직접 생성하여 완전한 세션을 만듭니다.
     const cryptoKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(jwtSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
     const now = getNumericDate(0);

@@ -13,12 +13,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // 최신 사용자 정보를 다시 불러옵니다.
-    const { data: { user }, error: userError } = await supabase.auth.refreshSession();
+    // 현재 사용자 확인
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
       return NextResponse.json(
-        { error: '사용자 정보를 갱신하는 데 실패했습니다.' },
+        { error: '인증되지 않은 사용자입니다.' },
         { status: 401 }
       );
     }
