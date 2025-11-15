@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { SignJWT } from 'jose';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,9 +15,8 @@ export async function POST(request: NextRequest) {
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const jwtSecret = process.env.CUSTOM_JWT_SECRET;
 
-    if (!supabaseUrl || !supabaseServiceRoleKey || !jwtSecret) {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
       return NextResponse.json(
         { error: '서버 설정 오류가 발생했습니다.' },
         { status: 500 }
@@ -108,43 +106,46 @@ export async function POST(request: NextRequest) {
       // 에러를 던지지 않고 계속 진행
     }
 
-    // 4. JWT 생성하여 세션 반환
-    const encoder = new TextEncoder();
-    const secretKey = encoder.encode(jwtSecret);
+    // 4. Magic Link를 생성하여 세션 토큰 얻기
+    const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: user.email!,
+    });
 
-    const now = Math.floor(Date.now() / 1000);
-    const accessTokenExp = now + 3600; // 1 hour
-    const refreshTokenExp = now + 604800; // 1 week
+    if (magicLinkError) {
+      console.error('Magic Link 생성 오류:', magicLinkError);
+      return NextResponse.json(
+        { error: '세션 생성에 실패했습니다.' },
+        { status: 500 }
+      );
+    }
 
-    const accessToken = await new SignJWT({
-      aud: 'authenticated',
-      sub: user.id,
-      role: 'authenticated',
-      email: user.email,
-    })
-      .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
-      .setIssuedAt(now)
-      .setExpirationTime(accessTokenExp)
-      .sign(secretKey);
+    // Magic Link URL에서 refresh_token 추출
+    const actionLink = magicLinkData.properties.action_link;
+    const urlParams = new URLSearchParams(actionLink.split('?')[1]);
+    const refreshToken = urlParams.get('refresh_token');
 
-    const refreshToken = await new SignJWT({
-      sub: user.id,
-    })
-      .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
-      .setIssuedAt(now)
-      .setExpirationTime(refreshTokenExp)
-      .sign(secretKey);
+    if (!refreshToken) {
+      return NextResponse.json(
+        { error: '세션 토큰을 추출할 수 없습니다.' },
+        { status: 500 }
+      );
+    }
 
-    const session = {
-      access_token: accessToken,
+    // refresh_token으로 세션 교환
+    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.refreshSession({
       refresh_token: refreshToken,
-      user: user,
-      token_type: 'bearer',
-      expires_in: 3600,
-      expires_at: accessTokenExp,
-    };
+    });
 
-    return NextResponse.json({ session }, { status: 200 });
+    if (sessionError) {
+      console.error('세션 교환 오류:', sessionError);
+      return NextResponse.json(
+        { error: '세션 생성에 실패했습니다.' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ session: sessionData.session }, { status: 200 });
   } catch (error: any) {
     console.error('계정 연동 API 오류:', error);
     return NextResponse.json(
