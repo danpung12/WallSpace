@@ -83,15 +83,16 @@ export default function LoginClient() {
         // redirectTo 파라미터 확인
         const redirectTo = searchParams.get('redirectTo');
         
+        // 로그인 성공 후 페이지 강제 새로고침으로 캐시 문제 해결
         if (redirectTo) {
           // redirectTo가 있으면 해당 경로로 이동
-          router.push(redirectTo);
+          window.location.href = redirectTo;
         } else {
           // redirectTo가 없으면 user_type에 따라 다른 페이지로 리다이렉트
           if (profile.user_type === 'guest') {
-            router.push('/guest');
+            window.location.href = '/guest';
           } else {
-            router.push('/home');
+            window.location.href = '/home';
           }
         }
       }

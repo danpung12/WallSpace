@@ -49,7 +49,22 @@ export const swrConfig: SWRConfiguration = {
   keepPreviousData: true, // 데이터가 변경되는 동안 이전 데이터 유지 (깜빡임 방지)
   errorRetryCount: 2, // 에러 시 재시도 횟수 (빠른 실패)
   errorRetryInterval: 1000, // 재시도 간격 (1초, 더 빠른 재시도)
+  onErrorRetry: (error, key, config, revalidate, { retryCount }) => {
+    // 401 Unauthorized 에러는 재시도하지 않음 (로그아웃 상태)
+    if (error.status === 401) return;
+    // 404 에러는 재시도하지 않음
+    if (error.status === 404) return;
+    // 최대 재시도 횟수 초과 시 중단
+    if (retryCount >= 2) return;
+    // 1초 후 재시도
+    setTimeout(() => revalidate({ retryCount }), 1000);
+  },
   onError: (error) => {
+    // 401 에러는 로그로만 남기고 무시 (로그아웃 상태)
+    if (error.status === 401) {
+      console.log('User is not authenticated');
+      return;
+    }
     // 에러 로깅 (필요시 에러 리포트 서비스로 전송 가능)
     console.error('SWR Error:', error);
   },
