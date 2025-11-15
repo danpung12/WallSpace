@@ -43,14 +43,41 @@ serve(async (req) => {
     // 3. Supabase 사용자 조회
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
     let user: User | null;
-    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email: userEmail });
-    if (listError) throw listError;
-    user = users && users.length > 0 ? users[0] : null;
+    
+    // 먼저 네이버 provider_id로 사용자 찾기 (올바른 계정 찾기)
+    const { data: { users: usersByProviderId }, error: providerIdError } = await supabaseAdmin.auth.admin.listUsers();
+    if (!providerIdError && usersByProviderId) {
+      user = usersByProviderId.find((u: any) => 
+        u.app_metadata?.provider_id === naverUser.id && u.app_metadata?.provider === 'naver'
+      ) || null;
+    }
+    
+    // provider_id로 못 찾았으면 이메일로 찾기
+    if (!user) {
+      const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email: userEmail });
+      if (listError) throw listError;
+      user = users && users.length > 0 ? users[0] : null;
+    }
 
     // 4. [핵심 수정] 사용자 상태에 따라 분기
-    if (user && user.app_metadata?.provider !== 'naver') {
+    if (user && user.app_metadata?.provider !== 'naver' && user.email !== userEmail) {
       // 기존 계정이 있지만, 네이버 연동이 안된 경우 -> 계정 충돌 상태 반환
       return new Response(JSON.stringify({ status: 'conflict', email: user.email }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    }
+    
+    // 같은 이메일이지만 다른 계정인 경우 (잘못된 연동 해제)
+    if (user && user.email === userEmail && user.app_metadata?.provider_id !== naverUser.id) {
+      // 잘못된 네이버 provider_id 제거
+      const updatedMetadata = { ...user.app_metadata };
+      delete updatedMetadata.provider;
+      delete updatedMetadata.provider_id;
+      
+      await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        app_metadata: updatedMetadata,
+      });
+      
+      // user를 null로 설정하여 새로 생성하도록 함
+      user = null;
     }
 
     if (!user) {
@@ -77,45 +104,52 @@ serve(async (req) => {
     if (!user) throw new Error('Could not create or find user.');
 
     // 기존 사용자에게 네이버 identity가 없으면 추가
-    // 직접 SQL로 identities 조회 (listUserIdentities가 없으므로)
-    const { data: existingIdentities, error: identityCheckError } = await supabaseAdmin
-      .from('auth.identities')
-      .select('provider')
-      .eq('user_id', user.id)
-      .eq('provider', 'naver');
+    // getUserById로 최신 정보 가져오기 (identities 포함)
+    const { data: { user: userWithIdentities }, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(user.id);
     
-    const hasNaverIdentity = existingIdentities && existingIdentities.length > 0;
-    
-    if (!hasNaverIdentity) {
-      // 기존 사용자에 네이버 identity 추가
-      try {
-        // 직접 SQL로 identity 추가
-        const { error: sqlError } = await supabaseAdmin
-          .from('auth.identities')
-          .insert({
-            user_id: user.id,
-            provider: 'naver',
-            provider_id: naverUser.id,
-            identity_data: {
-              sub: naverUser.id,
-              email: userEmail,
-              name: naverUser.name,
-              picture: naverUser.profile_image,
+    if (!getUserError && userWithIdentities) {
+      const identities = userWithIdentities.identities || [];
+      const hasNaverIdentity = identities.some((id: any) => id.provider === 'naver');
+      
+      if (!hasNaverIdentity) {
+        // 기존 사용자에 네이버 identity 추가
+        try {
+          // PostgREST API를 사용하여 직접 insert 시도
+          const insertResponse = await fetch(`${supabaseUrl}/rest/v1/auth.identities`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': supabaseServiceRoleKey,
+              'Authorization': `Bearer ${supabaseServiceRoleKey}`,
+              'Prefer': 'return=minimal',
             },
-            last_sign_in_at: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            body: JSON.stringify({
+              user_id: user.id,
+              provider: 'naver',
+              provider_id: naverUser.id,
+              identity_data: {
+                sub: naverUser.id,
+                email: userEmail,
+                name: naverUser.name,
+                picture: naverUser.profile_image,
+              },
+              last_sign_in_at: new Date().toISOString(),
+            }),
           });
-        
-        if (sqlError) {
-          console.error('네이버 identity 추가 실패:', sqlError);
+          
+          if (!insertResponse.ok) {
+            const errorText = await insertResponse.text();
+            console.error('네이버 identity 추가 실패:', insertResponse.status, errorText);
+            // 에러를 던지지 않고 계속 진행 (이미 로그인은 가능)
+          } else {
+            console.log('네이버 identity 추가 성공');
+          }
+        } catch (err) {
+          console.error('네이버 identity 추가 중 예외 발생:', err);
           // 에러를 던지지 않고 계속 진행 (이미 로그인은 가능)
-        } else {
-          console.log('네이버 identity 추가 성공');
         }
-      } catch (err) {
-        console.error('네이버 identity 추가 중 예외 발생:', err);
-        // 에러를 던지지 않고 계속 진행
+      } else {
+        console.log('네이버 identity가 이미 존재합니다.');
       }
     }
 
