@@ -221,12 +221,12 @@ export default function OnboardingPage() {
               <div className="mb-6">
                 <label className="block text-sm font-semibold text-[#3E352F] mb-3">성별 <span className="text-red-500">*</span></label>
                 <div className="grid grid-cols-3 gap-3">
-                  {[{ value: 'male', label: '남성', emoji: '👨' }, { value: 'female', label: '여성', emoji: '👩' }, { value: 'other', label:[object Object]} type="button" onClick={() => setGender(option.value as Gender)} className={`p-3 rounded-xl border-2 transition-all ${gender === option.value ? 'border-[#D2B48C] bg-[#D2B48C]/10' : 'border-[#EAE5DE] hover:border-[#D2B48C]/50'}`}>
+                  {[{ value: 'male', label: '남성', emoji: '👨' }, { value: 'female', label: '여성', emoji: '👩' }, { value: 'other', label: '기타', emoji: '🙂' }].map((option) => (
+                    <button key={option.value} type="button" onClick={() => setGender(option.value as Gender)} className={`p-3 rounded-xl border-2 transition-all ${gender === option.value ? 'border-[#D2B48C] bg-[#D2B48C]/10' : 'border-[#EAE5DE] hover:border-[#D2B48C]/50'}`}>
                       <div className="text-xl mb-1">{option.emoji}</div>
                       <div className="text-sm font-medium text-[#3E352F]">{option.label}</div>
                     </button>
-                  ))}
-                </div>
+                  ))}                </div>
               </div>
             )}
 
