@@ -43,6 +43,8 @@ export default function ProfilePage() {
   const [isMobile, setIsMobile] = useState(false); // ✅ 모바일 감지 상태 추가
 
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
+  const [showUnlinkConfirmModal, setShowUnlinkConfirmModal] = useState(false);
+  const [providerToUnlink, setProviderToUnlink] = useState<string | null>(null);
 
   // ✅ 모바일 감지
   useEffect(() => {
@@ -202,6 +204,45 @@ export default function ProfilePage() {
     } catch (error: any) {
       console.error(`${provider} 연동 실패:`, error);
       alert(`${provider} 계정 연동에 실패했습니다: ${error.message}`);
+    }
+  };
+
+  // 연동 해제 핸들러
+  const handleUnlinkProvider = async (provider: string) => {
+    setProviderToUnlink(provider);
+    setShowUnlinkConfirmModal(true);
+  };
+
+  // 연동 해제 확인
+  const confirmUnlinkProvider = async () => {
+    if (!providerToUnlink) return;
+
+    try {
+      const response = await fetch('/api/profile/unlink-provider', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ provider: providerToUnlink }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '연동 해제에 실패했습니다.');
+      }
+
+      alert(data.message || '연동이 해제되었습니다.');
+      
+      // 프로필 데이터 새로고침
+      mutate('/api/profile');
+      
+    } catch (error: any) {
+      console.error('연동 해제 실패:', error);
+      alert(error.message || '연동 해제 중 오류가 발생했습니다.');
+    } finally {
+      setShowUnlinkConfirmModal(false);
+      setProviderToUnlink(null);
     }
   };
 
@@ -384,15 +425,24 @@ export default function ProfilePage() {
                     {['google', 'naver', 'kakao'].map(provider => {
                       const isLinked = userProfile.identities?.some(id => id.provider === provider);
                       return (
-                        <button
-                          key={provider}
-                          onClick={() => !isLinked && handleLinkWithProvider(provider as 'google' | 'naver' | 'kakao')}
-                          disabled={isLinked}
-                          className={`transition-all duration-300 rounded-full focus:outline-none focus:ring-4 focus:ring-[#D2B48C]/50 ${isLinked ? 'opacity-100' : 'opacity-40 hover:opacity-75 hover:scale-105'} ${isLinked ? 'cursor-default' : 'cursor-pointer'}`}
-                          aria-label={`${provider} ${isLinked ? '계정 연동됨' : '계정 연동하기'}`}
-                        >
-                          <SocialIcon provider={provider} className="w-12 h-12 lg:w-14 lg:h-14" />
-                        </button>
+                        <div key={provider} className="flex flex-col items-center gap-2">
+                          <button
+                            onClick={() => !isLinked && handleLinkWithProvider(provider as 'google' | 'naver' | 'kakao')}
+                            disabled={isLinked}
+                            className={`transition-all duration-300 rounded-full focus:outline-none focus:ring-4 focus:ring-[#D2B48C]/50 ${isLinked ? 'opacity-100' : 'opacity-40 hover:opacity-75 hover:scale-105'} ${isLinked ? 'cursor-default' : 'cursor-pointer'}`}
+                            aria-label={`${provider} ${isLinked ? '계정 연동됨' : '계정 연동하기'}`}
+                          >
+                            <SocialIcon provider={provider} className="w-12 h-12 lg:w-14 lg:h-14" />
+                          </button>
+                          {isLinked && (
+                            <button
+                              onClick={() => handleUnlinkProvider(provider)}
+                              className="text-xs lg:text-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium transition-colors duration-200 hover:underline"
+                            >
+                              해제
+                            </button>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -618,6 +668,18 @@ export default function ProfilePage() {
         open={showAddLinkModal}
         onClose={() => setShowAddLinkModal(false)}
         onLink={handleLinkWithProvider}
+      />
+
+      {/* 연동 해제 확인 모달 */}
+      <LogoutConfirmationModal
+        isOpen={showUnlinkConfirmModal}
+        onClose={() => {
+          setShowUnlinkConfirmModal(false);
+          setProviderToUnlink(null);
+        }}
+        onConfirm={confirmUnlinkProvider}
+        title="계정 연동 해제"
+        message={`${providerToUnlink} 계정 연동을 해제하시겠습니까?`}
       />
     </div>
   );
