@@ -1,6 +1,5 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient, User } from 'https://esm.sh/@supabase/supabase-js@2';
-import { create, getNumericDate } from 'https://deno.land/x/djwt@v2.8/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,10 +17,9 @@ serve(async (req) => {
     const naverClientSecret = Deno.env.get('NAVER_CLIENT_SECRET');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const jwtSecret = Deno.env.get('CUSTOM_JWT_SECRET');
 
-    if (!naverClientId || !naverClientSecret || !supabaseUrl || !supabaseServiceRoleKey || !jwtSecret) {
-      throw new Error('Missing required environment variables, including CUSTOM_JWT_SECRET.');
+    if (!naverClientId || !naverClientSecret || !supabaseUrl || !supabaseServiceRoleKey) {
+      throw new Error('Missing required environment variables.');
     }
 
     // 1. 네이버 토큰 교환
@@ -166,25 +164,29 @@ serve(async (req) => {
       }
     }
 
-    // 5. JWT를 직접 생성하여 완전한 세션을 만듭니다.
-    const cryptoKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(jwtSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    const now = getNumericDate(0);
-    const accessTokenExp = now + 3600; // 1 hour
-    const refreshTokenExp = now + 604800; // 1 week
-
-    const accessToken = await create({ alg: 'HS256', typ: 'JWT' }, { aud: 'authenticated', sub: user.id, role: 'authenticated', email: user.email, iat: now, exp: accessTokenExp }, cryptoKey);
-    const refreshToken = await create({ alg: 'HS256', typ: 'JWT' }, { sub: user.id, iat: now, exp: refreshTokenExp }, cryptoKey);
-
-    const session = {
-      access_token: accessToken,
+    // 5. Magic Link를 생성하여 세션 토큰을 얻습니다.
+    const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: user.email!,
+    });
+    
+    if (magicLinkError) throw magicLinkError;
+    
+    // Magic Link URL에서 refresh_token 추출
+    const actionLink = magicLinkData.properties.action_link;
+    const urlParams = new URLSearchParams(actionLink.split('?')[1]);
+    const refreshToken = urlParams.get('refresh_token');
+    
+    if (!refreshToken) throw new Error('Could not extract refresh token from magic link.');
+    
+    // refresh_token으로 세션 교환
+    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.refreshSession({
       refresh_token: refreshToken,
-      user: user,
-      token_type: 'bearer',
-      expires_in: 3600,
-      expires_at: accessTokenExp,
-    };
+    });
+    
+    if (sessionError) throw sessionError;
 
-    return new Response(JSON.stringify({ session }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    return new Response(JSON.stringify({ session: sessionData.session }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
 
   } catch (error) {
     console.error('[FATAL] Edge function error:', error.message);
