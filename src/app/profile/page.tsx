@@ -205,8 +205,9 @@ export default function ProfilePage() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/profile/delete-account', {
-        method: 'POST',
+      // 1. 서버에 회원 탈퇴 요청
+      const response = await fetch('/api/profile', {
+        method: 'DELETE',
       });
 
       if (!response.ok) {
@@ -214,12 +215,17 @@ export default function ProfilePage() {
         throw new Error(data.message || '회원 탈퇴에 실패했습니다.');
       }
 
-      // 탈퇴 성공 시 로그아웃 처리
-      await logoutUser();
+      // 2. 클라이언트 세션 제거
+      const supabaseModule = await import('@/lib/supabase/client');
+      const supabase = supabaseModule.createClient();
+      await supabase.auth.signOut();
       
+      // 3. 모달 닫기 및 알림
       setShowDeleteAccountModal(false);
       alert('회원 탈퇴가 완료되었습니다.');
-      router.push('/'); // 홈으로 이동
+      
+      // 4. 홈으로 리다이렉트
+      router.push('/');
     } catch (err: any) {
       console.error('회원 탈퇴 중 오류:', err);
       alert(err.message || '회원 탈퇴 중 오류가 발생했습니다.');
