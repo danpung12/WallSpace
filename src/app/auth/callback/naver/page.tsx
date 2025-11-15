@@ -31,46 +31,60 @@ function NaverAuthCallback() {
       const supabase = createClient();
       setMessage('네이버 계정 정보를 확인하고 있습니다...');
       
-      // Edge Function 호출 시 apikey 헤더 추가 (JWT 검증 우회)
-      // Supabase 클라이언트가 자동으로 헤더를 추가하지만, 명시적으로 apikey를 추가
+      // Edge Function을 직접 fetch로 호출 (JWT 검증 우회)
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      const { data, error: functionError } = await supabase.functions.invoke('naver-auth', {
-        body: { code },
-        ...(anonKey && {
+      
+      if (!supabaseUrl || !anonKey) {
+        setError('환경 변수가 설정되지 않았습니다.');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${supabaseUrl}/functions/v1/naver-auth`, {
+          method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
             'apikey': anonKey,
           },
-        }),
-      });
+          body: JSON.stringify({ code }),
+        });
 
-      if (functionError) {
-        console.error('Edge Function error:', functionError);
-        setError(`로그인 처리 중 오류가 발생했습니다: ${functionError.message}`);
-        return;
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Edge Function error:', response.status, errorText);
+          setError(`로그인 처리 중 오류가 발생했습니다: ${response.status} ${errorText}`);
+          return;
+        }
+
+        const data = await response.json();
+
+        // [핵심 수정] 계정 충돌 상태를 확인하고 연동 페이지로 리디렉션합니다.
+        if (data.status === 'conflict' && data.email) {
+          router.push(`/auth/link/naver?email=${encodeURIComponent(data.email)}`);
+          return;
+        }
+
+        if (!data.session) {
+          setError('세션 정보를 받아오지 못했습니다.');
+          return;
+        }
+
+        setMessage('로그인 세션을 설정하고 있습니다...');
+
+        const { error: sessionError } = await supabase.auth.setSession(data.session);
+
+        if (sessionError) {
+          console.error('Session setting error:', sessionError);
+          setError(`로그인에 실패했습니다: ${sessionError.message}`);
+          return;
+        }
+
+        router.push('/onboarding');
+      } catch (err: any) {
+        console.error('Edge Function 호출 중 오류:', err);
+        setError(`로그인 처리 중 오류가 발생했습니다: ${err.message}`);
       }
-
-      // [핵심 수정] 계정 충돌 상태를 확인하고 연동 페이지로 리디렉션합니다.
-      if (data.status === 'conflict' && data.email) {
-        router.push(`/auth/link/naver?email=${encodeURIComponent(data.email)}`);
-        return;
-      }
-
-      if (!data.session) {
-        setError('세션 정보를 받아오지 못했습니다.');
-        return;
-      }
-
-      setMessage('로그인 세션을 설정하고 있습니다...');
-
-      const { error: sessionError } = await supabase.auth.setSession(data.session);
-
-      if (sessionError) {
-        console.error('Session setting error:', sessionError);
-        setError(`로그인에 실패했습니다: ${sessionError.message}`);
-        return;
-      }
-
-      router.push('/onboarding');
     };
 
     handleLogin();
