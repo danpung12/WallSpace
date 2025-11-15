@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { UserProfile } from '@/data/profile';
 
 export async function GET() {
@@ -228,32 +229,32 @@ export async function DELETE() {
       );
     }
 
-    // 1. 사용자 관련 데이터 삭제 (CASCADE로 자동 삭제되지 않는 경우를 대비)
-    // notification_settings, user_settings는 CASCADE로 자동 삭제됨
-    
-    // 2. profiles 테이블에서 사용자 삭제 (CASCADE로 관련 데이터도 삭제됨)
-    const { error: deleteProfileError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', user.id);
+    const userId = user.id;
 
-    if (deleteProfileError) {
-      console.error('Profile deletion error:', deleteProfileError);
-      return NextResponse.json(
-        { message: 'Failed to delete profile data' }, 
-        { status: 500 }
-      );
-    }
+    // Admin 클라이언트 생성 (Service Role Key 사용)
+    const adminClient = createAdminClient();
 
-    // 3. Supabase Auth에서 사용자 계정 삭제
-    const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(user.id);
+    // 1. Supabase Auth에서 사용자 계정 삭제 (먼저 실행)
+    const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(userId);
 
     if (deleteAuthError) {
       console.error('Auth user deletion error:', deleteAuthError);
       return NextResponse.json(
-        { message: 'Failed to delete user account' }, 
+        { message: 'Failed to delete user account', error: deleteAuthError.message }, 
         { status: 500 }
       );
+    }
+
+    // 2. profiles 테이블에서 사용자 삭제 (CASCADE로 관련 데이터도 삭제됨)
+    // Auth 삭제 후 실행하면 자동으로 처리되지만, 명시적으로 삭제
+    const { error: deleteProfileError } = await adminClient
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+
+    if (deleteProfileError) {
+      console.error('Profile deletion error:', deleteProfileError);
+      // Auth는 이미 삭제되었으므로 경고만 로깅
     }
 
     return NextResponse.json(
