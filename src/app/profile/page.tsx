@@ -69,7 +69,7 @@ export default function ProfilePage() {
     if (profileData) {
       setUserProfile(profileData);
       // 초기 로드 시에만 다크모드 설정 (이후 변경은 UserSettingsModal에서 처리)
-      if (profileData.userSettings?.darkMode !== undefined && !userProfile) {
+      if (profileData?.userSettings?.darkMode !== undefined && !userProfile) {
         setDarkMode(profileData.userSettings.darkMode);
       }
     }
@@ -574,9 +574,9 @@ export default function ProfilePage() {
         initialSettings={{ 
           darkMode: isDarkMode,
           notifications: {
-            comments: userProfile.notificationSettings.comments ?? true,
-            exhibitions: userProfile.notificationSettings.exhibitions ?? true,
-            exhibition_distance: userProfile.notificationSettings.exhibition_distance ?? 5
+            comments: userProfile?.notificationSettings?.comments ?? true,
+            exhibitions: userProfile?.notificationSettings?.exhibitions ?? true,
+            exhibition_distance: userProfile?.notificationSettings?.exhibition_distance ?? 5
           }
         }}
         onSave={async (settings) => {

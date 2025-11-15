@@ -31,16 +31,29 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
           const data: UserProfile = await response.json();
           setUserProfile(data);
           // sessionStorage에 캐싱 시도 (용량 초과 시 무시)
+          // avatarUrl이 base64 이미지인 경우 용량이 클 수 있으므로 제거하고 저장
           try {
-            sessionStorage.setItem('userProfile', JSON.stringify(data));
+            const dataToCache = {
+              ...data,
+              avatarUrl: data.avatarUrl?.startsWith('data:image') ? '' : data.avatarUrl, // base64 이미지는 제외
+            };
+            sessionStorage.setItem('userProfile', JSON.stringify(dataToCache));
           } catch (storageError) {
             // 저장소 용량 초과 시 무시하고 계속 진행
             console.warn('Failed to cache profile in sessionStorage:', storageError);
             // 기존 캐시 삭제 시도
             try {
               sessionStorage.removeItem('userProfile');
+              // 더 작은 데이터로 재시도 (avatarUrl 제외)
+              const minimalData = {
+                ...data,
+                avatarUrl: '',
+                identities: [], // identities도 제외
+              };
+              sessionStorage.setItem('userProfile', JSON.stringify(minimalData));
             } catch (e) {
-              // 무시
+              // 완전히 실패하면 캐싱 포기
+              console.warn('Failed to cache even minimal profile data');
             }
           }
           setLoading(false);
@@ -118,16 +131,29 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
   const updateProfile = useCallback((profile: UserProfile) => {
     setUserProfile(profile);
     // sessionStorage 업데이트 시도 (용량 초과 시 무시)
+    // avatarUrl이 base64 이미지인 경우 용량이 클 수 있으므로 제거하고 저장
     try {
-      sessionStorage.setItem('userProfile', JSON.stringify(profile));
+      const dataToCache = {
+        ...profile,
+        avatarUrl: profile.avatarUrl?.startsWith('data:image') ? '' : profile.avatarUrl, // base64 이미지는 제외
+      };
+      sessionStorage.setItem('userProfile', JSON.stringify(dataToCache));
     } catch (storageError) {
       // 저장소 용량 초과 시 무시하고 계속 진행
       console.warn('Failed to update profile in sessionStorage:', storageError);
       // 기존 캐시 삭제 시도
       try {
         sessionStorage.removeItem('userProfile');
+        // 더 작은 데이터로 재시도
+        const minimalData = {
+          ...profile,
+          avatarUrl: '',
+          identities: [], // identities도 제외
+        };
+        sessionStorage.setItem('userProfile', JSON.stringify(minimalData));
       } catch (e) {
-        // 무시
+        // 완전히 실패하면 캐싱 포기
+        console.warn('Failed to cache even minimal profile data');
       }
     }
   }, []);
