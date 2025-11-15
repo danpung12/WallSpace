@@ -29,14 +29,6 @@ export async function POST(request: Request) {
     console.log('User identities:', identities);
     console.log('Provider to unlink:', provider);
 
-    // 연동된 계정이 2개 이상인지 확인 (마지막 계정은 해제 불가)
-    if (identities.length <= 1) {
-      return NextResponse.json(
-        { error: '최소 1개의 로그인 방법이 필요합니다. 마지막 계정은 해제할 수 없습니다.' },
-        { status: 400 }
-      );
-    }
-
     // 해당 provider가 연동되어 있는지 확인
     const targetIdentity = identities.find((id: any) => id.provider === provider);
     
