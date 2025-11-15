@@ -21,83 +21,122 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     const checkAuthAndLoadData = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.replace('/login');
-        return;
-      }
-
-      // 프로필 체크 - 이미 완전한 프로필이 있으면 홈으로
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (profile && profile.nickname && profile.phone) {
-        // 이미 완전한 프로필이 있으면 user_type에 따라 리다이렉트
-        if (profile.user_type === 'guest') {
-          router.replace('/guest');
-        } else {
-          router.replace('/');
+      try {
+        const supabase = createClient();
+        
+        // 먼저 세션 확인
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
         }
-        return;
-      }
+        
+        if (!session) {
+          console.log('No session found, redirecting to login');
+          router.replace('/login');
+          return;
+        }
+        
+        console.log('Session found, user:', session.user?.email);
+        
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-      // 기존 프로필 데이터가 있다면 필드 채우기
-      if (profile) {
-        if (profile.user_type) setUserType(profile.user_type);
-        if (profile.gender) setGender(profile.gender);
-        if (profile.age_range) setAgeRange(profile.age_range);
-        if (profile.nickname) setNickname(profile.nickname);
-        if (profile.phone) setPhone(profile.phone);
-      }
+        if (userError) {
+          console.error('Auth error:', userError);
+          router.replace('/login');
+          return;
+        }
 
-      setUserData(user);
+        if (!user) {
+          console.log('No user found, redirecting to login');
+          router.replace('/login');
+          return;
+        }
 
-      // 소셜 로그인에서 받은 정보 자동 채우기
-      const metadata = user.user_metadata;
-      
-      // 성별 자동 채우기 (카카오/네이버)
-      if (metadata.gender) {
-        const genderMap: Record<string, Gender> = {
-          'male': 'male',
-          'female': 'female',
-          'M': 'male',
-          'F': 'female',
-        };
-        setGender(genderMap[metadata.gender] || null);
-      }
+        console.log('User found:', user.email);
 
-      // 나이대 자동 채우기 (카카오)
-      if (metadata.age_range) {
-        // 카카오: "20~29" 형식
-        const ageRangeMap: Record<string, AgeRange> = {
-          '0~9': '10s',
-          '10~14': '10s',
-          '15~19': '10s',
-          '20~29': '20s',
-          '30~39': '30s',
-          '40~49': '40s',
-          '50~59': '50s',
-          '60~': '60s+',
-        };
-        setAgeRange(ageRangeMap[metadata.age_range] || null);
-      }
-      // 네이버 나이대
-      else if (metadata.age) {
-        const age = parseInt(metadata.age);
-        if (age < 20) setAgeRange('10s');
-        else if (age < 30) setAgeRange('20s');
-        else if (age < 40) setAgeRange('30s');
-        else if (age < 50) setAgeRange('40s');
-        else if (age < 60) setAgeRange('50s');
-        else setAgeRange('60s+');
-      }
+        // 프로필 체크 - 이미 완전한 프로필이 있으면 홈으로
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
 
-      setLoading(false);
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Profile fetch error:', profileError);
+          // 에러가 있지만 계속 진행 (프로필이 없을 수 있음)
+        }
+
+        if (profile && profile.nickname && profile.phone) {
+          // 이미 완전한 프로필이 있으면 user_type에 따라 리다이렉트
+          if (profile.user_type === 'guest') {
+            router.replace('/guest');
+          } else {
+            router.replace('/');
+          }
+          return;
+        }
+
+        // 기존 프로필 데이터가 있다면 필드 채우기
+        if (profile) {
+          if (profile.user_type) setUserType(profile.user_type);
+          if (profile.gender) setGender(profile.gender);
+          if (profile.age_range) setAgeRange(profile.age_range);
+          if (profile.nickname) setNickname(profile.nickname);
+          if (profile.phone) setPhone(profile.phone);
+        }
+
+        setUserData(user);
+
+        // 소셜 로그인에서 받은 정보 자동 채우기
+        const metadata = user.user_metadata || {};
+        
+        console.log('User metadata:', metadata);
+        
+        // 성별 자동 채우기 (카카오/네이버)
+        if (metadata.gender) {
+          const genderMap: Record<string, Gender> = {
+            'male': 'male',
+            'female': 'female',
+            'M': 'male',
+            'F': 'female',
+          };
+          setGender(genderMap[metadata.gender] || null);
+        }
+
+        // 나이대 자동 채우기 (카카오)
+        if (metadata.age_range) {
+          // 카카오: "20~29" 형식
+          const ageRangeMap: Record<string, AgeRange> = {
+            '0~9': '10s',
+            '10~14': '10s',
+            '15~19': '10s',
+            '20~29': '20s',
+            '30~39': '30s',
+            '40~49': '40s',
+            '50~59': '50s',
+            '60~': '60s+',
+          };
+          setAgeRange(ageRangeMap[metadata.age_range] || null);
+        }
+        // 네이버 나이대
+        else if (metadata.age) {
+          const age = parseInt(metadata.age);
+          if (age < 20) setAgeRange('10s');
+          else if (age < 30) setAgeRange('20s');
+          else if (age < 40) setAgeRange('30s');
+          else if (age < 50) setAgeRange('40s');
+          else if (age < 60) setAgeRange('50s');
+          else setAgeRange('60s+');
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error('Onboarding check error:', error);
+        setLoading(false);
+        alert('오류가 발생했습니다. 다시 시도해주세요.');
+        router.replace('/login');
+      }
     };
 
     checkAuthAndLoadData();
