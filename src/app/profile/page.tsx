@@ -69,6 +69,8 @@ export default function ProfilePage() {
   // 프로필 데이터 설정
   useEffect(() => {
     if (profileData) {
+      console.log('프로필 데이터:', profileData);
+      console.log('identities:', profileData.identities);
       setUserProfile(profileData);
       // 초기 로드 시에만 다크모드 설정 (이후 변경은 UserSettingsModal에서 처리)
       if (profileData?.userSettings?.darkMode !== undefined && !userProfile) {
@@ -238,13 +240,30 @@ export default function ProfilePage() {
 
   const handleLinkWithProvider = async (provider: 'kakao' | 'naver' | 'google') => {
     try {
+      // 네이버는 커스텀 OAuth 플로우 사용
+      if (provider === 'naver') {
+        const naverClientId = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID;
+        if (!naverClientId) {
+          throw new Error('네이버 클라이언트 ID가 설정되지 않았습니다.');
+        }
+        
+        const state = Math.random().toString(36).substring(2, 15);
+        sessionStorage.setItem('oauth_state', state);
+        
+        const redirectUri = `${window.location.origin}/auth/callback/naver`;
+        const naverAuthUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${naverClientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+        
+        window.location.href = naverAuthUrl;
+        return;
+      }
+      
+      // 구글, 카카오는 Supabase 기본 OAuth 사용
       const supabaseModule = await import('@/lib/supabase/client');
       const supabase = supabaseModule.createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
-          // Linking to an existing user
           queryParams: { access_type: 'offline', prompt: 'consent' }
         }
       });

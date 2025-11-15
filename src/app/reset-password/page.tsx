@@ -54,7 +54,15 @@ export default function ResetPasswordPage() {
 
     } catch (err: any) {
       console.error('❌ Password reset error:', err);
-      setError('비밀번호 재설정에 실패했습니다. 다시 시도해주세요.');
+      
+      // 에러 코드에 따른 메시지 처리
+      if (err?.code === 'same_password') {
+        setError('과거에 사용했던 비밀번호로는 변경할 수 없습니다. 다른 비밀번호를 입력해주세요.');
+      } else if (err?.message) {
+        setError(err.message);
+      } else {
+        setError('비밀번호 재설정에 실패했습니다. 다시 시도해주세요.');
+      }
     } finally {
       setIsLoading(false);
     }
