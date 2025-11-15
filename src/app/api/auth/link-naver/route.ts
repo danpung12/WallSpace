@@ -1,7 +1,7 @@
 import { createRouteHandlerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { signJWT } from 'djwt';
+import { create, getNumericDate } from 'djwt';
 
 // Supabase Admin 클라이언트를 생성하는 함수 (보안을 위해 별도 파일로 분리하는 것이 좋음)
 // 여기서는 간단하게 route 핸들러 내에서 직접 생성합니다.
@@ -45,14 +45,14 @@ export async function POST(request: Request) {
       .eq('id', user.id);
     if (profileError) throw profileError;
 
-    // 4. 새로운 세션(JWT) 생성
+    // 4. 새로운 세션(JWT) 생성 (djwt/create 사용으로 수정)
     const cryptoKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(jwtSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-        const now = Math.floor(Date.now() / 1000);
-    const accessTokenExp = now + 3600;
-    const refreshTokenExp = now + 604800;
+    const now = getNumericDate(0);
+    const accessTokenExp = now + 3600; // 1 hour
+    const refreshTokenExp = now + 604800; // 1 week
 
-        const accessToken = await signJWT({ aud: 'authenticated', sub: user.id, role: 'authenticated', email: user.email, iat: now, exp: accessTokenExp }, cryptoKey, { algorithm: 'HS256' });
-        const refreshToken = await signJWT({ sub: user.id, iat: now, exp: refreshTokenExp }, cryptoKey, { algorithm: 'HS256' });
+    const accessToken = await create({ alg: 'HS256', typ: 'JWT' }, { aud: 'authenticated', sub: user.id, role: 'authenticated', email: user.email, iat: now, exp: accessTokenExp }, cryptoKey);
+    const refreshToken = await create({ alg: 'HS256', typ: 'JWT' }, { sub: user.id, iat: now, exp: refreshTokenExp }, cryptoKey);
 
     const session = {
       access_token: accessToken,
@@ -70,4 +70,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }
-
