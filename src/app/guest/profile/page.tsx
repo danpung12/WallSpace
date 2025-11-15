@@ -64,11 +64,12 @@ export default function GuestProfilePage() {
 
   const updateProfile = async (updatedData: Partial<UserProfile>): Promise<boolean> => {
     if (!userProfile) return false;
-    if (updatedData.avatarUrl) {
-        setUserProfile(prev => prev ? { ...prev, ...updatedData } : null);
-    } else {
-        setIsLoading(true);
-    }
+    
+    // 낙관적 업데이트: 즉시 UI 업데이트
+    const optimisticData = { ...userProfile, ...updatedData };
+    setUserProfile(optimisticData);
+    mutate('/api/profile', optimisticData, { revalidate: false });
+    
     setError(null);
     try {
       const response = await fetch("/api/profile", {
@@ -81,17 +82,17 @@ export default function GuestProfilePage() {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      // 프로필 업데이트 후 캐시 무효화
-      mutate('/api/profile');
+      // 프로필 업데이트 후 캐시 무효화 및 재검증
       const data: UserProfile = await response.json();
+      mutate('/api/profile', data, { revalidate: true });
       setUserProfile(data);
       return true;
     } catch (err: any) {
+      // 에러 발생 시 이전 데이터로 롤백
+      mutate('/api/profile');
       setError(err.message || "Failed to update profile");
       console.error("Error updating profile:", err);
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 

@@ -18,12 +18,28 @@ export async function GET() {
       );
     }
 
-    // 프로필 정보 가져오기
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    // 프로필 정보, 알림 설정, 사용자 설정을 병렬로 가져오기 (성능 최적화)
+    const [profileResult, notificationSettingsResult, userSettingsResult] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single(),
+      supabase
+        .from('notification_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single(),
+      supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single(),
+    ]);
+
+    const { data: profile, error: profileError } = profileResult;
+    const { data: notificationSettings } = notificationSettingsResult;
+    const { data: userSettings } = userSettingsResult;
 
     if (profileError || !profile) {
       return NextResponse.json(
@@ -31,20 +47,6 @@ export async function GET() {
         { status: 404 }
       );
     }
-
-    // 알림 설정 가져오기
-    const { data: notificationSettings } = await supabase
-      .from('notification_settings')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    // 사용자 설정 가져오기
-    const { data: userSettings } = await supabase
-      .from('user_settings')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
 
     // UserProfile 형식에 맞게 변환
     // user_metadata의 full_name을 우선 사용, 없으면 profiles 테이블의 name 사용
@@ -79,10 +81,10 @@ export async function GET() {
       })),
     };
 
-    // 프로필 데이터는 자주 변경되지 않으므로 캐싱
+    // 프로필 데이터는 자주 변경되지 않으므로 캐싱 (더 긴 캐시 시간)
     return NextResponse.json(userProfile, {
       headers: {
-        'Cache-Control': 'private, s-maxage=30, stale-while-revalidate=60',
+        'Cache-Control': 'private, s-maxage=60, stale-while-revalidate=120',
       },
     });
   } catch (error) {

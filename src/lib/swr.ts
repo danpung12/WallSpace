@@ -4,7 +4,9 @@ import useSWR, { SWRConfiguration, SWRResponse } from 'swr';
 
 // Fetcher 함수 - 모든 API 호출에 사용
 const fetcher = async (url: string) => {
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    credentials: 'include', // 쿠키 포함
+  });
   
   if (!res.ok) {
     const error: any = new Error('An error occurred while fetching the data.');
@@ -21,12 +23,12 @@ export const swrConfig: SWRConfiguration = {
   fetcher,
   revalidateOnFocus: false, // 포커스 시 자동 재검증 비활성화 (수동으로만 업데이트)
   revalidateOnReconnect: true, // 네트워크 재연결 시 재검증
-  revalidateIfStale: true, // 오래된 데이터가 있으면 재검증
-  dedupingInterval: 2000, // 2초 내 중복 요청 방지
+  revalidateIfStale: true, // 오래된 데이터가 있으면 백그라운드에서 재검증
+  dedupingInterval: 5000, // 5초 내 중복 요청 방지 (성능 최적화)
   focusThrottleInterval: 5000, // 포커스 시 throttle (5초)
   keepPreviousData: true, // 데이터가 변경되는 동안 이전 데이터 유지 (깜빡임 방지)
-  errorRetryCount: 3, // 에러 시 재시도 횟수
-  errorRetryInterval: 5000, // 재시도 간격 (5초)
+  errorRetryCount: 2, // 에러 시 재시도 횟수 (빠른 실패)
+  errorRetryInterval: 1000, // 재시도 간격 (1초, 더 빠른 재시도)
   onError: (error) => {
     // 에러 로깅 (필요시 에러 리포트 서비스로 전송 가능)
     console.error('SWR Error:', error);

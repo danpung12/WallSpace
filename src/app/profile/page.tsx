@@ -105,13 +105,14 @@ export default function ProfilePage() {
   // 프로필 데이터 업데이트 (PUT 요청)
   const updateProfile = async (updatedData: Partial<UserProfile>): Promise<boolean> => {
     if (!userProfile) return false;
-    // Optimistic UI update for avatar
-    if (updatedData.avatarUrl) {
-        setUserProfile(prev => prev ? { ...prev, ...updatedData } : null);
-    } else {
-        setIsLoading(true);
-    }
     setError(null);
+    // 낙관적 업데이트: 즉시 UI 업데이트
+    const optimisticData = { ...userProfile, ...updatedData };
+    setUserProfile(optimisticData);
+    updateGlobalProfile(optimisticData);
+    mutate('/api/profile', optimisticData, { revalidate: false });
+    setIsLoading(true);
+    
     try {
       const response = await fetch("/api/profile", {
         method: "PUT",
@@ -123,13 +124,15 @@ export default function ProfilePage() {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      // 프로필 업데이트 후 캐시 무효화
-      mutate('/api/profile');
+      // 프로필 업데이트 후 캐시 무효화 및 재검증
       const data: UserProfile = await response.json();
-      setUserProfile(data); // Re-sync with server state
-      updateGlobalProfile(data); // ✅ 전역 Context도 업데이트 (Header가 재렌더링 안 됨)
+      mutate('/api/profile', data, { revalidate: true });
+      setUserProfile(data);
+      updateGlobalProfile(data);
       return true;
     } catch (err: any) {
+      // 에러 발생 시 이전 데이터로 롤백
+      mutate('/api/profile');
       setError(err.message || "Failed to update profile");
       console.error("Error updating profile:", err);
       return false;

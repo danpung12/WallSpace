@@ -5,6 +5,7 @@ import { KakaoPlace, KakaoMap, KakaoLatLng, KakaoGeocoderResult, KakaoGeocoderSt
 import { LocationDetail, Space, Artwork } from '@/types/database';
 import { getLocations, getSpaces } from '@/lib/api/locations';
 import { getUserArtworks } from '@/lib/api/artworks';
+import { useApi, mutate } from '@/lib/swr';
 
 // --- 타입 정의 ---
 export type { LocationDetail as LocationType, Space, Artwork };
@@ -98,8 +99,6 @@ export function MapProvider({ children }: { children: ReactNode }) {
     const [artworks, setArtworks] = useState<Artwork[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [retryCount, setRetryCount] = useState(0);
-    const MAX_RETRY_COUNT = 3;
 
     // UI State
     const [isDetailPageVisible, setDetailPageVisible] = useState(false);
@@ -120,73 +119,47 @@ export function MapProvider({ children }: { children: ReactNode }) {
     // 예약 가능 여부를 추적하는 Map (location_id -> boolean)
     const [locationAvailability, setLocationAvailability] = useState<Map<string, boolean>>(new Map());
 
-    // Supabase 데이터 로드 함수
-    const loadData = useCallback(async (isRetry = false) => {
-        try {
-            if (isRetry) {
-                console.log(`🔄 Retrying to load locations (attempt ${retryCount + 1}/${MAX_RETRY_COUNT})...`);
-            } else {
-                console.log('📍 Loading locations...');
-            }
-            setLoading(true);
-            setError(null);
-            
-            // API routes를 통해 데이터 가져오기
-            const locationsResponse = await fetch('/api/locations');
-            
-            if (!locationsResponse.ok) {
-                throw new Error('Failed to fetch locations');
-            }
-            
-            const locationsData = await locationsResponse.json();
-            
-            // 사용자 작품 가져오기 (로그인하지 않은 경우 빈 배열)
-            let artworksData: Artwork[] = [];
-            try {
-                artworksData = await getUserArtworks();
-                console.log('✅ User artworks loaded:', artworksData.length);
-            } catch (artworkError) {
-                console.log('ℹ️ No user artworks (user may not be logged in)');
-            }
-            
+    // SWR로 locations 데이터 가져오기 (캐시 우선, 백그라운드 업데이트)
+    const { data: locationsData, error: locationsError, isLoading: locationsLoading } = useApi<LocationDetail[]>('/api/locations', {
+        revalidateOnFocus: false, // 포커스 시 자동 재검증 비활성화
+        revalidateIfStale: true, // 오래된 데이터가 있으면 백그라운드에서 재검증
+        dedupingInterval: 5000, // 5초 내 중복 요청 방지
+        keepPreviousData: true, // 데이터 변경 시 이전 데이터 유지 (깜빡임 방지)
+        onError: (err) => {
+            console.error('❌ Error loading locations:', err);
+            setError('데이터를 불러오는 중 오류가 발생했습니다.');
+        },
+    });
+
+    // 사용자 작품 가져오기 (로그인하지 않은 경우 빈 배열)
+    const { data: artworksData } = useApi<Artwork[]>('/api/artworks', {
+        revalidateOnFocus: false,
+        revalidateIfStale: true,
+        dedupingInterval: 5000,
+        keepPreviousData: true,
+    });
+
+    // 데이터 설정
+    useEffect(() => {
+        if (locationsData) {
             console.log('✅ Locations loaded:', locationsData.length);
             setLocations(locationsData);
+        }
+        if (locationsError) {
+            setError('데이터를 불러오는 중 오류가 발생했습니다.');
+        }
+        setLoading(locationsLoading);
+    }, [locationsData, locationsError, locationsLoading]);
+
+    useEffect(() => {
+        if (artworksData) {
             setArtworks(artworksData);
-            setRetryCount(0); // 성공하면 재시도 카운트 리셋
-            
             // 첫 번째 작품을 기본 선택으로 설정
-            if (artworksData.length > 0) {
+            if (artworksData.length > 0 && !selectedArtwork) {
                 setSelectedArtwork(artworksData[0]);
             }
-        } catch (err) {
-            console.error('❌ Error loading data:', err);
-            setError('데이터를 불러오는 중 오류가 발생했습니다.');
-        } finally {
-            setLoading(false);
         }
-    }, [retryCount]);
-    
-    // 초기 로드
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
-
-    // 자동 재시도 로직: locations가 비어있고 로딩이 완료된 경우
-    useEffect(() => {
-        if (!loading && locations.length === 0 && retryCount < MAX_RETRY_COUNT) {
-            console.warn('⚠️ No locations found after loading. Will retry in 2 seconds...');
-            const timer = setTimeout(() => {
-                setRetryCount(prev => prev + 1);
-                loadData(true);
-            }, 2000); // 2초 후 재시도
-
-            return () => clearTimeout(timer);
-        } else if (!loading && locations.length === 0 && retryCount >= MAX_RETRY_COUNT) {
-            console.error('❌ Max retry attempts reached. Failed to load locations.');
-        } else if (!loading && locations.length > 0) {
-            console.log(`✅ Successfully loaded ${locations.length} locations`);
-        }
-    }, [loading, locations.length, retryCount, loadData]);
+    }, [artworksData, selectedArtwork]);
 
     // Derived State
     const filterButtons = ['작품 선택', '카페', '갤러리', '문화회관'];
@@ -550,7 +523,11 @@ export function MapProvider({ children }: { children: ReactNode }) {
         handlePlaceSelect, gotoMonth, isDisabled, onClickDay, getDayClass, handleFilterClick,
         // Supabase 데이터
         locations, artworks, loading, error,
-        refreshLocations: loadData,
+        refreshLocations: async () => {
+            // SWR 캐시 무효화 및 재검증
+            await mutate('/api/locations');
+            await mutate('/api/artworks');
+        },
     };
 
     return <MapContext.Provider value={value}>{children}</MapContext.Provider>;
