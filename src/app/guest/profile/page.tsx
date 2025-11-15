@@ -9,6 +9,7 @@ import UserSettingsModal from "../../components/UserSettingsModal";
 import AvatarUploadModal from "../../components/AvatarUploadModal";
 import LogoutConfirmationModal from "../../components/LogoutConfirmationModal";
 import AlertModal from "../../components/AlertModal";
+import DeleteAccountModal from "../../components/DeleteAccountModal";
 import { UserProfile } from "@/data/profile";
 import { useDarkMode } from "../../context/DarkModeContext";
 import { useRouter } from "next/navigation";
@@ -28,6 +29,7 @@ export default function GuestProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [isSocialLogin, setIsSocialLogin] = useState(false);
   const [showAlertModal, setShowAlertModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false); // 회원 탈퇴 모달
 
   // SWR로 프로필 데이터 가져오기
   const { data: profileData, error: profileError, isLoading: profileLoading } = useApi<UserProfile>('/api/profile');
@@ -140,6 +142,23 @@ export default function GuestProfilePage() {
       router.push('/');
     } catch (err) {
       alert('로그아웃 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('회원 탈퇴에 실패했습니다.');
+      }
+      
+      setShowDeleteAccountModal(false);
+      router.push('/');
+    } catch (err) {
+      alert('회원 탈퇴 중 오류가 발생했습니다.');
     }
   };
 
@@ -320,6 +339,20 @@ export default function GuestProfilePage() {
                   </div>
                   <span className="ml-4 lg:ml-5 font-bold text-sm lg:text-base text-red-600 dark:text-red-400">로그아웃</span>
                 </button>
+
+                {/* 회원 탈퇴 */}
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteAccountModal(true)}
+                  className="group flex items-center p-4 lg:p-5 rounded-xl hover:bg-gradient-to-r hover:from-red-50 hover:to-red-50/50 dark:hover:from-red-900/20 dark:hover:to-red-900/10 transition-all duration-200 w-full"
+                >
+                  <div className="p-2.5 lg:p-3 bg-gradient-to-br from-red-100 to-red-50 dark:from-red-900/30 dark:to-red-900/20 rounded-xl">
+                    <svg className="w-6 lg:w-7 h-6 lg:h-7 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 256 256">
+                      <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z" />
+                    </svg>
+                  </div>
+                  <span className="ml-4 lg:ml-5 font-bold text-sm lg:text-base text-red-600 dark:text-red-400">회원 탈퇴</span>
+                </button>
               </div>
             </section>
           </div>
@@ -358,6 +391,7 @@ export default function GuestProfilePage() {
       <AvatarUploadModal open={showAvatarModal} currentAvatarUrl={userProfile.avatarUrl || '/default-profile.svg'} onClose={() => setShowAvatarModal(false)} onSave={handleAvatarSave} />
       <LogoutConfirmationModal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} onConfirm={handleLogout} title="로그아웃" message="정말 로그아웃 하시겠습니까?" />
       <AlertModal isOpen={showAlertModal} onClose={() => setShowAlertModal(false)} message="SNS 로그인 계정입니다." />
+      <DeleteAccountModal isOpen={showDeleteAccountModal} onClose={() => setShowDeleteAccountModal(false)} onConfirm={handleDeleteAccount} />
     </div>
   );
 }
