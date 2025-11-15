@@ -17,47 +17,59 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (retryCount = 0) => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/profile', {
-        credentials: 'include', // 쿠키 포함
-      });
-      
-      if (response.ok) {
-        const data: UserProfile = await response.json();
-        setUserProfile(data);
-        // sessionStorage에 캐싱 시도 (용량 초과 시 무시)
-        try {
-          sessionStorage.setItem('userProfile', JSON.stringify(data));
-        } catch (storageError) {
-          // 저장소 용량 초과 시 무시하고 계속 진행
-          console.warn('Failed to cache profile in sessionStorage:', storageError);
-          // 기존 캐시 삭제 시도
+  const fetchProfile = useCallback(async () => {
+    const maxRetries = 2;
+    
+    for (let retryCount = 0; retryCount <= maxRetries; retryCount++) {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/profile', {
+          credentials: 'include', // 쿠키 포함
+        });
+        
+        if (response.ok) {
+          const data: UserProfile = await response.json();
+          setUserProfile(data);
+          // sessionStorage에 캐싱 시도 (용량 초과 시 무시)
           try {
-            sessionStorage.removeItem('userProfile');
-          } catch (e) {
-            // 무시
+            sessionStorage.setItem('userProfile', JSON.stringify(data));
+          } catch (storageError) {
+            // 저장소 용량 초과 시 무시하고 계속 진행
+            console.warn('Failed to cache profile in sessionStorage:', storageError);
+            // 기존 캐시 삭제 시도
+            try {
+              sessionStorage.removeItem('userProfile');
+            } catch (e) {
+              // 무시
+            }
           }
+          setLoading(false);
+          return; // 성공 시 함수 종료
+        } else if (response.status === 401 && retryCount < maxRetries) {
+          // 401 에러 시 재시도 (쿠키 설정 지연 대응)
+          console.log(`Profile fetch 401, retrying... (${retryCount + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+          continue; // 재시도
+        } else {
+          console.error('Failed to fetch profile:', response.status, response.statusText);
+          setLoading(false);
+          return; // 재시도 불가능하거나 최대 재시도 횟수 초과
         }
-      } else if (response.status === 401 && retryCount < 2) {
-        // 401 에러 시 재시도 (쿠키 설정 지연 대응)
-        console.log(`Profile fetch 401, retrying... (${retryCount + 1}/2)`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
-        return fetchProfile(retryCount + 1);
-      } else {
-        console.error('Failed to fetch profile:', response.status, response.statusText);
+      } catch (error) {
+        console.error(`Error fetching profile (attempt ${retryCount + 1}/${maxRetries + 1}):`, error);
+        
+        // 네트워크 에러 시 재시도
+        if (retryCount < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+          continue; // 재시도
+        } else {
+          setLoading(false);
+          return; // 최대 재시도 횟수 초과
+        }
       }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      // 네트워크 에러 시 재시도
-      if (retryCount < 2) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
-        return fetchProfile(retryCount + 1);
-      }
-    } finally {
-      setLoading(false);
     }
+    
+    setLoading(false);
   }, []);
 
   // 초기 로드

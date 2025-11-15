@@ -70,7 +70,13 @@ export async function GET() {
       userSettings: {
         darkMode: userSettings?.dark_mode ?? false,
       },
-      identities: user.identities || [],
+      identities: (user.identities || []).map((identity: any) => ({
+        ...identity,
+        identity_data: {
+          ...identity.identity_data,
+          user_type: profile.user_type, // profiles 테이블의 user_type으로 동기화
+        },
+      })),
     };
 
     // 프로필 데이터는 자주 변경되지 않으므로 캐싱
