@@ -62,6 +62,13 @@ function NaverAuthCallback() {
 
         // [핵심 수정] 계정 충돌 상태를 확인하고 연동 페이지로 리디렉션합니다.
         if (data.status === 'conflict' && data.email) {
+          // 연동에 필요한 네이버 정보를 sessionStorage에 저장
+          sessionStorage.setItem('naver_linking_info', JSON.stringify({
+            email: data.email,
+            naverUserId: data.naverUserId,
+            naverUserName: data.naverUserName,
+            naverProfileImage: data.naverProfileImage,
+          }));
           router.push(`/auth/link/naver?email=${encodeURIComponent(data.email)}`);
           return;
         }

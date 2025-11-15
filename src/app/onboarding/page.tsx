@@ -19,133 +19,108 @@ export default function OnboardingPage() {
   const [phone, setPhone] = useState('');
   const [userData, setUserData] = useState<any>(null);
 
+  // 어떤 정보를 사용자에게 물어봐야 하는지 결정하는 상태
+  const [needsUserType, setNeedsUserType] = useState(true);
+  const [needsGender, setNeedsGender] = useState(true);
+  const [needsAgeRange, setNeedsAgeRange] = useState(true);
+  const [needsNickname, setNeedsNickname] = useState(true);
+  const [needsPhone, setNeedsPhone] = useState(true);
+
   useEffect(() => {
     const checkAuthAndLoadData = async () => {
       try {
         const supabase = createClient();
-        
-        // 먼저 세션 확인
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-        }
-        
-        if (!session) {
-          console.log('No session found, redirecting to login');
-          router.replace('/login');
-          return;
-        }
-        
-        console.log('Session found, user:', session.user?.email);
-        
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-        if (userError) {
-          console.error('Auth error:', userError);
-          router.replace('/login');
-          return;
-        }
+        const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
-          console.log('No user found, redirecting to login');
           router.replace('/login');
           return;
         }
 
-        console.log('User found:', user.email);
+        setUserData(user);
 
-        // 프로필 체크 - 이미 완전한 프로필이 있으면 홈으로
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
           .single();
 
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error('Profile fetch error:', profileError);
-          // 에러가 있지만 계속 진행 (프로필이 없을 수 있음)
-        }
-
-        // 프로필이 이미 완전한지 확인
-        if (profile && profile.user_type) {
-          const isComplete = 
-            (profile.user_type === 'guest' && profile.gender && profile.age_range) ||
-            (profile.user_type === 'artist' && profile.nickname && profile.phone);
-          
-          if (isComplete) {
-            // 이미 완전한 프로필이 있으면 user_type에 따라 리다이렉트
-            console.log('Complete profile found, redirecting...', profile.user_type);
-            if (profile.user_type === 'guest') {
-              router.replace('/guest');
-            } else {
-              router.replace('/');
-            }
-            return;
-          } else {
-            // 프로필이 있지만 완전하지 않은 경우 - 기존 데이터로 폼 채우기
-            console.log('Incomplete profile found, showing form...');
-          }
-        }
-
-        // 기존 프로필 데이터가 있다면 필드 채우기
-        if (profile) {
-          if (profile.user_type) setUserType(profile.user_type);
-          if (profile.gender) setGender(profile.gender);
-          if (profile.age_range) setAgeRange(profile.age_range);
-          if (profile.nickname) setNickname(profile.nickname);
-          if (profile.phone) setPhone(profile.phone);
-        }
-
-        setUserData(user);
-
-        // 소셜 로그인에서 받은 정보 자동 채우기
         const metadata = user.user_metadata || {};
-        
-        console.log('User metadata:', metadata);
-        
-        // 성별 자동 채우기 (카카오/네이버)
-        if (metadata.gender) {
-          const genderMap: Record<string, Gender> = {
-            'male': 'male',
-            'female': 'female',
-            'M': 'male',
-            'F': 'female',
-          };
-          setGender(genderMap[metadata.gender] || null);
+
+        // 1. 사용자 타입 결정
+        if (profile?.user_type) {
+          setUserType(profile.user_type);
+          setNeedsUserType(false);
         }
 
-        // 나이대 자동 채우기 (카카오)
-        if (metadata.age_range) {
-          // 카카오: "20~29" 형식
-          const ageRangeMap: Record<string, AgeRange> = {
-            '0~9': '10s',
-            '10~14': '10s',
-            '15~19': '10s',
-            '20~29': '20s',
-            '30~39': '30s',
-            '40~49': '40s',
-            '50~59': '50s',
-            '60~': '60s+',
+        // 2. 성별 결정
+        let finalGender: Gender = null;
+        if (profile?.gender) {
+          finalGender = profile.gender;
+        } else if (metadata.gender) {
+          const genderMap: Record<string, Gender> = {
+            'male': 'male', 'female': 'female', 'M': 'male', 'F': 'female',
           };
-          setAgeRange(ageRangeMap[metadata.age_range] || null);
+          finalGender = genderMap[metadata.gender] || null;
         }
-        // 네이버 나이대
-        else if (metadata.age) {
-          const age = parseInt(metadata.age);
-          if (age < 20) setAgeRange('10s');
-          else if (age < 30) setAgeRange('20s');
-          else if (age < 40) setAgeRange('30s');
-          else if (age < 50) setAgeRange('40s');
-          else if (age < 60) setAgeRange('50s');
-          else setAgeRange('60s+');
+        if (finalGender) {
+          setGender(finalGender);
+          setNeedsGender(false);
+        }
+
+        // 3. 나이대 결정
+        let finalAgeRange: AgeRange = null;
+        if (profile?.age_range) {
+          finalAgeRange = profile.age_range;
+        } else if (metadata.age_range) { // 카카오
+          const ageRangeMap: Record<string, AgeRange> = {
+            '10~19': '10s', '20~29': '20s', '30~39': '30s',
+            '40~49': '40s', '50~59': '50s', '60~': '60s+',
+          };
+          finalAgeRange = ageRangeMap[metadata.age_range] || null;
+        } else if (metadata.age) { // 네이버 (e.g., "20-29")
+          const ageStr = metadata.age.split('-')[0];
+          const age = parseInt(ageStr);
+          if (age < 20) finalAgeRange = '10s';
+          else if (age < 30) finalAgeRange = '20s';
+          else if (age < 40) finalAgeRange = '30s';
+          else if (age < 50) finalAgeRange = '40s';
+          else if (age < 60) finalAgeRange = '50s';
+          else finalAgeRange = '60s+';
+        }
+        if (finalAgeRange) {
+          setAgeRange(finalAgeRange);
+          setNeedsAgeRange(false);
+        }
+        
+        // 4. 아티스트 정보 결정
+        if (profile?.nickname) {
+            setNickname(profile.nickname);
+            if(profile.nickname !== '무명') setNeedsNickname(false);
+        }
+        if (profile?.phone) {
+            setPhone(profile.phone);
+            setNeedsPhone(false);
+        }
+
+        // 프로필이 이미 완성되었는지 최종 확인
+        if (profile?.user_type) {
+            const isGuestComplete = profile.user_type === 'guest' && finalGender && finalAgeRange;
+            const isArtistComplete = profile.user_type === 'artist' && profile.nickname && profile.phone;
+            if (isGuestComplete) {
+                router.replace('/guest');
+                return;
+            }
+            if (isArtistComplete) {
+                router.replace('/');
+                return;
+            }
         }
 
         setLoading(false);
       } catch (error) {
         console.error('Onboarding check error:', error);
         setLoading(false);
-        alert('오류가 발생했습니다. 다시 시도해주세요.');
         router.replace('/login');
       }
     };
@@ -158,118 +133,42 @@ export default function OnboardingPage() {
       alert('사용자 타입을 선택해주세요.');
       return;
     }
-    
-    // 게스트인 경우: 성별, 나이대 필수
-    if (userType === 'guest') {
-      if (!gender) {
-        alert('성별을 선택해주세요.');
-        return;
-      }
-      if (!ageRange) {
-        alert('나이대를 선택해주세요.');
-        return;
-      }
+
+    if (userType === 'guest' && (!gender || !ageRange)) {
+      alert('게스트 정보(성별, 나이대)를 모두 입력해주세요.');
+      return;
     }
-    
-    // 아티스트인 경우: 닉네임, 휴대폰 번호 필수
-    if (userType === 'artist') {
-      if (!nickname.trim()) {
-        alert('닉네임을 입력해주세요.');
-        return;
-      }
-      if (!phone.trim()) {
-        alert('휴대폰 번호를 입력해주세요.');
-        return;
-      }
-      // 휴대폰 번호 형식 검증
-      const phoneRegex = /^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/;
-      if (!phoneRegex.test(phone.replace(/[- ]/g, ''))) {
-        alert('올바른 휴대폰 번호 형식이 아닙니다. (예: 010-1234-5678)');
-        return;
-      }
+
+    if (userType === 'artist' && (!nickname.trim() || !phone.trim())) {
+      alert('아티스트 정보(닉네임, 휴대폰 번호)를 모두 입력해주세요.');
+      return;
     }
 
     setSaving(true);
     const supabase = createClient();
 
     try {
-      const metadata = userData.user_metadata;
-      
-      // profiles 테이블에 데이터 저장
-      const fullName = metadata.full_name || metadata.name || metadata.nickname || userData.email?.split('@')[0];
-      const avatarUrl = metadata.avatar_url || metadata.picture || metadata.profile_image || '/default-profile.svg';
-      
-      // 프로필이 이미 있는지 확인
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', userData.id)
-        .single();
+      const updateData: any = {
+        user_type: userType,
+        updated_at: new Date().toISOString(),
+      };
 
-      let error;
-      
-      if (existingProfile) {
-        // 기존 프로필 업데이트
-        const updateData: any = {
-          user_type: userType,
-          updated_at: new Date().toISOString(),
-        };
-        
-        // 게스트: 성별, 나이대 저장
-        if (userType === 'guest') {
-          updateData.gender = gender;
-          updateData.age_range = ageRange;
-          updateData.nickname = '무명'; // 게스트 기본 닉네임
-        }
-        
-        // 아티스트: 닉네임, 휴대폰 저장
-        if (userType === 'artist') {
-          updateData.nickname = nickname;
-          updateData.phone = phone;
-        }
-        
-        const updateResult = await supabase
-          .from('profiles')
-          .update(updateData)
-          .eq('id', userData.id);
-        error = updateResult.error;
+      if (userType === 'guest') {
+        updateData.gender = gender;
+        updateData.age_range = ageRange;
+        if (!nickname) updateData.nickname = '무명';
       } else {
-        // 새 프로필 생성
-        const insertData: any = {
-          id: userData.id,
-          email: userData.email,
-          full_name: fullName,
-          avatar_url: avatarUrl,
-          user_type: userType,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        
-        // 게스트: 성별, 나이대 저장
-        if (userType === 'guest') {
-          insertData.gender = gender;
-          insertData.age_range = ageRange;
-          insertData.nickname = '무명'; // 게스트 기본 닉네임
-        }
-        
-        // 아티스트: 닉네임, 휴대폰 저장
-        if (userType === 'artist') {
-          insertData.nickname = nickname;
-          insertData.phone = phone;
-        }
-        
-        const insertResult = await supabase.from('profiles').insert(insertData);
-        error = insertResult.error;
+        updateData.nickname = nickname;
+        updateData.phone = phone;
       }
 
-      if (error) {
-        console.error('Profile save error:', error);
-        alert('프로필 저장 중 오류가 발생했습니다.');
-        setSaving(false);
-        return;
-      }
+      const { error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', userData.id);
 
-      // user_type에 따라 다른 페이지로 리다이렉트
+      if (error) throw error;
+
       if (userType === 'guest') {
         router.replace('/guest');
       } else {
@@ -277,7 +176,7 @@ export default function OnboardingPage() {
       }
     } catch (err) {
       console.error('Onboarding error:', err);
-      alert('오류가 발생했습니다.');
+      alert('프로필 저장 중 오류가 발생했습니다.');
       setSaving(false);
     }
   };
@@ -296,162 +195,79 @@ export default function OnboardingPage() {
         <h1 className="text-3xl font-bold text-[#3E352F] mb-2">환영합니다! 👋</h1>
         <p className="text-[#6B5E54] mb-8">몇 가지 정보만 입력하면 시작할 수 있어요</p>
 
-        {/* 사용자 타입 선택 */}
-        <div className="mb-6">
-          <label className="block text-sm font-semibold text-[#3E352F] mb-3">
-            사용자 타입 <span className="text-red-500">*</span>
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setUserType('artist')}
-              className={`p-4 rounded-xl border-2 transition-all ${
-                userType === 'artist'
-                  ? 'border-[#D2B48C] bg-[#D2B48C]/10'
-                  : 'border-[#EAE5DE] hover:border-[#D2B48C]/50'
-              }`}
-            >
-              <div className="text-2xl mb-1">🎨</div>
-              <div className="font-semibold text-[#3E352F]">아티스트</div>
-              <div className="text-xs text-[#6B5E54] mt-1">작품을 전시합니다</div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setUserType('guest')}
-              className={`p-4 rounded-xl border-2 transition-all ${
-                userType === 'guest'
-                  ? 'border-[#D2B48C] bg-[#D2B48C]/10'
-                  : 'border-[#EAE5DE] hover:border-[#D2B48C]/50'
-              }`}
-            >
-              <div className="text-2xl mb-1">👤</div>
-              <div className="font-semibold text-[#3E352F]">게스트</div>
-              <div className="text-xs text-[#6B5E54] mt-1">작품을 감상합니다</div>
-            </button>
+        {needsUserType && (
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-[#3E352F] mb-3">
+              사용자 타입 <span className="text-red-500">*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+                <button type="button" onClick={() => setUserType('artist')} className={`p-4 rounded-xl border-2 transition-all ${userType === 'artist' ? 'border-[#D2B48C] bg-[#D2B48C]/10' : 'border-[#EAE5DE] hover:border-[#D2B48C]/50'}`}>
+                    <div className="text-2xl mb-1">🎨</div>
+                    <div className="font-semibold text-[#3E352F]">아티스트</div>
+                    <div className="text-xs text-[#6B5E54] mt-1">작품을 전시합니다</div>
+                </button>
+                <button type="button" onClick={() => setUserType('guest')} className={`p-4 rounded-xl border-2 transition-all ${userType === 'guest' ? 'border-[#D2B48C] bg-[#D2B48C]/10' : 'border-[#EAE5DE] hover:border-[#D2B48C]/50'}`}>
+                    <div className="text-2xl mb-1">👤</div>
+                    <div className="font-semibold text-[#3E352F]">게스트</div>
+                    <div className="text-xs text-[#6B5E54] mt-1">작품을 감상합니다</div>
+                </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* 게스트 선택 시: 성별, 나이대 */}
         {userType === 'guest' && (
           <>
-            {/* 성별 선택 */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-[#3E352F] mb-3">
-                성별 <span className="text-red-500">*</span>
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { value: 'male', label: '남성', emoji: '👨' },
-                  { value: 'female', label: '여성', emoji: '👩' },
-                  { value: 'other', label: '기타', emoji: '🙂' },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setGender(option.value as Gender)}
-                    className={`p-3 rounded-xl border-2 transition-all ${
-                      gender === option.value
-                        ? 'border-[#D2B48C] bg-[#D2B48C]/10'
-                        : 'border-[#EAE5DE] hover:border-[#D2B48C]/50'
-                    }`}
-                  >
-                    <div className="text-xl mb-1">{option.emoji}</div>
-                    <div className="text-sm font-medium text-[#3E352F]">{option.label}</div>
-                  </button>
-                ))}
+            {needsGender && (
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-[#3E352F] mb-3">성별 <span className="text-red-500">*</span></label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[{ value: 'male', label: '남성', emoji: '👨' }, { value: 'female', label: '여성', emoji: '👩' }, { value: 'other', label:[object Object]} type="button" onClick={() => setGender(option.value as Gender)} className={`p-3 rounded-xl border-2 transition-all ${gender === option.value ? 'border-[#D2B48C] bg-[#D2B48C]/10' : 'border-[#EAE5DE] hover:border-[#D2B48C]/50'}`}>
+                      <div className="text-xl mb-1">{option.emoji}</div>
+                      <div className="text-sm font-medium text-[#3E352F]">{option.label}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* 나이대 선택 */}
-            <div className="mb-8">
-              <label className="block text-sm font-semibold text-[#3E352F] mb-3">
-                나이대 <span className="text-red-500">*</span>
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { value: '10s', label: '10대' },
-                  { value: '20s', label: '20대' },
-                  { value: '30s', label: '30대' },
-                  { value: '40s', label: '40대' },
-                  { value: '50s', label: '50대' },
-                  { value: '60s+', label: '60대+' },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setAgeRange(option.value as AgeRange)}
-                    className={`p-3 rounded-xl border-2 transition-all ${
-                      ageRange === option.value
-                        ? 'border-[#D2B48C] bg-[#D2B48C]/10'
-                        : 'border-[#EAE5DE] hover:border-[#D2B48C]/50'
-                    }`}
-                  >
-                    <div className="text-sm font-medium text-[#3E352F]">{option.label}</div>
-                  </button>
-                ))}
+            {needsAgeRange && (
+              <div className="mb-8">
+                <label className="block text-sm font-semibold text-[#3E352F] mb-3">나이대 <span className="text-red-500">*</span></label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[{ value: '10s', label: '10대' }, { value: '20s', label: '20대' }, { value: '30s', label: '30대' }, { value: '40s', label: '40대' }, { value: '50s', label: '50대' }, { value: '60s+', label: '60대+' }].map((option) => (
+                    <button key={option.value} type="button" onClick={() => setAgeRange(option.value as AgeRange)} className={`p-3 rounded-xl border-2 transition-all ${ageRange === option.value ? 'border-[#D2B48C] bg-[#D2B48C]/10' : 'border-[#EAE5DE] hover:border-[#D2B48C]/50'}`}>
+                      <div className="text-sm font-medium text-[#3E352F]">{option.label}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
 
-        {/* 아티스트 선택 시: 닉네임, 휴대폰 번호 */}
         {userType === 'artist' && (
           <>
-            {/* 닉네임 입력 */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-[#3E352F] mb-3">
-                닉네임 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                placeholder="닉네임을 입력하세요"
-                className="w-full px-4 py-3 rounded-xl border-2 border-[#EAE5DE] focus:border-[#D2B48C] focus:outline-none transition-all"
-                maxLength={20}
-              />
-            </div>
+            {needsNickname && (
+                <div className="mb-6">
+                    <label className="block text-sm font-semibold text-[#3E352F] mb-3">닉네임 <span className="text-red-500">*</span></label>
+                    <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="닉네임을 입력하세요" className="w-full px-4 py-3 rounded-xl border-2 border-[#EAE5DE] focus:border-[#D2B48C] focus:outline-none transition-all" maxLength={20} />
+                </div>
+            )}
 
-            {/* 휴대폰 번호 입력 */}
-            <div className="mb-8">
-              <label className="block text-sm font-semibold text-[#3E352F] mb-3">
-                휴대폰 번호 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="010-1234-5678"
-                className="w-full px-4 py-3 rounded-xl border-2 border-[#EAE5DE] focus:border-[#D2B48C] focus:outline-none transition-all"
-                maxLength={13}
-              />
-              <p className="text-xs text-[#6B5E54] mt-2">하이픈(-)을 포함하여 입력해주세요</p>
-            </div>
+            {needsPhone && (
+                <div className="mb-8">
+                    <label className="block text-sm font-semibold text-[#3E352F] mb-3">휴대폰 번호 <span className="text-red-500">*</span></label>
+                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="010-1234-5678" className="w-full px-4 py-3 rounded-xl border-2 border-[#EAE5DE] focus:border-[#D2B48C] focus:outline-none transition-all" maxLength={13} />
+                    <p className="text-xs text-[#6B5E54] mt-2">하이픈(-)을 포함하여 입력해주세요</p>
+                </div>
+            )}
           </>
         )}
 
-        {/* 완료 버튼 */}
-        <button
-          onClick={handleComplete}
-          disabled={
-            saving || 
-            !userType || 
-            (userType === 'guest' && (!gender || !ageRange)) ||
-            (userType === 'artist' && (!nickname.trim() || !phone.trim()))
-          }
-          className={`w-full h-14 rounded-full font-bold text-white transition-all ${
-            saving || 
-            !userType || 
-            (userType === 'guest' && (!gender || !ageRange)) ||
-            (userType === 'artist' && (!nickname.trim() || !phone.trim()))
-              ? 'bg-gray-300 cursor-not-allowed'
-              : 'bg-[#D2B48C] hover:bg-[#A89587]'
-          }`}
-        >
+        <button onClick={handleComplete} disabled={saving || !userType || (userType === 'guest' && (!gender || !ageRange)) || (userType === 'artist' && (!nickname.trim() || !phone.trim()))} className={`w-full h-14 rounded-full font-bold text-white transition-all ${saving || !userType || (userType === 'guest' && (!gender || !ageRange)) || (userType === 'artist' && (!nickname.trim() || !phone.trim())) ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#D2B48C] hover:bg-[#A89587]'}`}>
           {saving ? '처리 중...' : '시작하기'}
         </button>
       </div>
     </div>
   );
 }
-

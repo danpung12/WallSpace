@@ -1,72 +1,170 @@
-import { createRouteHandlerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
-import { create, getNumericDate } from 'djwt';
-
-// Supabase Admin 클라이언트를 생성하는 함수 (보안을 위해 별도 파일로 분리하는 것이 좋음)
-// 여기서는 간단하게 route 핸들러 내에서 직접 생성합니다.
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { create, getNumericDate } from 'https://deno.land/x/djwt@v2.8/mod.ts';
 
-export async function POST(request: Request) {
-  const { email, userType } = await request.json();
-
-  if (!email || !userType) {
-    return NextResponse.json({ error: 'Email and userType are required' }, { status: 400 });
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const body = await request.json();
+    const { email, naverUserId, naverUserName, naverProfileImage } = body;
+
+    if (!email || !naverUserId) {
+      return NextResponse.json(
+        { error: '필수 정보가 누락되었습니다.' },
+        { status: 400 }
+      );
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const jwtSecret = process.env.CUSTOM_JWT_SECRET;
 
-    if (!jwtSecret) {
-      throw new Error('JWT secret is not configured.');
+    if (!supabaseUrl || !supabaseServiceRoleKey || !jwtSecret) {
+      return NextResponse.json(
+        { error: '서버 설정 오류가 발생했습니다.' },
+        { status: 500 }
+      );
     }
 
-    // 1. 이메일로 사용자 조회
-    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email });
-    if (listError || !users || users.length === 0) {
-      throw new Error('User not found.');
-    }
-    const user = users[0];
-
-    // 2. 사용자 정보 업데이트 (계정 연동)
-    const { data: updatedUser, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      app_metadata: { ...user.app_metadata, provider: 'naver' },
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
     });
-    if (updateError) throw updateError;
 
-    // 3. 프로필에 user_type 업데이트
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .update({ user_type: userType })
-      .eq('id', user.id);
-    if (profileError) throw profileError;
+    // 1. 이메일로 사용자 찾기
+    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (listError) {
+      console.error('사용자 조회 오류:', listError);
+      return NextResponse.json(
+        { error: '사용자 조회에 실패했습니다.' },
+        { status: 500 }
+      );
+    }
 
-    // 4. 새로운 세션(JWT) 생성 (djwt/create 사용으로 수정)
-    const cryptoKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(jwtSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    const now = getNumericDate(0);
+    const user = users?.find((u: any) => u.email === email);
+
+    if (!user) {
+      return NextResponse.json(
+        { error: '해당 이메일의 사용자를 찾을 수 없습니다.' },
+        { status: 404 }
+      );
+    }
+
+    // 2. 사용자의 app_metadata에 네이버 정보 추가
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+      app_metadata: {
+        ...user.app_metadata,
+        provider: 'naver',
+        provider_id: naverUserId,
+      },
+      user_metadata: {
+        ...user.user_metadata,
+        full_name: naverUserName || user.user_metadata?.full_name,
+        avatar_url: naverProfileImage || user.user_metadata?.avatar_url,
+      },
+    });
+
+    if (updateError) {
+      console.error('사용자 업데이트 오류:', updateError);
+      return NextResponse.json(
+        { error: '계정 연동에 실패했습니다.' },
+        { status: 500 }
+      );
+    }
+
+    // 3. 네이버 identity 추가 (auth.identities 테이블)
+    try {
+      const insertResponse = await fetch(`${supabaseUrl}/rest/v1/auth.identities`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseServiceRoleKey,
+          'Authorization': `Bearer ${supabaseServiceRoleKey}`,
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          provider: 'naver',
+          provider_id: naverUserId,
+          identity_data: {
+            sub: naverUserId,
+            email: email,
+            name: naverUserName,
+            picture: naverProfileImage,
+          },
+          last_sign_in_at: new Date().toISOString(),
+        }),
+      });
+
+      if (!insertResponse.ok) {
+        const errorText = await insertResponse.text();
+        console.error('네이버 identity 추가 실패:', insertResponse.status, errorText);
+        // 에러를 던지지 않고 계속 진행 (이미 연동은 완료됨)
+      }
+    } catch (err) {
+      console.error('네이버 identity 추가 중 예외 발생:', err);
+      // 에러를 던지지 않고 계속 진행
+    }
+
+    // 4. JWT 생성하여 세션 반환
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(jwtSecret);
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+
+    const now = Math.floor(Date.now() / 1000);
     const accessTokenExp = now + 3600; // 1 hour
     const refreshTokenExp = now + 604800; // 1 week
 
-    const accessToken = await create({ alg: 'HS256', typ: 'JWT' }, { aud: 'authenticated', sub: user.id, role: 'authenticated', email: user.email, iat: now, exp: accessTokenExp }, cryptoKey);
-    const refreshToken = await create({ alg: 'HS256', typ: 'JWT' }, { sub: user.id, iat: now, exp: refreshTokenExp }, cryptoKey);
+    const accessTokenPayload = {
+      aud: 'authenticated',
+      sub: user.id,
+      role: 'authenticated',
+      email: user.email,
+      iat: now,
+      exp: accessTokenExp,
+    };
+
+    const refreshTokenPayload = {
+      sub: user.id,
+      iat: now,
+      exp: refreshTokenExp,
+    };
+
+    const accessToken = await create(
+      { alg: 'HS256', typ: 'JWT' },
+      accessTokenPayload,
+      cryptoKey
+    );
+
+    const refreshToken = await create(
+      { alg: 'HS256', typ: 'JWT' },
+      refreshTokenPayload,
+      cryptoKey
+    );
 
     const session = {
       access_token: accessToken,
       refresh_token: refreshToken,
-      user: updatedUser.user, // 업데이트된 사용자 정보 사용
+      user: user,
       token_type: 'bearer',
       expires_in: 3600,
       expires_at: accessTokenExp,
     };
 
-    return NextResponse.json({ session });
-
-  } catch (error) {
-    console.error('Link Naver account error:', error);
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return NextResponse.json({ session }, { status: 200 });
+  } catch (error: any) {
+    console.error('계정 연동 API 오류:', error);
+    return NextResponse.json(
+      { error: error.message || '서버 오류가 발생했습니다.' },
+      { status: 500 }
+    );
   }
 }
