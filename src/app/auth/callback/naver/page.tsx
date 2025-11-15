@@ -46,6 +46,7 @@ function NaverAuthCallback() {
           headers: {
             'Content-Type': 'application/json',
             'apikey': anonKey,
+            'Authorization': `Bearer ${anonKey}`, // JWT 검증 우회를 위한 Authorization 헤더
           },
           body: JSON.stringify({ code }),
         });
