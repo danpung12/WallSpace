@@ -44,40 +44,53 @@ serve(async (req) => {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
     let user: User | null;
     
-    // 먼저 네이버 provider_id로 사용자 찾기 (올바른 계정 찾기)
-    const { data: { users: usersByProviderId }, error: providerIdError } = await supabaseAdmin.auth.admin.listUsers();
-    if (!providerIdError && usersByProviderId) {
-      user = usersByProviderId.find((u: any) => 
+    // 먼저 네이버 provider_id로 사용자 찾기 (올바른 계정 찾기 - 가장 우선)
+    const { data: { users: allUsers }, error: listAllError } = await supabaseAdmin.auth.admin.listUsers();
+    if (!listAllError && allUsers) {
+      // 네이버 provider_id로 먼저 찾기
+      user = allUsers.find((u: any) => 
         u.app_metadata?.provider_id === naverUser.id && u.app_metadata?.provider === 'naver'
       ) || null;
-    }
-    
-    // provider_id로 못 찾았으면 이메일로 찾기
-    if (!user) {
-      const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({ email: userEmail });
-      if (listError) throw listError;
-      user = users && users.length > 0 ? users[0] : null;
+      
+      // provider_id로 못 찾았으면 이메일로 찾기
+      if (!user) {
+        user = allUsers.find((u: any) => u.email === userEmail) || null;
+      }
     }
 
     // 4. [핵심 수정] 사용자 상태에 따라 분기
-    if (user && user.app_metadata?.provider !== 'naver' && user.email !== userEmail) {
+    // 네이버 provider_id로 찾은 사용자면 그대로 사용
+    if (user && user.app_metadata?.provider_id === naverUser.id && user.app_metadata?.provider === 'naver') {
+      // 이미 올바른 계정에 연결되어 있음 - 계속 진행
+      console.log('네이버 provider_id로 올바른 계정 찾음:', user.email);
+    }
+    // 같은 이메일이지만 다른 provider_id인 경우 (잘못된 연동 해제)
+    else if (user && user.email === userEmail && user.app_metadata?.provider_id && user.app_metadata?.provider_id !== naverUser.id) {
+      // 잘못된 네이버 provider_id 제거하고 올바른 것으로 업데이트
+      console.log('잘못된 네이버 provider_id 발견, 수정 중...');
+      await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        app_metadata: { ...user.app_metadata, provider: 'naver', provider_id: naverUser.id },
+        user_metadata: { ...user.user_metadata, full_name: naverUser.name, avatar_url: naverUser.profile_image },
+      });
+      // user 객체 업데이트
+      user.app_metadata = { ...user.app_metadata, provider: 'naver', provider_id: naverUser.id };
+    }
+    // 다른 이메일인 경우 (계정 충돌) - 하지만 provider_id로 찾지 못했으므로 새로 생성해야 함
+    else if (user && user.email !== userEmail && user.app_metadata?.provider !== 'naver') {
       // 기존 계정이 있지만, 네이버 연동이 안된 경우 -> 계정 충돌 상태 반환
+      console.log('계정 충돌 발견:', user.email, 'vs', userEmail);
       return new Response(JSON.stringify({ status: 'conflict', email: user.email }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
     }
-    
-    // 같은 이메일이지만 다른 계정인 경우 (잘못된 연동 해제)
-    if (user && user.email === userEmail && user.app_metadata?.provider_id !== naverUser.id) {
-      // 잘못된 네이버 provider_id 제거
-      const updatedMetadata = { ...user.app_metadata };
-      delete updatedMetadata.provider;
-      delete updatedMetadata.provider_id;
-      
+    // 같은 이메일이고 네이버가 아닌 경우 -> 네이버로 업데이트
+    else if (user && user.email === userEmail && user.app_metadata?.provider !== 'naver') {
+      // 기존 계정에 네이버 정보 추가
+      console.log('기존 계정에 네이버 정보 추가:', user.email);
       await supabaseAdmin.auth.admin.updateUserById(user.id, {
-        app_metadata: updatedMetadata,
+        app_metadata: { ...user.app_metadata, provider: 'naver', provider_id: naverUser.id },
+        user_metadata: { ...user.user_metadata, full_name: naverUser.name, avatar_url: naverUser.profile_image },
       });
-      
-      // user를 null로 설정하여 새로 생성하도록 함
-      user = null;
+      // user 객체 업데이트
+      user.app_metadata = { ...user.app_metadata, provider: 'naver', provider_id: naverUser.id };
     }
 
     if (!user) {
