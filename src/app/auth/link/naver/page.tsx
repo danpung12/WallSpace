@@ -18,10 +18,29 @@ function NaverLinkPage() {
     const userTypeParam = searchParams.get('userType');
     const providerParam = searchParams.get('provider');
     
+    console.log('계정 연동 페이지 파라미터:', { emailParam, userTypeParam, providerParam });
+    
     if (emailParam) {
       setEmail(emailParam);
       setUserType(userTypeParam || '');
       setProvider(providerParam || 'naver');
+      
+      // sessionStorage에서도 정보 가져오기 (URL 파라미터가 없을 경우 대비)
+      const linkingInfoStr = sessionStorage.getItem('naver_linking_info');
+      if (linkingInfoStr) {
+        try {
+          const linkingInfo = JSON.parse(linkingInfoStr);
+          console.log('sessionStorage 정보:', linkingInfo);
+          if (!userTypeParam && linkingInfo.userType) {
+            setUserType(linkingInfo.userType);
+          }
+          if (!providerParam && linkingInfo.provider) {
+            setProvider(linkingInfo.provider);
+          }
+        } catch (e) {
+          console.error('sessionStorage 파싱 오류:', e);
+        }
+      }
     } else {
       // 이메일 정보가 없으면 로그인 페이지로
       router.replace('/login');
@@ -95,11 +114,11 @@ function NaverLinkPage() {
     switch (provider) {
       case 'naver':
         return (
-          <svg className="w-16 h-16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="48" height="48" rx="8" fill="#03C75A"/>
-            <path d="M28.5 24L19.5 12H14v24h9.5V24L33 36h5.5V12H28.5v12z" fill="white"/>
-          </svg>
+          <div className="w-16 h-16 flex items-center justify-center bg-[#03C75A] rounded-xl">
+            <span className="text-white text-4xl font-bold" style={{ fontFamily: 'Arial, sans-serif' }}>N</span>
+          </div>
         );
+
       case 'google':
         return (
           <svg className="w-16 h-16" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
